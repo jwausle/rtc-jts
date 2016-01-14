@@ -1,0 +1,29 @@
+
+
+Actualizar un QM instalado
+
+Notas:
+      - Este script actualiza QM. Para obtener más información, consulte el tema de ayuda, "Actualización de la solución de Rational para CLM".
+      - Excepto cuando muestre esta ayuda, este script se debe ejecutar desde un directorio JazzInstallRoot/server.
+
+Uso:
+    qm_upgrade
+         -oldApplicationHome <valor> --Vía de acceso completa al directorio de inicio de QM de la instalación anterior.  En una instalación típica, esta vía de acceso es <instalación de QM>/server/conf.
+         [-applicationContextRoot jazz] --Raíz de contexto de QM.
+         [-oldApplicationVersion Ninguno] --La versión que se está actualizando.  De forma predeterminada, se determina ejecutando repotools -version en la aplicación QM anterior.
+         [-updateTomcatFiles <yes (valor predeterminado) | no>] --Si deben actualizarse los archivos de configuración tomcat.
+         [-oldTomcatHome <ninguno>] --Vía de acceso completa al directorio raíz de Tomcat de la instalación anterior. De forma predeterminada, el valor del parámetro oldTomcatHome se deriva del valor del parámetro oldApplicationHome.
+         [-newApplicationHome conf] --Vía de acceso al directorio de configuración de servidor QM de la nueva instalación.
+         [-newJTSHome <ninguno>] --Vía de acceso al directorio de configuración de servidor JTS del JTS que la nueva instalación utilizará. De forma predeterminada, el valor del parámetro newJTSHome se deriva del valor del parámetro newApplicationHome.
+         [-jtsContextRoot jts] --Raíz de contexto de JTS.
+         [-newApplicationTomcatHome <ninguno>] --Vía de acceso al directorio de inicio de Tomcat de QM de la nueva instalación. De forma predeterminada, el valor del parámetro newApplicationTomcatHome se deriva del valor del parámetro newApplicationHome.
+         [-newJTSTomcatHome <ninguno>] --Vía de acceso al directorio de inicio de Tomcat de JTS del JTS que la nueva instalación utilizará. De forma predeterminada, el valor del parámetro newJTSTomcatHome se deriva del valor de parámetro newJTSHome.
+         [-ignoreJTSVersionCheck] --No intente comprobar si la versión de la aplicación es compatible con la versión de JTS ubicada en newJTSHome.  Este argumento solo debe utilizarse en un despliegue distribuido donde JTS esté en un sistema aparte y no se pueda acceder a él desde el sistema de aplicaciones.
+         [-noPrompt] --No mostrar solicitud antes de crear o modificar las tablas.
+         [-noEditor] --No abrir los archivos teamserver.properties con un editor.
+         [-noVerify] --No realizar verificación de los archivos teamserver.properties.
+         [-noStepPrompt] --No mostrar solicitud antes de ejecutar un paso.
+
+Ejemplos:
+    upgrade/qm/qm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer3.0.x/jazz/server/conf -importFromFile /tmp/qmData.tar
+

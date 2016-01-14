@@ -1,0 +1,29 @@
+
+
+Önceden kurulu bir CCM'yi yükseltme
+
+Notlar:
+      - Bu komut dosyası CCM'yi yükseltir. Daha fazla bilgi için "CLM için Rational çözümünü yükseltme" başlıklı yardım konusuna bakın.
+      - Bu yardım konusunun görüntülenmesi sırası dışında, bu komut dosyası JazzInstallRoot/server dizininden çalıştırılmalıdır.
+
+Kullanım:
+    ccm_upgrade
+         -oldApplicationHome <değer> --Eski kuruluşun CCM sunucu yapılandırması dizininin tam yolu.  Tipik bir kuruluş için bu yol şöyledir: <CCM kuruluşu>/server/conf.
+         [-applicationContextRoot jazz] --CCM bağlam kökü.
+         [-oldApplicationVersion <none>] --Yükseltilmekte olan CCM sürümü.  Varsayılan olarak bu, eski CCM uygulamasına karşı repotools -version çalıştırılarak belirtilir.
+         [-updateTomcatFiles <yes (varsayılan) | no>] --tomcat yapılandırma dosyalarının güncellenip güncellenmeyeceği.
+         [-oldTomcatHome <none>] --Eski CCM kuruluşunun Tomcat ana dizini tam yolu. Varsayılan olarak, oldTomcatHome parametre değeri oldApplicationHome parametre değerinden türetilir.
+         [-newApplicationHome conf] --Yeni kuruluşun CCM sunucusu yapılandırma dizini yolu.
+         [-newJTSHome <none>] --Yeni kuruluşun kullanacağı JTS sunucu yapılandırma dizini yolu. Varsayılan olarak, newJTSHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-jtsContextRoot jts] --JTS Bağlam kökü.
+         [-newApplicationTomcatHome <none>] --Yeni kuruluşun CCM Tomcat ana dizini yolu. Varsayılan olarak, newApplicationTomcatHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-newJTSTomcatHome <none>] --Yeni kuruluşun kullanacağı JTS'nin JJTS Tomcat ana dizini yolu. Varsayılan olarak, newJTSTomcatHome parametre değeri newJTSHome parametre değerinden türetilir.
+         [-ignoreJTSVersionCheck] --Uygulama sürümünün newJTSHome'da bulunan JTS sürümüyle uyumlu olduğunu doğrulamayı denemeyin.  Bu bağımsız değişken yalnızca JTS'in uygulama sisteminden erişilemeyen ayrı bir sistemde olduğu dağıtımlı konuşlandırmada kullanılabilir.
+         [-noPrompt] --Tablolar yaratılmadan ya da değiştirilmeden önce sorulmasın.
+         [-noEditor] --teamserver.properties dosyalarında bir düzenleyici açılmasın.
+         [-noVerify] --teamserver.properties dosyaları doğrulaması gerçekleştirilmesin.
+         [-noStepPrompt] --Bir adım gerçekleştirilmeden önce sorulmasın.
+
+Örnekler:
+    upgrade/ccm/ccm_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

@@ -1,0 +1,29 @@
+
+
+Egy már telepített QM frissítése
+
+Megjegyzések:
+      - Ez a parancsfájl frissíti a QM kiszolgálót. További információkért tekintse meg a "Rational solution for CLM frissítése" című súgótémakört.
+      - Ez a parancsfájl csak a JazzInstallRoot/server könyvtárból futtatható, kivéve amikor ezt a súgót jeleníti meg.
+
+Használat:
+    qm_upgrade
+         -oldApplicationHome <érték> --A QM saját könyvtárának teljes elérési útja a régi telepítésben.  Szokásos telepítés esetén ez az elérési út a <QM telepítés>/server/conf.
+         [-applicationContextRoot jazz] --QM kontextusgyökér.
+         [-oldApplicationVersion <nincs>] --A frissítendő változat.  Alapértelmezés szerint ez a régi QM alkalmazáson a repotools -version parancs futtatásával határozható meg.
+         [-updateTomcatFiles <igen (alapértelmezett) | nem>] --Frissítse-e a tomcat konfigurációs fájlokat?
+         [-oldTomcatHome <nincs>] --A Tomcat gyökérkönyvtárának teljes elérési útja a régi telepítésben. Alapértelmezés szerint az oldTomcatHome paraméter értéke az oldApplicationHome paraméter értékéből származik.
+         [-newApplicationHome conf] --A QM kiszolgáló konfigurációs könyvtárának elérési útja az új telepítésben.
+         [-newJTSHome <nincs>] --Az új telepítés által használt JTS kiszolgáló konfigurációs könyvtárának elérési útja. Alapértelmezés szerint a newJTSHome paraméter értéke a newApplicationHome paraméter értékéből származik.
+         [-jtsContextRoot jts] --JTS kontextusgyökér.
+         [-newApplicationTomcatHome <nincs>] --A QM Tomcat saját könyvtárának elérési útja az új telepítésben. Alapértelmezés szerint a newApplicationTomcatHome paraméter értéke a newApplicationHome paraméter értékéből származik.
+         [-newJTSTomcatHome <nincs>] --Az új telepítés által használt JTS kiszolgáló JTS Tomcat alapkönyvtára. Alapértelmezés szerint a newJTSTomcatHome paraméter értéke a newJTSHome paraméter értékéből származik.
+         [-ignoreJTSVersionCheck] --Ne próbálja ellenőrizni, hogy az alkalmazás változata kompatibilis-e a newJTSHome paraméterben található JTS változattal.  Ez az argumentum csak elosztott telepítésben használható, ahol a JTS egy olyan különálló rendszeren található, amely nem érhető el az alkalmazás rendszeréből.
+         [-noPrompt] --Ne kérdezzen rá a táblák létrehozása vagy módosítása előtt.
+         [-noEditor] --Ne nyisson meg szerkesztőt a teamserver.properties fájlokhoz.
+         [-noVerify] --Ne hajtsa végre a teamserver.properties fájlok ellenőrzését.
+         [-noStepPrompt] --Ne legyen kérdés egy lépés végrehajtása előtt.
+
+Példák:
+    upgrade/qm/qm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer3.0.x/jazz/server/conf -importFromFile /tmp/qmData.tar
+

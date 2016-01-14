@@ -1,0 +1,27 @@
+
+
+Обновление установленной версии JTS
+
+Примечания:
+      - Этот сценарий обновляет JTS. См. раздел справки "Обновление Rational solution for CLM".
+      - За исключением вывода данной справки, этот сценарий должен выполняться из каталога JazzInstallRoot/server.
+
+Формат:
+    jts_upgrade
+         -oldJTSHome <значение> --Полный путь к каталогу конфигурации сервера JTS в предыдущей версии. Для стандартной установки это <каталог-установки-JTS>/server/conf.
+         [-jtsContextRoot jts] --Корневой контекст JTS.
+         [-oldJTSVersion <нет>] --Обновляемая версия JTS. По умолчанию она определяется командой repotools -version, выполняемой с прежним JTS.
+         [-lpaContextRoot admin] --Корневой контекст LPA.
+         [-updateTomcatFiles <yes (по умолчанию) | no>] --Требуется ли обновлять файлы конфигурации tomcat.
+         [-oldTomcatHome <нет>] --Полный путь к домашнему каталогу Tomcat в предыдущей версии. По умолчанию значение параметра oldTomcatHome создается на основе значения параметра oldJTSHome.
+         [-newJTSHome conf] --Путь к каталогу конфигурации сервера JTS в новой версии.
+         [-newTomcatHome <нет>] --Путь к домашнему каталогу Tomcat в новой версии. По умолчанию значение параметра newTomcatHome наследуется от параметра newJTSHome.
+         [-noPrompt] --Не запрашивать перед созданием таблиц во время импорта.
+         [-noEditor] --Не открывать редактор для файла teamserver.properties.
+         [-ignoreLPA] --Игнорировать обновление приложения LPA
+         [-noVerify] --Не проверять файлы teamserver.properties.
+         [-noStepPrompt] --Не показывать приглашение перед выполнением операции.
+
+Примеры:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

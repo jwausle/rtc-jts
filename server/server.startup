@@ -1,0 +1,171 @@
+#!/bin/sh
+
+# Licensed Materials - Property of IBM (c) Copyright IBM Corporation 2008, 2015.
+# All Rights Reserved.
+# 
+# Note to U.S. Government Users Restricted Rights: Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+
+if [ `uname` = SunOS ];
+  then
+    SPACE_PATTERN=' ' ;
+  else
+    SPACE_PATTERN='[[:space:]]' ;
+fi
+
+# Having a space in the directory name causes problems for how Tomcat handles
+# the JAVA_OPTS environment variable.
+pwd | grep "$SPACE_PATTERN"
+if [ $? -eq 0 ];
+  then /bin/echo \
+ERROR:  The Jazz Team Server may not be installed in a directory whose name contains a space character.  Please relocate the jazz directory and try again.
+  exit 1
+fi
+
+START_DIR=`dirname "$0"`
+cd "$START_DIR"
+
+CLEAN=false
+DEBUG=false
+
+for var in "$@" 
+do
+   if [ "$var" = "-debug" ] ; then
+      DEBUG=true
+   fi
+   if [ "$var" = "-clean" ] ; then
+      CLEAN=true
+   fi
+done
+
+echo $TMP | grep "$SPACE_PATTERN"
+if [ $? -eq 0 ];
+  then TEMP_DIR=/tmp ;
+  else TEMP_DIR=${TMP:-/tmp} ;
+fi
+
+# For Mac OS X (unsupported, but used by developers)
+if [ `uname` = Darwin ];
+  then
+    JRE_HOME=$(/usr/libexec/java_home)
+#   Using TLS only protocols protects against CVE-2014-3566 vulnerability    
+    JAVA_OPTS="$JAVA_OPTS -Djazz.connector.sslEnabledProtocols=\"SSLv2Hello,TLSv1,TLSv1.1,TLSv1.2\""
+    JAVA_OPTS="$JAVA_OPTS -Djazz.connector.algorithm=SunX509"
+  else
+    JRE_HOME=`pwd`/jre
+#   Using TLS only protocols protects against CVE-2014-3566 vulnerability    
+    JAVA_OPTS="$JAVA_OPTS -Djazz.connector.sslEnabledProtocols=\"TLSv1,TLSv1.1,TLSv1.2\""
+    JAVA_OPTS="$JAVA_OPTS -Djazz.connector.algorithm=IbmX509"
+fi
+
+export JRE_HOME
+CATALINA_HOME=`pwd`/tomcat
+export CATALINA_HOME
+
+# The following four environment variables are used to point to the appropriate
+# JDBC jar file supplied by the database vendor.  For Oracle and SQL Server, the
+# environment variable should point to the driver file itself; for db2i and
+# db2z, the variable should point to the directory that contains the multiple
+# necessary jdbc driver files required on those platforms (for example, 
+# /opt/ibm/db2/V9.7/java). For DB2, the use of DB2_ABSPATH var is optional; if not
+# set the default driver packaged with the server will be used.
+
+# Users should set these variables; if they are set, the script will respect
+# their value.  If they are unset, we try locating the driver files in a
+# directory under <JazzInstallDir>/server.  (For example, the default location
+# for the Oracle JDBC driver is under <JazzInstallDir>/server/oracle/ojdbc6.jar).
+
+if [ -z "$ORACLE_JDBC_DRIVER_FILE" ] ; then
+  ORACLE_JDBC_DRIVER_FILE="`cd \"$START_DIR\" 2>/dev/null && pwd || echo \"$START_DIR\"`/oracle/ojdbc6.jar" ;
+fi
+
+if [ -z "$SQLSERVER_JDBC_DRIVER_FILE" ] ; then
+  SQLSERVER_JDBC_DRIVER_FILE="`cd \"$START_DIR\" 2>/dev/null && pwd || echo \"$START_DIR\"`/sqlserver/sqljdbc4.jar" ;
+fi
+
+if [ -z "$DB2I_ABSPATH" ] ; then
+  DB2I_ABSPATH="`cd \"$START_DIR\" 2>/dev/null && pwd || echo \"$START_DIR\"`/db2i" ;
+fi
+
+if [ -z "$DB2Z_ABSPATH" ] ; then
+  DB2Z_ABSPATH="`cd \"$START_DIR\" 2>/dev/null && pwd || echo \"$START_DIR\"`/db2z" ;
+fi
+
+COGNOS_SDK=$START_DIR/CognosSDK
+export COGNOS_SDK
+
+JAVA_OPTS="$JAVA_OPTS -Djava.awt.headless=true"
+JAVA_OPTS="$JAVA_OPTS -DSQLSERVER_JDBC_DRIVER_FILE=$SQLSERVER_JDBC_DRIVER_FILE"
+JAVA_OPTS="$JAVA_OPTS -DORACLE_JDBC_DRIVER_FILE=$ORACLE_JDBC_DRIVER_FILE"
+JAVA_OPTS="$JAVA_OPTS -DDB2I_JDBC=$DB2I_ABSPATH"
+JAVA_OPTS="$JAVA_OPTS -DDB2Z_JDBC=$DB2Z_ABSPATH"
+if [ -n "$DB2_ABSPATH" ] ; then
+  JAVA_OPTS="$JAVA_OPTS -DDB2_ABSPATH=$DB2_ABSPATH/"
+fi
+JAVA_OPTS="$JAVA_OPTS -Dorg.eclipse.emf.ecore.plugin.EcorePlugin.doNotLoadResourcesPlugin=true"
+JAVA_OPTS="$JAVA_OPTS -Dorg.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=true"
+JAVA_OPTS="$JAVA_OPTS -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true"
+JAVA_OPTS="$JAVA_OPTS -DJAZZ_HOME=file://"`pwd`"/conf"
+JAVA_OPTS="$JAVA_OPTS -Dcom.ibm.team.repository.tempDir=$TEMP_DIR"
+JAVA_OPTS="$JAVA_OPTS -Dlog4j.configuration=file://"`pwd`"/conf/startup_log4j.properties"
+JAVA_OPTS="$JAVA_OPTS -Xmx4G"
+JAVA_OPTS="$JAVA_OPTS -Xms4G"
+JAVA_OPTS="$JAVA_OPTS -Xmn512M"
+JAVA_OPTS="$JAVA_OPTS -XX:MaxDirectMemorySize=1G"
+JAVA_OPTS="$JAVA_OPTS -Dderby.locks.waitTimeout=1200"
+JAVA_OPTS="$JAVA_OPTS -Dderby.locks.deadlockTimeout=1140"
+
+if [ "$CLEAN" = "true" ] ; then
+   JAVA_OPTS="$JAVA_OPTS -Djazz.clean=true"
+fi
+if [ "$DEBUG" = "true" ] ; then
+   JAVA_OPTS="$JAVA_OPTS -Dcom.ibm.team.repository.debug.enabled=true"
+   JAVA_OPTS="$JAVA_OPTS -Dcom.ibm.team.repository.debug.users=*"
+fi
+
+## *** Debug service properties ***
+
+## Give access to restricted areas to all JazzAdmins users.
+#JAVA_OPTS="$JAVA_OPTS -Dcom.ibm.team.repository.debug.users=JazzAdmins"
+
+## Expose /repodebug/access service.
+#JAVA_OPTS="$JAVA_OPTS -Dcom.ibm.team.repository.debug.accessServiceEnabled=true"
+
+## Patch service options.
+#JAVA_OPTS="$JAVA_OPTS -Dcom.ibm.team.osgi.patch.disable=true"
+#JAVA_OPTS="$JAVA_OPTS -Dcom.ibm.team.osgi.patch.directory=patch"
+
+## Required for CLM Monitoring
+# JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote=true"
+# JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.port=1099"
+# JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.ssl=false"
+# JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.authenticate=false"
+
+## BEGIN app-specific options section
+## END app-specific options section
+
+if [ `uname` = SunOS ];
+  then
+    JAVA_OPTS="$JAVA_OPTS -d64" ;
+    JAVA_OPTS="$JAVA_OPTS -XX:MaxPermSize=768m -XX:ReservedCodeCacheSize=512M -XX:CodeCacheMinimumFreeSpace=2M -XX:+UnlockDiagnosticVMOptions -XX:+UnsyncloadClass" ;
+    JAVA_OPTS="$JAVA_OPTS -Djava.protocol.handler.pkgs=com.ibm.net.ssl.www2.protocol" ;
+elif [ `uname` = Darwin ];
+  then
+    JAVA_OPTS="$JAVA_OPTS -XX:MaxPermSize=1024m"
+#   JAVA_OPTS="$JAVA_OPTS -XX:ReservedCodeCacheSize=512M -XX:CodeCacheMinimumFreeSpace=2M -XX:+UnlockDiagnosticVMOptions -XX:+UnsyncloadClass"
+elif [ `uname` = AIX ];
+  then
+    JAVA_OPTS="$JAVA_OPTS -Xgcpolicy:gencon"
+    JAVA_OPTS="$JAVA_OPTS -Xnocompressedrefs"
+else
+    JAVA_OPTS="$JAVA_OPTS -Xgcpolicy:gencon"
+    JAVA_OPTS="$JAVA_OPTS -Xcompressedrefs -Xgc:preferredHeapBase=0x100000000"
+fi
+
+export JAVA_OPTS
+
+if [ "$DEBUG" = "true" ] ; then
+	$CATALINA_HOME/bin/catalina.sh jpda start
+else
+	$CATALINA_HOME/bin/startup.sh
+fi

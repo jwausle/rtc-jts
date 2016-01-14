@@ -1,0 +1,1702 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!--  Shared targets -->
+<!--  Use this with AutoPD 1.2.2 or later. Must include autopd share target to use this.-->
+
+<project name="rational_systemVersionInfo"> 
+	
+	<dirname property="rational.systemVersionInfo.shared.targets.basedir" file="${ant.file.rational_systemVersionInfo}" />
+	<dirname property="rational.systemVersionInfo.shared.targets.parentdir" file="${rational.systemVersionInfo.shared.targets.basedir}" />
+	<dirname property="rational.systemVersionInfo.shared.targets.bundle.basedir" file="${rational.systemVersionInfo.shared.targets.parentdir}" />
+	
+	<!-- import the common file --> 
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_im_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared" />
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared" />	
+
+	<!-- ISADC needs -->
+	<import>
+		<javaresource name="scripts/sharedtargets.xml"/>
+	</import>
+	
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+	
+<!-- ####################################################################### -->
+<!--                System Information for Rational Software                 -->
+<!-- Common code to retrieve system and basic Rational product information   -->
+<!-- ####################################################################### -->
+	
+	<!-- =================================== -->
+	<!--         Windows only                -->
+	<!-- =================================== -->
+	
+	<!-- ################################################
+	     internal.setupRegExportProperties - values that gets stashed away.
+	     This is a target b/c ANT will only run this once. 
+	     Use in the context of this file only.  
+	     For : collect_systeminfo_win
+	     	   collect_reg_versioninfo_win
+	     	   parseForRationalSoftwareInUninstall
+   	     	   parseIBMRationalSDPRegistry
+   	     	   parseRationalSoftwareRegistry   	     	   
+	    ################################################   -->
+	<macrodef name="internal.setupRegExportProperties">
+		<sequential>
+		
+		<autopd_if isNotTrue="${isInitialized.internal.setupRegExportProperties}">
+			
+			<autopdproperty name="isInitialized.internal.setupRegExportProperties" value="true"/>
+			<!-- registry keys and files for exports -->
+			<!-- string replacement for delimiter @ used in the code -->
+			<property name="atsign" value="_ATSIGN_"/>
+			<property name="regfile.sware.uninstall" value="regfile.sware.uninstall.export.txt"/>
+			<property name="regfile.sware.uninstall.tmp" value="regfile.sware.uninstall.export.tmp.txt"/>
+			<property name="regkey.sware.uninstall" value="HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"/>
+			<property name="regkey.sware.uninstall.parse" value="\[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"/>		
+	
+			<property name="regfile.ibm.rational.sdp" value="regfile.ibm.rational.sdp.export.txt"/>
+			<property name="regkey.ibm.rational.sdp" value="HKEY_LOCAL_MACHINE\SOFTWARE\IBM\Rational\Software Development Platform\products"/>
+			<property name="regkey.ibm.rational.sdp.parse" value="\[HKEY_LOCAL_MACHINE\\SOFTWARE\\IBM\\Rational\\Software Development Platform\\products\\([^\]]+)\]"/>	
+			
+			<property name="regfile.rational.software" value="regfile.rational.software.export.txt"/>
+			<property name="regkey.rational.software" value="HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software"/>
+			<property name="regkey.rational.software.parse" value="\[HKEY_LOCAL_MACHINE\\SOFTWARE\\Rational Software\\([^\]\\]+)\]"/>
+			
+			<!-- for analysis -->
+			<property name="regfile.sware.uninstall.analysis" value="regfile.sware.uninstall.export_ANALYSIS.txt"/>
+			<property name="regfile.ibm.rational.sdp.analysis" value="regfile.ibm.rational.sdp.export_ANALYSIS.txt"/>
+			<property name="regfile.rational.software.analysis" value="regfile.rational.software.export_ANALYSIS.txt"/>
+			
+		</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+		     internal.setupProductRegKeyProperties - values that gets stashed away.
+		     This is a target b/c ANT will only run this once. 
+		     Use in the context of this file only
+		 ################################################  -->
+	<macrodef name="internal.setupProductRegKeyProperties">
+		<sequential>
+			<!-- this is for look up purposes, when trying to find name, and location -->
+			<!-- property is setup such that :
+			key.product.version.type
+				product: cq | cclt | robot | sodaWd | testenabler | licsvr | reqpro | projconsole | suite | rosert
+						rmt | rsa | rpt | rft 
+				version: currentver | v7 | v6 (which is 2003/06/04 )|
+				type : version | install
+			-->
+			<autopd_if isNotTrue="${isInitialized.internal.setupProductRegKeyProperties}">
+				
+				<autopdproperty name="isInitialized.internal.setupProductRegKeyProperties" value="true"/>
+				
+				<!-- General -->
+				<property name="key.installmgr.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{DBD90D51-BD46-41AF-A1F5-B74CEA24365B}\DisplayVersion"/>
+				
+				<property name="key.licclient.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{AA4DB754-FF06-4D39-84BE-D2BF1D849D00}\DisplayVersion"/>
+				<property name="key.licsvr.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8DB4A048-4708-468D-910D-02111D9B6F51}\DisplayVersion"/>
+										
+				<property name="key.common.install" value="SOFTWARE\Rational Software\Common\CommonDir"/>
+				<property name="key.common.install.64" value="SOFTWARE\Wow6432Node\Rational Software\Common\CommonDir"/>
+				<property name="key.common.version" value="SOFTWARE\Rational Software\RSCOMMONVERSION"/>
+				<property name="key.common.version.64" value="SOFTWARE\Wow6432Node\Rational Software\RSCOMMONVERSION"/>
+		
+				<!-- suite & others -->
+				<property name="suite.v6.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{69AB6D3E-9CA5-BF42-B28D-EACA4B19C8FB}\DisplayVersion"/>
+		
+				<property name="key.cclt.currentver" value="SOFTWARE\Atria\ClearCase\CurrentVersion\ClearCaseMajorVersion"/>
+				<property name="key.cclt.install" value="SOFTWARE\Atria\ClearCase\CurrentVersion\ProductHome"/>
+				<property name="key.cclt.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{61788A6F-DB71-42DD-9066-C997A519B20B}\DisplayVersion"/>
+				<property name="key.cclt.v6.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B6BB7BE9-BF07-4A3F-A444-BA9B554F6D80}\DisplayVersion"/>
+				
+				<property name="key.cc.currentver" value="SOFTWARE\Atria\ClearCase\CurrentVersion\ClearCaseMajorVersion"/>
+				<property name="key.cc.install" value="SOFTWARE\Atria\ClearCase\CurrentVersion\ProductHome"/>
+				<property name="key.cc.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{61788A6F-DB71-42DD-9066-C997A519B20B}\DisplayVersion"/>
+				<property name="key.cc.v6.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B6BB7BE9-BF07-4A3F-A444-BA9B554F6D80}\DisplayVersion"/>
+				
+				<property name="key.cq.currentver" value="SOFTWARE\Rational Software\ClearQuest\CurrentVersion"/>
+				<property name="key.cq.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{CE7BC4DE-8956-4B80-BFB7-541812764162}\DisplayVersion"/>
+				<property name="key.cq.v7.install" value="SOFTWARE\Rational Software\ClearQuest\7.0.0\Install\TARGETDIR"/>
+			    <!-- fix me -->
+				<property name="key.cq.v6.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{CE7BC4DE-8956-4B80-BFB7-541812764162}\DisplayVersion"/>
+				<property name="key.cq.v6.install" value="SOFTWARE\Rational Software\ClearQuest\2003.06.00\Install\TARGETDIR"/>
+			
+				<!-- fix me -->
+				<property name="key.reqpro.v6.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C6DCA530-4107-48E1-B11B-865C0C44D6B2}\DisplayVersion"/>
+				<property name="key.reqpro.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C6DCA530-4107-48E1-B11B-865C0C44D6B2}\DisplayVersion"/>
+				<property name="key.reqpro.install" value="SOFTWARE\Rational Software\RequisitePro\4.0\InstallDirectory"/>
+				<property name="key.reqpro.cq.pkg.install_1.8" value="SOFTWARE\Rational Software\ClearQuest Packages\RequisitePro\1.8"/>
+				
+				<property name="key.projconsole.currentver" value="SOFTWARE\Rational Software\ProjectConsole\CurrentVersion"/>
+				<property name="key.projconsole.install" value="SOFTWARE\Rational Software\ProjectConsole\PROJECTCONSOLE_HOME"/>		
+				<property name="key.projconsole.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{E328A91E-A6ED-4006-AEA9-0E976B696461}\DisplayVersion"/>
+				<!-- fix me -->
+			    <property name="key.projconsole.v6.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{E328A91E-A6ED-4006-AEA9-0E976B696461}\DisplayVersion"/>
+		
+				<property name="key.dci.v7.version" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.data.collection.infrastructure\version"/>  <!-- 6.0 -->
+				<property name="key.dci.v7.install" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.data.collection.infrastructure\location"/>  <!-- C:\Program Files\IBM\Rational\SDP\6.0 -->				
+				
+				<property name="key.rac.v7.version" value="SOFTWARE\IBM\Rational Agent Controller\Version"/>      <!-- 7.0.2-->
+				<property name="key.rac.v7.install" value="SOFTWARE\IBM\Rational Agent Controller\InstallHome"/> 
+						
+			    <!-- v7 of the below are in install manager -->
+				<property name="key.rft.v6.version" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.functional.tester\version"/>  <!-- 6.1 -->
+				<property name="key.rft.v6.install" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.functional.tester\location"/>  <!-- C:\Program Files\IBM\Rational\SDP\6.0 -->	
+				
+				<property name="key.rmt.v6.version" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.manual.tester\version"/>  <!-- 6.1 -->
+				<property name="key.rmt.v6.install" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.manual.tester\location"/>  <!-- C:\Program Files\IBM\Rational\SDP\6.0 -->
+				
+				<property name="key.rpt.v6.version" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.performance.tester\version"/>  <!-- 6.1 -->
+				<property name="key.rpt.v6.install" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.performance.tester\location"/>  <!-- C:\Program Files\IBM\Rational\SDP\6.0 -->	
+				
+				<property name="key.rsa.v6.version" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.software.architect\version"/>  <!-- 6.0 -->
+				<property name="key.rsa.v6.install" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.software.architect\location"/>  <!-- C:\Program Files\IBM\Rational\SDP\6.0 -->				
+				
+				<property name="key.rad.v6.version" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.application.developer\version"/>  <!-- 6.0 -->
+				<property name="key.rad.v6.install" value="SOFTWARE\IBM\Rational\Software Development Platform\products\com.ibm.rational.application.developer\location"/>  <!-- C:\Program Files\IBM\Rational\SDP\6.0 -->				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- target not used --> 
+	<macrodef name="win_setupRegKey_more">
+		<sequential>
+		<property name="key.robot.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{4361552E-B857-11DA-9597-00E08161165F}\DisplayVersion"/>
+		<property name="key.sodaWd.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5D6AD464-9D41-4B9B-B04A-6ED8BF194811}\DisplayVersion"/>
+		<property name="key.sodaWd.v7.install" value="SOFTWARE\Rational Software\SoDAWord\SODA_HOME"/>			
+
+		<property name="key.testenabler.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{7C2CFC80-0235-D611-8FBB-00C04F72EE80}\DisplayVersion"/>
+		<property name="key.test.v7.install" value="SOFTWARE\Rational Software\Rational Test\8\Install Directory"/> <!-- Rational Test -->
+		<property name="key.rosert.v6.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{F8900841-4ED6-9743-AECE-B32737FE8E59}\DisplayVersion"/>			
+		<property name="key.rpm.v7.version" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{E26BCE90-44F4-44E5-9ADA-DB53DED3B724}\DisplayVersion"/>
+		<property name="key.rpm.v7.install" value="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{E26BCE90-44F4-44E5-9ADA-DB53DED3B724}\InstallSource"/>  <!-- InstallLocation was empty -->
+		</sequential>
+	</macrodef>
+	
+
+	<!-- ################################################
+		     
+		     Useful targets to collect system information 
+		     
+		 ################################################   -->
+
+	<!-- Windows: mem -->
+	<macrodef name="win_collect_meminfo">
+		<sequential>			
+			<autopd_if isTrue="${isWindows}">
+				<!-- mem -->
+				<autopdproperty name="win.mem.out" value="${autopdtmp}/win_mem_out.txt"/>
+				<autopdproperty name="echo.command.name" value="mem"/>
+				<autopdproperty name="echo.output" value="Running command: ${echo.command.name}"/>
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${win.mem.out}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${win.mem.out}"/>			
+				<exec executable="cmd.exe" os="${os.windows}"
+					    output="${win.mem.out}"
+						failonerror="false" failifexecutionfails="false">
+					    <arg line="/c mem"/>
+				</exec>
+	
+				<!-- collect the output -->
+				<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+					<fileset file="${win.mem.out}"/>
+				</copy>
+			</autopd_if>
+		
+		</sequential>
+	</macrodef>
+			
+    <!-- Windows : systeminfo -->
+	<macrodef name="win_collect_win_systeminfo">
+		<sequential>			
+			<autopd_if isTrue="${isWindows}">
+				<!-- mem -->
+				<autopdproperty name="win.sysinfo.out" value="${autopdtmp}/win_systeminfo_out.txt"/>
+				<autopdproperty name="echo.command.name" value="systeminfo"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 
+						message="Running command: {0}"
+						replace="${echo.command.name}"/>
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${win.sysinfo.out}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${win.sysinfo.out}"/>			
+				<exec executable="cmd.exe" os="${os.windows}"
+					    output="${win.sysinfo.out}"
+						failonerror="false" failifexecutionfails="false">
+					    <arg line="/c systeminfo"/>
+				</exec>
+	
+				<!-- collect the output -->
+				<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+					<fileset file="${win.sysinfo.out}"/>
+				</copy>
+			</autopd_if>
+		
+		</sequential>
+	</macrodef>
+	
+	<!-- Collects uninstalled registry information --> 
+	<macrodef name="win_collect_systeminfo">
+		<sequential>
+		
+		<internal.setupRegExportProperties/>
+		
+		<!-- no op. just call parts of the system collector -->
+		<win_collectRegistryInfo filename="${regfile.sware.uninstall}" regkey="${regkey.sware.uninstall}"/>
+		</sequential>
+	
+	</macrodef>
+	
+	<!-- collects Rational registry information -->
+	<macrodef name="win_collect_reg_versioninfo">	
+		<sequential>
+		<internal.setupRegExportProperties/>
+		
+		<!-- Get additional Rational Registry information  -->
+		<!-- HKEY_LOCAL_MACHINE\software\IBM\Rational -->
+		<win_collectRegistryInfo filename="${regfile.ibm.rational.sdp}" regkey="${regkey.ibm.rational.sdp}"/>
+		
+		<!-- HKEY_LOCAL_MACHINE\software\Rational Software -->
+		<win_collectRegistryInfo filename="${regfile.rational.software}" regkey="${regkey.rational.software}"/>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- Extracts Rational installed/product information -->
+	<!-- Pulled from cqtm.xml  -->
+	<macrodef name="win_collect_parse_rational_system_information">
+		<sequential>
+			<win_collect_systeminfo/>
+			<win_collect_reg_versioninfo/>
+		
+			<!-- Analysis of the collected data -->
+			<win_parseForRationalSoftwareInUninstall/>
+			<win_parseIBMRationalSDPRegistry/>
+			<win_parseRationalSoftwareRegistry/>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- Updated in 4.1.3.20140828 to use VB scripts -->
+	<!-- input:
+	    prefix = collection prefix
+	    target.out = VB Script output. 
+	  -->
+	<macrodef name="win_collect_system_event_logs">
+		<attribute name="prefix" default="system_info"/>
+		<attribute name="target.out" default="win_collect_system_event_logs_out.txt"/>	
+		<attribute name="echo.on" default="true"/>
+		<sequential>
+						
+			<autopdproperty name="system.event.vbs.path" value="${rational.systemVersionInfo.shared.targets.basedir}\vbs\get_win_event_log.vbs"/>
+			<autopd_unset_property name="has.vbs"/>
+			<available property="has.vbs" file="${system.event.vbs.path}" type="file"/>
+			
+			<autopd_if isNotTrue="${has.vbs}">
+				<autopd_if isTrue="@{echo.on}">
+					<wsnlsecho key="ratl.system.warn.missing.vbs" 
+						    	bundle="properties/RATLSHARE/autopd"
+						    	message="Cannot find script file: {0}"
+						    	replace="${system.event.vbs.path}"
+						    	id="2074"
+						    	level="warn"
+								messagePrefix="CWPDD"/>
+				</autopd_if>
+			</autopd_if>
+			<autopd_if isTrue="${has.vbs}">
+				<!-- fix up vb-script path --> 
+				<win_pathFixup type="\\" inputDir="${system.event.vbs.path}" defaultDir="${system.event.vbs.path}"/>
+				<autopdproperty name="system.event.vbs.path.fixed" value="${inputDir.out}"/>
+				
+				<!-- fix up output location -->
+				<win_pathFixup type="\\" inputDir="${autopdtmp}" defaultDir="${autopdtmp}"/>
+				<autopdproperty name="autopdtmp.fixed" value="${inputDir.out}"/>
+					
+				<!-- output -->
+				<autopdproperty name="target.out.file" value="${autopdtmp}/@{target.out}"/>				
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.system.info.collect.win.event" 
+						propertyName="collect.windows.event.msg" 
+						message="Collecting windows event logs..."/>
+				
+				<autopd_if isTrue="@{echo.on}">
+					<echo message="${collect.windows.event.msg}"/>
+				</autopd_if>
+				
+				<echo message="${line.separator}****** ${collect.windows.event.msg} ******${line.separator}${line.separator}" append="true" file="${target.out.file}"/>				
+				<exec executable="cscript" failonerror="false" failifexecutionfails="false"
+					 os="${os.windows}" append="true" error="${target.out.file}"	output="${target.out.file}">
+					<arg value="${system.event.vbs.path.fixed}"/>
+					<arg value="${autopdtmp.fixed}"/>
+				</exec>	
+				
+				<!-- collect those logs -->
+			<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+					<fileset	dir="${autopdtmp}">
+						<include name="*.evt"/>
+						<include name="@{target.out}"/>
+					</fileset>
+				</copy>
+				
+			
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	<!-- #######################################################
+		  Windows utilities: System
+		    - provide full path to target.out.
+		    - Contents will be appended. 
+		    - NO Collection.
+		    - Use: win_collect_basic_systeminfo to gather all the system info
+		        -> this does not include event logs.
+		####################################################### -->
+	
+	<macrodef name="win_collect_basic_systeminfo">
+		<attribute name="prefix" default="system_info"/>
+		<attribute name="echo.on" default="true"/>
+    	<sequential>
+    		<autopd_if isTrue="@{echo.on}">
+	    		<stepcount />
+				<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+				<echo message=" "/>	
+	    		<wsnlsecho key="ratl.system.info.collect.system" 
+						bundle="properties/RATLSHARE/autopd"
+						message="[{0}] Step {1}: Gathering system information"
+						replace="${autopdts};;${step.count}"
+						id="2075"
+						level="info"
+						messagePrefix="CWPDD"/>
+    		</autopd_if>
+			
+			<!-- create directory -->
+			<autopdproperty name="sysinfo.dir" value="${autopdtmp}/@{prefix}"/>
+			<mkdir dir="${sysinfo.dir}"/>
+    		
+    		<!-- dump info? -->
+    		<win.get.set target.out="${sysinfo.dir}/environmentalvariables.txt"/>
+    		<win.get.netuse target.out="${sysinfo.dir}/mappeddrives.txt"/>
+    		<win.get.localaccounts target.out="${sysinfo.dir}/localaccounts.txt"/>
+    		<win.get.net.start target.out="${sysinfo.dir}/runningservices.txt"/>
+    		<win.get.tasklist target.out="${sysinfo.dir}/tasklist.txt"/>
+    		<win.get.systeminfo target.out="${sysinfo.dir}/systeminfo.txt"/>
+    			
+			<!-- get disk information -->
+			<win.get.fsinfo.drives />
+			
+			<!-- Make sure that there is no win.drives.error and that win.drives is valid -->
+			<condition property="has.win.drives">
+				<and>
+					<or>
+						<not>
+							<isset property="win.drives.error"/>
+						</not>
+						<equals arg1="" arg2="${win.drives.error}"/>
+					</or>
+					<isset property="win.drives"/>
+					<not>
+						<equals arg1="" arg2="${win.drives}"/>
+					</not>
+				</and>
+			</condition>
+			
+			<autopd_if isTrue="${has.win.drives}">
+				<!-- Since we have the drive, loop through them -->
+				<autopdloop param="win.drive.val" paramList="${win.drives}" delimiter=" ">
+					<condition property="valid.drive">
+						<not>
+							<equals arg1="Drives:" arg2="${win.drive.val}" />
+						</not>
+					</condition>
+    			
+    				<!-- The disk info will contain "Drives:" at the beginning, just skip that as its useless -->
+    				<autopd_if isTrue="${valid.drive}">
+						<win.get.fsutil.volume.diskfree target.out="${sysinfo.dir}/diskinfo.txt" win.drive="${win.drive.val}" />
+					</autopd_if>
+						
+				</autopdloop>
+			</autopd_if>
+    			
+    		<!-- installed products ? -->
+    		
+    		<!-- zip all -->
+			<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset dir="${autopdtmp}">
+					<include name="@{prefix}/**" /> 
+				</fileset> 
+			</copy>
+    		
+    	</sequential>
+	</macrodef>
+
+	<!-- runs "fsutil volume diskfree" to get specific drive usage information -->
+	<macrodef name="win.get.fsutil.volume.diskfree">
+		<attribute name="target.out" />
+		<attribute name="win.drive" />
+			
+		<sequential>
+			<!-- get the network information -->
+			<echo message="****** fsutil volume diskfree @{win.drive} ******" />
+			<echo message="******  fsutil volume diskfree @{win.drive}  ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="fsutil" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}" output="@{target.out}">
+				<arg line="volume diskfree @{win.drive}"/>
+			</exec>
+			<echo message="${line.separator}" append="true" file="@{target.out}"/>
+		</sequential>
+	</macrodef>
+	    				 	
+	<!-- runs "fsutil fsinfo drives" to get all drive information -->
+	<macrodef name="win.get.fsinfo.drives">
+		<sequential>
+			<!-- get the network information -->
+			<echo message="****** fsutil fsinfo drives ******" />
+			<exec executable="fsutil" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" errorproperty="win.drives.error" outputproperty="win.drives" resultproperty="win.drives.result">
+				<arg line="fsinfo drives"/>
+			</exec>
+		</sequential>
+	</macrodef>
+					
+	<!-- set -->
+	<macrodef name="win.get.set">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** set ******" />
+			<echo message="${line.separator}****** set ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="cmd.exe" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="/c set"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="win.get.netuse">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** net use ******" />
+			<echo message="${line.separator}****** net use ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="net" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="use"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- net user, net localgroup  -->
+	<macrodef name="win.get.localaccounts">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** net user ******" />
+			<echo message="${line.separator}****** net user ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="net" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="user"/>
+			</exec>
+			
+			<echo message="****** net localgroup ******" />
+			<echo message="${line.separator}****** net localgroup ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="net" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="localgroup"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- net start -->
+	<macrodef name="win.get.net.start">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** net start ******" />
+			<echo message="${line.separator}****** net start ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="net" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="start"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- tasklist -->
+	<macrodef name="win.get.tasklist">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** tasklist ******" />
+			<echo message="${line.separator}****** tasklist ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="tasklist" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- systeminfo - Gets all system information for a windows system -->
+	<macrodef name="win.get.systeminfo">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** systeminfo ******" />
+			<echo message="${line.separator}****** systeminfo ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="systeminfo" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- whoami - available for later versions of Windows -->
+	<macrodef name="win.get.whoami.groups">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** whoami /groups ******" />
+			<echo message="${line.separator}****** whoami /groups ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="whoami" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="/groups"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- #######################################################
+	  Windows utilities: Network. 
+	    - provide full path to target.out.
+	    - Contents will be appended. 
+	    - NO Collection.
+	    - run macro: win_collect_networkinfo to collect all utilities.
+	####################################################### -->
+	<macrodef name="win_collect_networkinfo">
+		<attribute name="prefix" default="network_info"/>
+		<attribute name="echo.on" default="true"/>
+		<sequential>
+			<autopd_if isTrue="@{echo.on}">
+				<stepcount />
+				<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+				<echo message=" "/>	
+				<wsnlsecho key="ratl.system.info.collect.network" 
+						bundle="properties/RATLSHARE/autopd"
+						message="[{0}] Step {1}: Gathering network information"
+						replace="${autopdts};;${step.count}"
+						id="2075"
+						level="info"
+						messagePrefix="CWPDD"/>
+			</autopd_if>
+			
+			<!-- create directory -->
+			<autopdproperty name="network.dir" value="${autopdtmp}/@{prefix}"/>
+			<mkdir dir="${network.dir}"/>
+			
+			<!-- getting all the following network options -->
+			<win.get.ipconfig target.out="${network.dir}/ipconfig.txt"/>
+			<win.get.nbtstat target.out="${network.dir}/nbtstat.txt"/>
+			<win.get.net.config target.out="${network.dir}/netconfigworkstation.txt"/>
+			<win.get.netstat target.out="${network.dir}/netstat.txt"/>
+			<win.get.net.share target.out="${network.dir}/shares.txt"/>
+			
+			<!-- zip all -->
+			<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset dir="${autopdtmp}">
+					<include name="@{prefix}/**" /> 
+				</fileset> 
+			</copy>			
+	    </sequential>
+	</macrodef>
+	
+	<!-- === runs ipconfig /all === -->
+	<macrodef name="win.get.ipconfig">
+		<attribute name="target.out"/>
+		<sequential>
+			<!-- get the network information -->
+			<echo message="****** ipconfig /all ******" />
+			<echo message="${line.separator}****** ipconfig /all ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="ipconfig" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="/all"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- === runs nbtstat -a localhost === -->
+	<macrodef name="win.get.nbtstat">
+		<attribute name="target.out"/>
+		<sequential>
+			
+			<!-- get hostname -->
+			<autopd_unset_property name="script.hostname"/>
+			<exec executable="hostname"  failifexecutionfails="false"  outputproperty="script.hostname" />
+			
+			<!-- get the network information -->
+			<echo message="****** nbtstat -a  ${script.hostname} ******" />
+			<echo message="${line.separator}****** nbtstat -a  ${script.hostname} ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="cmd.exe" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="/c nbtstat -a ${script.hostname}"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- net config workstation -->
+	<macrodef name="win.get.net.config">
+		<attribute name="target.out"/>
+		<sequential>
+			<!-- get the network information -->
+			<echo message="****** net config workstation ******" />
+			<echo message="${line.separator}****** net config workstation ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="net" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="config workstation"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- netstat -a , netstat -s -->
+	<macrodef name="win.get.netstat">
+		<attribute name="target.out"/>
+		<sequential>
+			<!-- get the network information -->
+			<echo message="****** netstat -a ******" />
+			<echo message="${line.separator}****** netstat -a ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="netstat" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="-a"/>
+			</exec>
+			
+			<echo message="****** netstat -s******" />
+			<echo message="${line.separator}****** netstat -s ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="netstat" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="-s"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<!-- net share -->
+	<macrodef name="win.get.net.share">
+		<attribute name="target.out"/>
+		<sequential>
+			<echo message="****** net share ******" />
+			<echo message="${line.separator}****** net share ******${line.separator}${line.separator}" append="true" file="@{target.out}"/>
+			<exec executable="net" failonerror="false" failifexecutionfails="false"
+				 os="${os.windows}" append="true" error="@{target.out}"	output="@{target.out}">
+				<arg line="share"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+
+	<!-- #######################################################
+          macrodef: internal.convert_registry_to_UTF16LE
+          Only works for registry files, that has been exported internally via win_collect_reg_versioninfo
+          Input: 
+          	- regfile.in:  file that contains registry file for input.
+			- regfile.out: file that contains registry file for output.
+			- ${isRegedit4} = true : unset
+         ####################################################### -->
+	<macrodef name="internal.convert_registry_to_UTF16LE">
+		<attribute name="regfile.in"/>  <!-- full path to the file - no check -->
+		<attribute name="regfile.out"/> <!-- full path to the file - no check -->
+		<sequential>
+			
+			<autopd_unset_property name="encoded-file"/>
+			<internal.win_check_for_regedit4 regfile.in="@{regfile.in}"/>
+			<autopd_if isNotTrue="${isRegedit4}">
+				<loadfile property="encoded-file"
+				      srcFile="@{regfile.in}"
+				      encoding="UTF-16LE"
+					 failonerror="false"/>  <!-- in case this has been converted --> 			
+				<autopd_unset_property name="fileLoaded"/>
+				<condition property="fileLoaded">
+					<isset property="encoded-file"/>
+				</condition>
+				<autopd_if isTrue="${fileLoaded}">
+					<!-- replace the file with loaded file -->
+					<echo message="${encoded-file}" file="@{regfile.out}"/>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+		
+	<!-- #######################################################
+      macrodef: iinternal.win_check_for_regedit4
+      Only works for registry files, that has been exported internally via win_collect_reg_versioninfo
+      On win2K, the /a option does not necessary generate REGEDIT4 output.
+      Input: 
+      	- regfile.in:  file that contains registry file for input.
+		- ${isRegedit4} = true : unset
+     ####################################################### -->
+	<macrodef name="internal.win_check_for_regedit4">
+		<attribute name="regfile.in"/> <!-- full path to the file - no check -->
+		<sequential>
+			<!-- maybe there is a better way in ANT to pickup the first line? -->
+			<regex_extract_value 
+				file="@{regfile.in}"
+				searchPattern="^(REGEDIT4)$"
+				subPatternIndex="1"
+				extractedValue="regedit4"
+				returnOption="firstMatch"
+				match_across_multiple_lines="false"
+			/>
+			
+			<autopd_unset_property name="isRegedit4"/>
+			<condition property="isRegedit4">
+				<isset property="regedit4"/>
+			</condition>
+			
+		</sequential>
+	</macrodef>
+
+	
+	<!-- #######################################################
+          macrodef: win_parseForRationalSoftwareInUninstall
+          PARSES only REGEDIT4 formatted files!
+          Output: 
+          	- sware.uninstall_analysis.txt
+			- ${productNameList} = list of product names.
+			- ${versionList} = list of version info
+         ####################################################### -->
+	
+    <macrodef name="win_parseForRationalSoftwareInUninstall">
+    	<sequential>
+
+    	<internal.setupRegExportProperties/>
+    	
+		<stepcount />
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<echo message=" "/>
+		<wsnlsecho key="ratl.system.info.2071" 
+				bundle="properties/RATLSHARE/autopd"
+				message="[{0}] Step {1}: Parsing {2} for information."
+				replace="${autopdts};;${step.count};;${regfile.sware.uninstall}"
+				id="2071"
+				level="info"
+				messagePrefix="CWPDD"/>
+    	
+    	<autopdproperty name="result_outfile" value="${regfile.sware.uninstall.analysis}"/>
+    		
+    	<!-- check to see if file is there -->
+    	<autopd_unset_property name="file.available"/>
+		<available file="${autopdtmp}/${regfile.sware.uninstall}" type="file" property="file.available"/> 
+    	<autopd_if isNotTrue="${file.available}">
+    		<wsnlsecho key="ratl.system.warn.2072" 
+				bundle="properties/RATLSHARE/autopd"
+				message="Cannot find {0} to parse for analysis."
+				replace="${autopdtmp}/${regfile.sware.uninstall}"
+				id="2072"
+				level="warn"
+				messagePrefix="CWPDD"/>
+    	</autopd_if>
+    	<autopd_if isTrue="${file.available}">
+    	    	
+    		<!-- check to see ifs REGEDIT 4 --> 
+    		<internal.win_check_for_regedit4 regfile.in="${autopdtmp}/${regfile.sware.uninstall}"/>
+
+    		<autopd_unset_property name="sware.uninstall.source"/>
+    		<autopd_if isTrue="${isRegedit4}">
+    			<!-- no encoding -->
+	    		<loadfile property="sware.uninstall.source" srcFile="${autopdtmp}/${regfile.sware.uninstall}">
+					<filterchain>
+				    <striplinebreaks/>
+				  </filterchain>
+				</loadfile>
+    		</autopd_if>
+    		<autopd_if isNotTrue="${isRegedit4}">
+    			<!-- modify encoding if its NOT regedit4 format -->
+	    		<loadfile property="sware.uninstall.source" srcFile="${autopdtmp}/${regfile.sware.uninstall}" encoding="UTF-16LE">
+					<filterchain>
+				    <striplinebreaks/>
+				  </filterchain>
+				</loadfile>
+    		</autopd_if>
+    		
+    		<!-- replace all @ in the string with "_ATSIGN_" string -->
+    		<autopdreplace property="sware.uninstall.source" token="@" value="${atsign}"/>
+			<!-- breaking the entries up - using @  -->
+			<autopdreplace property="sware.uninstall.source" token="${regkey.sware.uninstall.parse}" value="@"/>
+    		
+    		<!-- create a file --> 
+			<echo file="${autopdtmp}/${regfile.sware.uninstall.tmp}" message=" "/>
+    		
+    		<!-- loop thru the chunks - only one delimiter is allowed.-->
+    		<!-- use @ for delimiter - if use | , be careful when using file_trim -->
+			<autopdloop param="value" paramlist="${sware.uninstall.source}" delimiter="@">
+				<!-- each of these results in ] with " "=" " (possibly some \") -->
+				<!-- if string contains "Publisher"="Rational Software" -->
+				<autopd_unset_property name="isRationalSoftware"/>
+				<condition property="isRationalSoftware">
+					<contains string="${value}" substring='"Publisher"="Rational Software"'/>
+				</condition>
+				<autopd_if isTrue="${isRationalSoftware}">
+					<echo file="${autopdtmp}/${regfile.sware.uninstall.tmp}" append="true" message="${value}"/>
+					<echo file="${autopdtmp}/${regfile.sware.uninstall.tmp}" append="true" message="${line.separator}"/> <!-- line break -->
+				</autopd_if>
+			</autopdloop>
+	
+    		<!-- parse the resulting file - DisplayName & Display version --> 
+    		<regex_extract_value 
+					file="${autopdtmp}/${regfile.sware.uninstall.tmp}"
+					searchPattern='"DisplayName"="([^"]*)"'
+					subPatternIndex="1"
+					extractedValue="extracted"
+					returnOption="allMatches"
+					match_across_multiple_lines="false"
+    				delimiter="@"
+				/>
+			
+			<regex_extract_value 
+					file="${autopdtmp}/${regfile.sware.uninstall.tmp}"
+					searchPattern='"DisplayVersion"="([^"]*)"'
+					subPatternIndex="1"
+					extractedValue="extractedVersion"
+					returnOption="allMatches"
+					match_across_multiple_lines="false"
+					delimiter="@"
+				/>
+    		
+    		
+    		<!-- print file out -->
+    		<autopdproperty name="file.output.name" value="${autopdtmp}/${result_outfile}"/>
+    		<saveresourcebundleproperty 
+    				bundle="properties/RATLSHARE/autopd"
+    				key="ratl.system.info.2078" 
+    				propertyName="internal.print2.str"
+    				message='Collecting product entries in key=[{0}] containing "Publisher"="Rational Software" to {1}...'    				
+    		        replace="${regkey.sware.uninstall};;${result_outfile}"/>
+    		<echo message="${internal.print2.str}"/>
+    		    		
+    		<internal.printAnalysis2 file="${autopdtmp}/${result_outfile}" 
+    			title="${internal.print2.str}"
+    			key.label="Product"  keyList="${extracted}"
+    			value.label="Version" valueList="${extractedVersion}"
+    		/>
+    		
+
+			<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset	dir="${autopdtmp}">
+					<include name="${result_outfile}"/>
+				</fileset>
+			</copy>
+    	
+    		
+    	</autopd_if>
+
+		
+        </sequential>    
+	</macrodef>
+	
+	
+	<!-- #######################################################
+          macrodef:win_parseIBMRationalSDPRegistry
+          PARSES only REGEDIT4 formatted files!
+          Output: 
+          	- sware.uninstall_analysis.txt
+			- ${productNameList} = list of product names.
+			- ${versionList} = list of version info
+         ####################################################### -->
+	
+    <macrodef name="win_parseIBMRationalSDPRegistry">
+		<sequential>
+    	<internal.setupRegExportProperties/>
+    	
+		<stepcount />
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<echo message=" "/>
+		<wsnlsecho key="ratl.system.info.2071" 
+				bundle="properties/RATLSHARE/autopd"
+				message="[{0}] Step {1}: Parsing {2} for information."
+				replace="${autopdts};;${step.count};;${regfile.ibm.rational.sdp}"
+				id="2071"
+				level="info"
+				messagePrefix="CWPDD"/>
+    	
+		
+		<autopdproperty name="result_outfile" value="${regfile.ibm.rational.sdp.analysis}"/>
+		
+		<!-- check to see if file is there -->
+    	<autopd_unset_property name="file.available"/>
+		<available file="${autopdtmp}/${regfile.ibm.rational.sdp}" type="file" property="file.available"/> 
+    	<autopd_if isNotTrue="${file.available}">
+    		<wsnlsecho key="ratl.system.warn.2072" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Cannot find {0} to parse for analysis."
+					replace="${autopdtmp}/${regfile.ibm.rational.sdp}"
+					id="2072"
+					level="warn"
+					messagePrefix="CWPDD"/>
+
+    	</autopd_if>
+    	<autopd_if isTrue="${file.available}">
+    		
+    		<!-- converts the registry file to UTF16LE if necessary -->
+    		<internal.convert_registry_to_UTF16LE 
+    						regfile.in="${autopdtmp}/${regfile.ibm.rational.sdp}" 
+    						regfile.out="${autopdtmp}/${regfile.ibm.rational.sdp}"/>
+
+			<regex_extract_value 
+					file="${autopdtmp}/${regfile.ibm.rational.sdp}"
+					searchPattern='${regkey.ibm.rational.sdp.parse}'
+					subPatternIndex="1"
+					extractedValue="extracted.product"
+					returnOption="allMatches"
+					match_across_multiple_lines="false"
+					delimiter="@"
+				/>
+    		
+			<regex_extract_value 
+					file="${autopdtmp}/${regfile.ibm.rational.sdp}"
+					searchPattern='"version"="([^"]*)"'
+					subPatternIndex="1"
+					extractedValue="extracted.version"
+					returnOption="allMatches"
+					match_across_multiple_lines="false"
+					delimiter="@"
+				/>
+    		
+			<regex_extract_value 
+					file="${autopdtmp}/${regfile.ibm.rational.sdp}"
+					searchPattern='"location"="([^"]*)"'
+					subPatternIndex="1"
+					extractedValue="extracted.location"
+					returnOption="allMatches"
+					match_across_multiple_lines="false"
+					delimiter="@"
+				/>
+		   		
+    		
+    		<!-- print file out -->
+    		<autopdproperty name="file.output.name" value="${autopdtmp}/${result_outfile}"/>
+    		<saveresourcebundleproperty 
+    				bundle="properties/RATLSHARE/autopd"
+    				key="ratl.system.info.2079" 
+    				propertyName="internal.print3.str"
+    				message="Collecting install and version information on Rational products listed in key=[{0}] to {1} ..."    				
+    		        replace="${regkey.ibm.rational.sdp};;${result_outfile}"/>
+    		<echo message="${internal.print3.str}"/>
+    		    		
+    		<internal.printAnalysis3 file="${file.output.name}" 
+    			title="${internal.print3.str}"
+    			key.label="Product"  keyList="${extracted.product}"
+    			value.label="Version" valueList="${extracted.version}"
+    			value.label.2="Install Location" valueList.2="${extracted.location}"
+    		/>
+    		
+    		
+    		<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset	dir="${autopdtmp}">
+					<include name="${result_outfile}"/>
+				</fileset>
+			</copy>
+    	
+    	</autopd_if>
+
+	
+		</sequential>
+	</macrodef>
+	
+	<!-- #######################################################
+          macrodef: win_parseRationalSoftwareRegistry
+          PARSES only REGEDIT4 formatted files!
+          Output: 
+          	- sware.uninstall_analysis.txt
+			- ${productNameList} = list of product names.
+			- ${versionList} = list of version info
+         ####################################################### -->
+	
+    <macrodef name="win_parseRationalSoftwareRegistry" >
+    	<sequential>
+    	<internal.setupRegExportProperties/>
+    	
+		<stepcount />
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<echo message=" "/>
+		<wsnlsecho key="ratl.system.info.2071" 
+				bundle="properties/RATLSHARE/autopd"
+				message="[{0}] Step {1}: Parsing {2} for information."
+				replace="${autopdts};;${step.count};;${regfile.rational.software}"
+				id="2071"
+				level="info"
+				messagePrefix="CWPDD"/>
+    	
+    	<autopdproperty name="result_outfile" value="${regfile.rational.software.analysis}"/>    	    	
+    	
+    	<!-- check to see if file is there -->
+       	<autopd_unset_property name="file.available"/>
+		<available file="${autopdtmp}/${regfile.rational.software}" type="file" property="file.available"/> 
+    	<autopd_if isNotTrue="${file.available}">
+    		<wsnlsecho key="ratl.system.warn.2072" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Cannot find {0} to parse for analysis."
+					replace="${autopdtmp}/${regfile.rational.software}"
+					id="2072"
+					level="warn"
+					messagePrefix="CWPDD"/>
+    	</autopd_if>
+    	<autopd_if isTrue="${file.available}">
+    		    		    		
+    		<!-- converts the registry file to UTF16LE if necessary -->
+    		<internal.convert_registry_to_UTF16LE 
+    						regfile.in="${autopdtmp}/${regfile.rational.software}" 
+    						regfile.out="${autopdtmp}/${regfile.rational.software}"/>
+    		
+			<regex_extract_value 
+					file="${autopdtmp}/${regfile.rational.software}"
+					searchPattern='${regkey.rational.software.parse}'
+					subPatternIndex="1"
+					extractedValue="extracted.product"
+					returnOption="allMatches"
+					match_across_multiple_lines="false"
+					delimiter="@"
+				/>
+		   		
+    		<!-- print file out -->
+    		<autopdproperty name="file.output.name" value="${autopdtmp}/${result_outfile}"/>
+    		<saveresourcebundleproperty 
+    				bundle="properties/RATLSHARE/autopd"
+    				key="ratl.system.info.2077" 
+    				propertyName="internal.print1.str" 
+    				message="Collecting entries listed under key=[{0}] to {1} ..."
+    		        replace="${regkey.rational.software};;${result_outfile}"/>
+    		<echo message="${internal.print1.str}"/>
+
+    		<!-- listing of Rational Software listed in ${regkey.rational.software} -->
+    		<internal.printAnalysis file="${file.output.name}" 
+    			title="${internal.print1.str}"
+    			key.label="Product"  keyList="${extracted.product}"
+    		/>
+    		
+    		<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset	dir="${autopdtmp}">
+					<include name="${result_outfile}"/>
+				</fileset>
+			</copy>
+    	    		
+    	</autopd_if>
+
+    	</sequential>
+	</macrodef>
+	
+	
+	
+	<!-- #############################################  -->
+	<!--  Product Info                                  -->
+	<!-- #############################################  -->
+	<!-- ===================================== -->
+	<!-- Rational CQ Installation information  -->
+	<!-- ===================================== -->
+	<!-- Output:
+			- hasAllInformation : if both version and install info is available
+			- cq.install : location of Rational ClearQuest Install
+			- cq.version : version of the Rational ClearQuest
+	-->	
+	<!-- DEPRECATED - keep around in case people didn't update ClearQuest v70 plugin -->
+	<!-- new functions in cccq.shared --> 
+	<macrodef name="win_getCQInstallInfo_2">
+	<sequential>
+		<internal.setupProductRegKeyProperties/>
+
+		<!-- WINDOWS  -->
+		<wsnlsecho key="ratl.system.info.2073" 
+				bundle="properties/RATLSHARE/autopd"
+				message="Getting {0} installation information..."
+				replace="ClearQuest"
+				id="2073"
+				level="info"
+				messagePrefix="CWPDD"/>
+		
+		<autopd_if isTrue="${isWindows}">
+			<!-- list of | separated ,ver@install:version -->
+			<autopdproperty name="v6" value="2003.06@${key.cq.v6.install}:${key.cq.v6.version}"/>
+			<autopdproperty name="v7" value="7.0@${key.cq.v7.install}:${key.cq.v7.version}"/>
+			<win_getProductInstallVersionInfo.byCurrentVersion
+				current.ver.regkey="${key.cq.currentver}"
+				vers.keys="${v6}|${v7}"
+				product="cq"
+			/>
+		</autopd_if>	
+		
+		<!-- Sanity -->
+		<echo message="cq.install = ${cq.install}"/>
+		<echo message="cq.version = ${cq.version}"/>
+		<!-- VERIFY -->
+		<!-- check set -->
+		<checkInstallLocation dir="${cq.install}" product="Rational ClearQuest" />
+		<autopd_unset_property name="hasAllInformation"/>		
+		<condition property="hasAllInformation">
+			<and>
+				<equals arg1="true" arg2="${hasValidInstallDir}" casesensitive="false"/>
+				<isset property="cq.version"/>
+	   		</and>
+		</condition>
+		
+	</sequential> 
+	</macrodef>
+	
+	
+	<!-- ===================================== -->
+	<!-- Rational Common Location information  -->
+	<!-- ===================================== -->	
+	<!-- Output:
+			- hasAllInformation : if both version and install info is available
+			- common.install : location of Rational Common
+			- common.version : version of the Rational Common
+	-->
+	<macrodef name="win_getRationalCommonInfo">
+	<sequential>
+		<internal.setupProductRegKeyProperties/>
+		
+		<wsnlsecho key="ratl.system.info.2073" 
+				bundle="properties/RATLSHARE/autopd"
+				message="Getting {0} installation information..."
+				replace="Rational Common"
+				id="2073"
+				level="info"
+				messagePrefix="CWPDD"/>
+		
+		<!-- WINDOWS  -->
+		<autopd_if isTrue="${isWindows}">
+			<rtl.windows_registry_access propertyName="common.install" registryKey="${key.common.install}" altRegisteryKey="${key.common.install.64}"/>
+			<rtl.windows_registry_access propertyName="common.version" registryKey="${key.common.version}" altRegisteryKey="${key.common.version.64}"/>
+		</autopd_if> 
+		
+		<!-- Sanity -->
+	   	<echo message="common.install = ${common.install}"/>
+		<echo message="common.version = ${common.version}"/>
+		
+		<!-- VERIFY -->
+		<!-- check set -->
+		<checkInstallLocation dir="${common.install}" product="Rational Common" />
+		<autopd_unset_property name="hasAllInformation"/>		
+		<condition property="hasAllInformation">
+			<and>
+				<equals arg1="true" arg2="${hasValidInstallDir}" casesensitive="false"/>
+				<isset property="common.version"/>
+	   		</and>
+		</condition>
+	</sequential> 
+	</macrodef>
+	
+	
+	<!-- ===================================== -->
+	<!-- Rational ClearCase LT                 -->
+	<!-- ===================================== -->
+	<!-- Output:
+			- hasAllInformation : if both version and install info is available
+			- cclt.install : location of Rational ClearCase LT
+			- cclt.version : version of the Rational ClearCase LT
+	-->	
+	<macrodef name="win_getCCLTInstallInfo">
+		<sequential>
+			<internal.setupProductRegKeyProperties/>
+			
+			<wsnlsecho key="ratl.system.info.2073" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Getting {0} installation information..."
+					replace="ClearCase LT"
+					id="2073"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- WINDOWS  -->
+			<autopd_if isTrue="${isWindows}">
+				<!-- list of | separated ,ver@install:version -->
+				<autopdproperty name="v6" value="2003.06@${key.cclt.install}:${key.cclt.v6.version}}"/>
+				<autopdproperty name="v7" value="7.0@${key.cclt.install}:${key.cclt.v7.version}"/>
+				<win_getProductInstallVersionInfo.byCurrentVersion
+					current.ver.regkey="${key.cclt.currentver}"
+					vers.keys="${v6}|${v7}"
+					product="cclt"
+				/>
+				
+			</autopd_if> 
+
+			<!-- Sanity -->
+			<echo message="cclt.install = ${cclt.install}"/>
+			<echo message="cclt.version = ${cclt.version}"/>
+			
+			<!-- VERIFY -->
+			<!-- check set -->
+			<checkInstallLocation dir="${cclt.install}" product="Rational ClearCase" />
+			<autopd_unset_property name="hasAllInformation"/>		
+			<condition property="hasAllInformation">
+				<and>
+					<equals arg1="true" arg2="${hasValidInstallDir}" casesensitive="false"/>
+					<isset property="cclt.version"/>
+		   		</and>
+			</condition>
+		</sequential>
+	</macrodef>
+	
+	<!-- ===================================== -->
+	<!--  Policy Tester /AppScan Enterprise    -->
+	<!-- ===================================== -->
+
+	<!-- properties for Policy Tester / AppScan Enterprise -->
+	<macrodef name="win_setAppScanEnterpriseProperties">
+		<sequential>
+			<!-- registry key -->
+			<autopd_if isNotTrue="${isInitialized.win_setAppScanEnterpriseProperties}">
+						
+				<autopdproperty name="isInitialized.win_setAppScanEnterpriseProperties" value="true"/>
+				<property name="appscan.ent.reg.fileout" value="REG_APPSCAN_ENT.txt"/>
+					
+				<!-- product location -->
+				<property name="appscan.ent.reg.product" value="HKEY_LOCAL_MACHINE\SOFTWARE\IBM\Rational\AppScanEnterprise"/>
+	
+				<property name="appscan.ent.product.dir.autopd" value="SOFTWARE\IBM\Rational\AppScanEnterprise\ASEDir"/>
+				<property name="appscan.ent.product.dir.default" value="C:\\Program Files\\IBM\\Rational ASE\\"/>
+				
+				<!-- pre 5.4 -->
+				<property name="appscan.webxm.reg.product" value="HKEY_LOCAL_MACHINE\SOFTWARE\Watchfire\WebXM"/>
+				<property name="appscan.webxm.reg.product.dir.autopd" value="SOFTWARE\Watchfire\WebXM\WebXMDir"/>
+				<property name="appscan.webxm.reg.product.dir.default" value="C:\\Program Files\\Watchfire\\WebXM\\"/>
+			</autopd_if>
+		
+		</sequential>
+	</macrodef>
+
+	
+
+
+	<!-- win_appscan.ent.getProductInfo
+		Output: 
+			appscan.ent.product.hasValidDir = true | unset.
+			appscan.ent.product.dir = value of product directory | unset.
+			appscan.ent.product.key = value of the key that contains the information : unset
+			appscan.ent.product.isPre54 = true (if its WebXM) | unset
+	-->
+		
+	<macrodef name="win_appscan.ent.getProductInfo">
+		<sequential>
+			<autopd_unset_property name="appscan.ent.product.hasValidDir"/>
+			<autopd_unset_property name="appscan.ent.product.dir"/>
+			<autopd_unset_property name="appscan.ent.product.key"/>
+			<autopd_unset_property name="appscan.ent.product.isPre54"/>
+			
+			<!-- Get the following values 
+			New installation of 5.4 will create the following:
+			Key: [HKEY_LOCAL_MACHINE\SOFTWARE\IBM\Rational\AppScanEnterprise]  / appscan.ent.product.dir.autopd
+			Value: ASEDir (default value is: "C:\\Program Files\\IBM\\Rational ASE\\")
+
+			Existing pre-5.4 installations & 4.5 series.
+			Key: [HKEY_LOCAL_MACHINE\SOFTWARE\Watchfire\WebXM]  / appscan.webxm.reg.product.dir.autopd
+			Value: WebXMDir (default value is: "C:\\Program Files\\Watchfire\\WebXM\\")
+			 -->
+						
+			<!-- read registry for the product location ... -->
+			<win_checkRegistryDir regkey="${appscan.ent.product.dir.autopd}"/>
+			
+			<!-- set the values -->
+			<autopd_if isTrue="${reg.isValidDirectory}">
+				<autopdproperty name="appscan.ent.product.hasValidDir" value="${reg.isValidDirectory}"/>
+				<autopdproperty name="appscan.ent.product.dir" value="${reg.value}"/>
+				<autopdproperty name="appscan.ent.product.key" value="${appscan.ent.reg.product}"/>
+				<autopdproperty name="appscan.ent.product.isPre54" value="false"/>
+			</autopd_if>
+			
+			<!-- ifs not appscan. Check to see if WebXM / pre54 is installed --> 
+			<autopd_if isNotTrue="${reg.isValidDirectory}">
+				<!-- try again with a different registry key-->
+				<win_checkRegistryDir regkey="${appscan.webxm.reg.product.dir.autopd}"/>				
+				
+				<!-- set the values -->
+				<autopd_if isTrue="${reg.isValidDirectory}">
+					<autopdproperty name="appscan.ent.product.hasValidDir" value="${reg.isValidDirectory}"/>
+					<autopdproperty name="appscan.ent.product.dir" value="${reg.value}"/>
+					<autopdproperty name="appscan.ent.product.key" value="${appscan.webxm.reg.product}"/>
+					<autopdproperty name="appscan.ent.product.isPre54" value="true"/>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>	
+	
+	<!-- #############################################  -->
+	<!--  Utilities                                     -->
+	<!-- #############################################  -->
+
+	<!-- this method is used in other part of this file -->
+	<!-- output :
+		hasValidInstallDir
+	-->
+	<macrodef name="checkInstallLocation">
+		<attribute name="product"/>
+		<attribute name="dir"/>
+		<sequential>
+		   <!-- VERIFY -->
+		   <!-- check set -->
+			<echo message=" "/>
+			
+		   <!-- verify directory exists -->
+			<autopd_unset_property name="hasValidInstallDir"/>
+	   		<available property="hasValidInstallDir" file="@{dir}" type="dir"/>
+		
+		   <!-- this value will not set to true unless ${isDirSet} = true -->
+		   <autopd_if isNotTrue="${hasValidInstallDir}">
+				<wsnlsecho key="ratl.system.warn.2074" 
+	   					bundle="properties/RATLSHARE/autopd"
+	   					message="Installation location for {0} not found. Missing or invalid directory: {1}"
+	   					replace="@{product};;@{dir}"
+	   					id="2074"
+	   					level="warn"
+	   					messagePrefix="CWPDD"/>
+		   </autopd_if>
+
+			<!-- Found  -->
+		   <autopd_if isTrue="${hasValidInstallDir}">
+		   		<wsnlsecho key="ratl.system.info.2075" 
+	   					bundle="properties/RATLSHARE/autopd"
+	   					message="Installation location for {0} found at: {1}."
+	   					replace="@{product};;@{dir}"
+	   					id="2075"
+	   					level="info"
+	   					messagePrefix="CWPDD"/>
+		   </autopd_if>	   	
+		</sequential>
+	</macrodef>
+		
+	
+	<!-- This is not used anywhere else other than this file at this moment : 11/21/2007 -->
+	<macrodef name="win_getProductInstallVersionInfo.byCurrentVersion">
+		<attribute name="product"/>  <!-- such as cc / cq / reqpro / etc --> 		
+		<attribute name="current.ver.regkey"/>
+		<attribute name="vers.keys"/>  <!-- list of | separated ,ver@install:version -->
+		<sequential>
+			<autopd_unset_property name="@{product}.version"/>
+			<autopd_unset_property name="@{product}.install"/>
+			
+			<!-- get the general versions -->
+			<windows_registry_access propertyName="@{product}.version" registryKey="@{current.ver.regkey}"/>
+
+			<!-- if no CQ_version - no CQ installed -->
+			<autopd_unset_property name="${hasProductVersion}"/>
+			<condition property="hasProductVersion">
+				<isSet property="@{product}.version"/>
+			</condition>
+			
+			<!-- look for the version and the key needed for the next step --> 
+			<autopd_if isTrue="${hasProductVersion}">
+			<autopdproperty name="isMatchedVersion" value="false"/>
+			<autopdloop param="ver.keys" paramlist="@{vers.keys}" delimiter="|">
+
+				<autopd_if isNotTrue="${isMatchedVersion}">
+					<!-- version information -->
+					<trim_filename key="version" filename="${ver.keys}" suffixTrim="@.*"/>
+
+					<!-- install registry key  -->
+					<trim_filename key="install.reg" filename="${ver.keys}" prefixTrim=".*@"/>
+					<trim_filename key="install.reg" filename="${install.reg}" suffixTrim=":.*"/>
+					
+					<!-- version registry key  -->
+					<trim_filename key="version.reg" filename="${ver.keys}" prefixTrim=".*:"/>
+					
+					
+					<!-- check version matching with the general versions ...  -->
+					<autopd_unset_property name="isMatchedVersion"/>
+					<condition property="isMatchedVersion">
+						<contains string="${@{product}.version}" substring="${version}"/>
+					</condition>
+					
+					
+					<!-- calculate the values when values are found -->
+					<autopd_if isTrue="${isMatchedVersion}">
+						<echo message="isMatchedVersion = ${version} "/>
+						
+						<windows_registry_access propertyName="@{product}.install" registryKey="${install.reg}" />
+						<windows_registry_access propertyName="@{product}.version.actual" registryKey="${version.reg}"/>
+						
+						<autopd_unset_property name="hasActualCQVersion"/>
+						<condition property="hasActualCQVersion">
+							<isSet property="@{product}.version.actual"/>
+						</condition>
+					
+						<!-- if there is a real version -->
+						<autopd_if isTrue="${hasActualCQVersion}">
+							<autopdproperty name="@{product}.version" value="${@{product}.version.actual}"/>
+						</autopd_if>
+					</autopd_if>		
+					
+				</autopd_if>
+			</autopdloop>
+		</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!--- internal use only -->
+	<!-- This method scans the registry for install/version pairs -->
+	<!-- This method is not performant -->
+	<!-- sample usage:
+		<autopdproperty name="v6" value="2003.06@SOFTWARE\Rational Software\RequisitePro\4.0\InstallDirectory:SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C6DCA530-4107-48E1-B11B-865C0C44D6B2}\DisplayVersion"/>
+		<autopdproperty name="v7" value="7.0@SOFTWARE\Rational Software\RequisitePro\4.0\InstallDirectory:SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C6DCA530-4107-48E1-B11B-865C0C44D6B2}\DisplayVersion"/>
+		<win_getProductInstallVersionInfo.internal.NoCurrentVersion
+			product.key="SOFTWARE\Rational Software\RequisitePro\4.0\InstallDirectory"
+			vers.keys="${v6}|${v7}"
+			product="reqpro"
+			/>
+		<echo message="reqpro install = ${reqpro.install}"/>
+		<echo message="reqpro version = ${reqpro.version}"/>
+		-->
+	
+	<!-- Need this ? -->
+	<!-- This is not used anywhere else other than this file at this moment : 11/21/2007 -->
+	<macrodef name="win_getProductInstallVersionInfo.internal.NoCurrentVersion">
+		<attribute name="product"/>  <!-- such as cc / cq / reqpro / etc -->
+		<attribute name="vers.keys"/>  <!-- list of | separated ,ver@install:version -->
+		<attribute name="product.key"/> <!-- a key - that is always there to tell if a product is installed -->
+		<sequential>
+			<autopd_unset_property name="@{product}.version"/>
+			<autopd_unset_property name="@{product}.install"/>
+			
+			<!-- get the general versions -->
+			<windows_registry_access propertyName="productValue" registryKey="@{product.key}"/>
+			<echo message="productValue = ${productValue}"/>
+
+			<!-- if the key is available - the product is installed -->
+			<autopd_unset_property name="hasProductInstalled"/>
+			<condition property="hasProductInstalled">
+				<isSet property="productValue"/>
+			</condition>
+						
+			<autopdproperty name="hasInstallInfo" value="false"/> <!-- once install info is found - stop looking -->
+			<autopdproperty name="product.install.tmp" value=""/>
+			<autopdproperty name="product.version.tmp" value=""/>
+			<autopdloop param="ver.keys" paramlist="@{vers.keys}" delimiter="|">
+				<autopd_if isNotTrue="${hasInstallVerInfo}">
+					<!-- version information -->
+					<trim_filename key="version" filename="${ver.keys}" suffixTrim="@.*"/>
+
+					<!-- install registry key  -->
+					<trim_filename key="install.reg" filename="${ver.keys}" prefixTrim=".*@"/>
+					<trim_filename key="install.reg" filename="${install.reg}" suffixTrim=":.*"/>
+					
+					<!-- version registry key  -->
+					<trim_filename key="version.reg" filename="${ver.keys}" prefixTrim=".*:"/>
+					
+					<!-- look for install info  -->
+					<windows_registry_access propertyName="product.install.val" registryKey="${install.reg}"/>
+					<windows_registry_access propertyName="product.version.val" registryKey="${version.reg}"/>
+					
+					<!-- check to see if both values are available -->
+					<autopd_unset_property name="hasInstallVerInfo"/>
+					<condition property="hasInstallVerInfo">
+						<and>
+						<isSet property="product.install.val"/>
+						<isSet property="product.version.val"/>
+						</and>
+					</condition>
+					
+					<!-- if both values are available - all good -->
+					<autopd_if isTrue="${hasInstallVerInfo}">
+						<autopdproperty name="@{product}.install" value="${product.install.val}"/>
+						<autopdproperty name="@{product}.version" value="${product.version.val}"/>
+					</autopd_if>
+					
+					<!-- if both values are not available... more work -->
+					<autopd_if isNotTrue="${hasInstallVerInfo}">
+						<!-- check if one has been set  -->
+						<autopd_unset_property name="hasAtLeastOneInfo"/>
+						<condition property="hasAtLeastOneInfo">
+							<or>
+								<isSet property="product.install.val"/>
+								<isSet property="product.version.val"/>
+							</or>
+						</condition>
+						
+						<!-- if at least one is set - keep it in tmp -->
+						<autopd_if isTrue="${hasAtLeastOneInfo}">
+							<autopd_unset_property name="hasInstallInfo"/>
+							<autopd_unset_property name="hasVerInfo"/>
+							<condition property="hasInstallInfo">
+								<isSet property="product.install.val"/>
+							</condition>
+							<condition property="hasVerInfo">
+								<isSet property="product.version.val"/>
+							</condition>
+							<autopd_if isTrue="${hasInstallInfo}">
+								<autopdproperty name="product.install.tmp" value="${product.install.val}"/>
+							</autopd_if>
+							<autopd_if isTrue="${hasVerInfo}">
+								<autopdproperty name="product.version.tmp" value="${product.version.val}"/>
+							</autopd_if>							
+						</autopd_if>
+					</autopd_if>
+				</autopd_if>
+			</autopdloop>
+			
+			<!-- end of the loop and nothing is found... -->
+			<autopd_if isNotTrue="${hasInstallVerInfo}">
+				<!-- set the values - to those in tmp -->
+				<autopd_unset_property name="hasInstallInfo"/>
+				<autopd_unset_property name="hasVerInfo"/>
+				<condition property="hasInstallInfo">
+					<isSet property="product.install.tmp"/>
+				</condition>
+				<condition property="hasVerInfo">
+					<isSet property="product.version.tmp"/>
+				</condition>
+				<autopd_if isTrue="${hasInstallInfo}">
+					<autopdproperty name="@{product}.install" value="${product.install.tmp}"/>
+				</autopd_if>
+				<autopd_if isTrue="${hasVerInfo}">
+					<autopdproperty name="@{product}.version" value="${product.version.tmp}"/>
+				</autopd_if>	
+			</autopd_if>
+
+		</sequential>
+	</macrodef>	
+	
+
+	<!-- ########################################### -->
+	<!--  PRINTS                                     -->
+	<!-- ########################################### -->
+	
+
+	<!-- 
+	   INPUT:
+	       value : a value to be tested 
+	       If value is:
+	       		equals to ""
+	       		or is not set
+	       		or contains ${
+	       	then its considered empty...
+	       	For internal use only
+	   OUTPUT:
+		returns :
+			list.isEmpty = true | unset
+	   -->		
+	<macrodef name="internal.check.empty">
+		<attribute name="value"/>
+		<sequential>
+			<autopd_unset_property name="value.isEmpty"/>
+			<condition property="value.isEmpty">
+				<or>
+					<equals arg1="" arg2="@{value}"/>
+					<contains string="@{value}" substring="$${" />
+				</or>
+			</condition>
+		</sequential>
+	</macrodef>
+		
+	<!-- print one lists together ... --> 
+	<macrodef name="internal.printAnalysis">
+		<attribute name="file"/>
+		<attribute name="title"/>
+		<attribute name="key.label"/>
+    	<attribute name="keyList"/>    		
+		<sequential>
+			
+			<echo file="@{file}" message="@{title}${line.separator}${line.separator}"/>
+			<echo file="@{file}" append="true" message="@{key.label}${line.separator}"/>
+			<echo file="@{file}" append="true" message="==========================================${line.separator}"/>
+			
+			<!-- check the keyList -->
+			<internal.check.empty value="@{keyList}"/>
+			<autopd_if isTrue="${value.isEmpty}">
+				<echo file="@{file}" append="true" message="No matching entries found ${line.separator}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${value.isEmpty}">
+				<autopdloop param="key" paramlist="@{keyList}" delimiter="@">
+					<echo file="@{file}" append="true" message="${key}${line.separator}"/>
+				</autopdloop>
+			</autopd_if>
+		</sequential>	
+	</macrodef>
+
+	<!-- print two lists together ... --> 
+	<macrodef name="internal.printAnalysis2">
+		<attribute name="file"/>
+		<attribute name="title"/>
+		<attribute name="key.label"/>
+    	<attribute name="keyList"/>    		
+		<attribute name="value.label"/>
+		<attribute name="valueList"/>
+		<sequential>
+			
+			
+			<echo file="@{file}" message="@{title}${line.separator}${line.separator}"/>
+			<echo file="@{file}" append="true" message="@{key.label}, @{value.label}${line.separator}"/>
+			<echo file="@{file}" append="true" message="==========================================${line.separator}"/>
+			
+			<!-- check the keyList -->
+			<internal.check.empty value="@{keyList}"/>
+			<autopd_if isTrue="${value.isEmpty}">
+				<echo file="@{file}" append="true" message="No matching entries found ${line.separator}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${value.isEmpty}">
+				<!-- loop thru the key values -->
+				<autopdproperty name="str" value="a"/>
+				<autopdloop param="value" paramlist="@{valueList}" delimiter="@">
+					<autopdproperty name="${str}" value="${value}"/>
+					<autopdproperty name="str" value="${str}a"/>  <!-- append str with another 'a' -->
+				</autopdloop>	
+				
+				<autopdproperty name="str" value="a"/>
+				<autopdloop param="key" paramlist="@{keyList}" delimiter="@">
+					<getKeyValue key="${str}"/>
+					<echo file="@{file}" append="true" message="${key}			${key.value}${line.separator}"/>
+					<autopdproperty name="str" value="${str}a"/>
+				</autopdloop>
+			</autopd_if>
+		</sequential>	
+	</macrodef>
+	
+	<!-- print three lists together ... --> 
+	<macrodef name="internal.printAnalysis3">
+		<attribute name="file"/>
+		<attribute name="title"/>
+		<attribute name="key.label"/>
+    	<attribute name="keyList"/>    		
+		<attribute name="value.label"/>
+		<attribute name="valueList"/>
+		<attribute name="value.label.2"/>
+		<attribute name="valueList.2"/>
+		<sequential>
+			
+			<echo file="@{file}" message="@{title}${line.separator}${line.separator}"/>
+			<echo file="@{file}" append="true" message="@{key.label}, @{value.label}, @{value.label.2} ${line.separator}"/>
+			<echo file="@{file}" append="true" message="==========================================${line.separator}"/>
+			
+			<!-- check the keyList -->
+			<internal.check.empty value="@{keyList}"/>
+			<autopd_if isTrue="${value.isEmpty}">
+				<echo file="@{file}" append="true" message="No matching entries found ${line.separator}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${value.isEmpty}">
+				<!-- loop thru the key values -->
+				<autopdproperty name="str" value="a"/>
+				<autopdloop param="value" paramlist="@{valueList}" delimiter="@">
+					<autopdproperty name="${str}" value="${value}"/>
+					<autopdproperty name="str" value="${str}a"/>  <!-- append str with another 'a' -->
+				</autopdloop>	
+				
+				<!-- loop thru the key values -->
+				<autopdproperty name="str" value="b"/>
+				<autopdloop param="value" paramlist="@{valueList.2}" delimiter="@">
+					<autopdproperty name="${str}" value="${value}"/>
+					<autopdproperty name="str" value="${str}b"/>  <!-- append str with another 'b' -->
+				</autopdloop>	
+				
+				<autopdproperty name="str" value="a"/>
+				<autopdproperty name="str2" value="b"/>
+				<autopdloop param="key" paramlist="@{keyList}" delimiter="@">
+					<getKeyValue key="${str}"/>
+					<echo file="@{file}" append="true" message="${key}			${key.value}"/>
+					<getKeyValue key="${str2}"/>
+					<echo file="@{file}" append="true" message="		${key.value}${line.separator}"/>
+					<autopdproperty name="str" value="${str}a"/>
+					<autopdproperty name="str2" value="${str2}b"/>
+				</autopdloop>
+			</autopd_if>
+		</sequential>	
+	</macrodef>
+		
+	
+
+</project>

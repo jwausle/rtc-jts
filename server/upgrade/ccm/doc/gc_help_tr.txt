@@ -1,0 +1,29 @@
+
+
+Önceden yüklenmiş bir GC'yi yükseltme
+
+Notlar:
+      - Bu komut dosyası GC'yi yükseltir. Daha fazla bilgi için "CLM için Rational çözümünü yükseltme" başlıklı yardım konusuna bakın.
+      - Bu yardım konusunun görüntülenmesi sırası dışında, bu komut dosyası JazzInstallRoot/server dizininden çalıştırılmalıdır.
+
+Kullanım:
+    gc_upgrade
+         -oldApplicationHome <değer> --Eski kurulumun GC sunucusu yapılandırma dizininin tam yolu.  Tipik bir kuruluş için bu yol şöyledir: <GC installation>/server/conf.
+         [-applicationContextRoot jazz] --GC bağlam kökü.
+         [-oldApplicationVersion <none>] --Yükseltilmekte olan GC sürümü.  Varsayılan olarak bu, eski GC uygulamasına karşı repotools -version çalıştırılarak belirlenir.
+         [-updateTomcatFiles <yes (varsayılan) | no>] --tomcat yapılandırma dosyalarının güncellenip güncellenmeyeceği.
+         [-oldTomcatHome <none>] --Eski GC kuruluşunun Tomcat ana dizini tam yolu. Varsayılan olarak, oldTomcatHome parametre değeri oldApplicationHome parametre değerinden türetilir.
+         [-newApplicationHome conf] --Yeni kuruluşun GC sunucusu yapılandırma dizininin yolu.
+         [-newJTSHome <none>] --Yeni kuruluşun kullanacağı JTS sunucu yapılandırma dizini yolu. Varsayılan olarak, newJTSHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-jtsContextRoot jts] --JTS Bağlam kökü.
+         [-newApplicationTomcatHome <none>] --Yeni kuruluşun GC Tomcat ana dizininin yolu. Varsayılan olarak, newApplicationTomcatHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-newJTSTomcatHome <none>] --Yeni kuruluşun kullanacağı JTS'nin JJTS Tomcat ana dizini yolu. Varsayılan olarak, newJTSTomcatHome parametre değeri newJTSHome parametre değerinden türetilir.
+         [-ignoreJTSVersionCheck] --Uygulama sürümünün newJTSHome'da bulunan JTS sürümüyle uyumlu olduğunu doğrulamayı denemeyin.  Bu bağımsız değişken yalnızca JTS'in uygulama sisteminden erişilemeyen ayrı bir sistemde olduğu dağıtımlı konuşlandırmada kullanılabilir.
+         [-noPrompt] --Tablolar yaratılmadan ya da değiştirilmeden önce sorulmasın.
+         [-noStepPrompt] --Bir adım gerçekleştirilmeden önce sorulmasın.
+         [-noVerify] --teamserver.properties dosyaları doğrulaması gerçekleştirilmesin.
+         [-noEditor] --teamserver.properties dosyalarında bir düzenleyici açılmasın.
+
+Örnekler:
+    upgrade/gc/gc_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

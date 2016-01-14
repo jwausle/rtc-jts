@@ -1,0 +1,36 @@
+
+
+升級已安裝的 RM
+
+附註：
+      - 這個 Script 會升級 RM。如需相關資訊，請參閱「升級 Rational CLM 解決方案」說明主題。
+      - 除非您正在顯示這項說明，否則必須從 JazzInstallRoot/server 目錄來執行這個 Script。
+
+用法：
+    rm_upgrade
+         -oldApplicationHome <值> -- 舊安裝架構中 RM 伺服器配置目錄的完整路徑。若為一般安裝，這個路徑是 <RM installation>/server/conf。
+         [-oldJTSHome <value>] -- 舊安裝架構中 JTS 伺服器配置目錄的完整路徑。若為一般安裝，這個路徑是 <JTS installation>/server/conf。
+         [-applicationContextRoot rdm] --RM 環境定義根目錄:
+         [-db.jdbc.location <無>] -- RM 5.0 資料庫位置的路徑；這個資料庫應該是來自 4.0.X 的 JTS 資料庫確切副本。
+         [-db.jdbc.password <無>] -- JDBC 資料庫密碼。
+         [-db.db2i.schema.name <無>] -- DB2i 綱目名稱。只用於 DB2i 資料庫類型。
+         [-db.db2.dsn.dbname <無>] -- DB2 DSN DBName。只用於 DB2z 資料庫類型。
+         [-db.schemaPrefix <無>] -- 資料庫綱目字首。只用於 DB2z 資料庫類型。
+  		     [-oldApplicationVersion <無>] -- 要升級的版本。依預設，這是透過對舊 RM 應用程式執行 repotools -version 來判斷。
+         [-updateTomcatFiles <yes （預設）| no>] -- 是否更新 Tomcat 配置檔。
+         [-oldApplicationTomcatHome <無>] -- 舊安裝架構中 RM Tomcat 根目錄的完整路徑。依預設，oldApplicationTomcatHome 參數值衍生自 oldApplicationHome 參數值。
+         [-oldJTSTomcatHome <無>] -- 舊安裝架構中 JTS Tomcat 根目錄的完整路徑。依預設，oldJTSTomcatHome 參數值衍生自 oldJTSHome 參數值。
+         [-newApplicationHome conf] -- 新安裝架構中 RM 伺服器配置目錄的路徑。
+         [-newJTSHome <無>] -- 新安裝架構將使用之 JTS 中 JTS 伺服器配置目錄的完整路徑。依預設，newJTSHome 參數值衍生自 newApplicationHome 參數值。
+         [-newJTSContextRoot jts] -- 新安裝架構的 JTS 環境定義根目錄。
+         [-newApplicationTomcatHome <無>] -- 新安裝架構中 RM Tomcat 起始目錄的路徑。依預設，newApplicationTomcatHome 參數值衍生自 newApplicationHome 參數值。
+         [-newJTSTomcatHome <無>] -- 新安裝架構將使用之 JTS 中 JTS Tomcat 起始目錄的路徑。依預設，newJTSTomcatHome 參數值衍生自 newJTSHome 參數值。
+         [-ignoreJTSVersionCheck] -- 不要嘗試驗證應用程式版本是否與位於 newJTSHome 的 JTS 版本相容。只有在分散式部署中的 JTS 位於無法從應用程式系統存取的個別系統時，才應使用這個引數。
+         [-noPrompt] -- 在建立或修改表格之前不先提示。
+         [-noEditor] -- 不使用編輯器開啟 teamserver.properties 檔。
+         [-noVerify] -- 不執行 teamserver.properties 檔驗證。
+         [-noStepPrompt] -- 在執行步驟之前不先提示。
+
+範例：
+   upgrade/rm/rm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer4_0/rm/server/conf 
+

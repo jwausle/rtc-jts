@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><site>
+<description>
+			RTC Commons Server Update Site
+		</description>
+<feature id="com.ibm.team.rtc.update.site.content.rtc.feature" url="features/com.ibm.team.rtc.update.site.content.rtc.feature_3.1.400.v20150519_1650.jar" version="3.1.400.v20150519_1650">
+<category name="RTC Server Update Site"/>
+</feature>
+<feature id="com.ibm.rational.buildforge.common.rtc.feature" url="features/com.ibm.rational.buildforge.common.rtc.feature_3.0.1200.v20150513_1704.jar" version="3.0.1200.v20150513_1704"/>
+<feature id="com.ibm.team.apt.common.rtc.feature" url="features/com.ibm.team.apt.common.rtc.feature_3.0.1300.v20150513_1704.jar" version="3.0.1300.v20150513_1704"/>
+<feature id="com.ibm.team.apt.ide.server.shared.rtc.feature" url="features/com.ibm.team.apt.ide.server.shared.rtc.feature_3.0.1300.v20150513_1704.jar" version="3.0.1300.v20150513_1704"/>
+<feature id="com.ibm.team.apt.server.rtc.feature" url="features/com.ibm.team.apt.server.rtc.feature_3.1.1200.v20150513_2056.jar" version="3.1.1200.v20150513_2056"/>
+<feature id="com.ibm.team.qp.rtc.feature" url="features/com.ibm.team.qp.rtc.feature_1.0.200.v20150507_0229.jar" version="1.0.200.v20150507_0229"/>
+<feature id="com.ibm.team.apt.sample.money.rtc.feature" url="features/com.ibm.team.apt.sample.money.rtc.feature_3.0.300.v20140903_0052.jar" version="3.0.300.v20140903_0052"/>
+<feature id="com.ibm.team.build.common.rtc.feature" url="features/com.ibm.team.build.common.rtc.feature_3.1.1100.v20150513_1704.jar" version="3.1.1100.v20150513_1704"/>
+<feature id="com.ibm.team.build.server.rtc.feature" url="features/com.ibm.team.build.server.rtc.feature_3.0.1300.v20150505_1720.jar" version="3.0.1300.v20150505_1720"/>
+<feature id="com.ibm.team.build.sample.money.rtc.feature" url="features/com.ibm.team.build.sample.money.rtc.feature_3.0.400.v20130614_0105.jar" version="3.0.400.v20130614_0105"/>
+<feature id="com.ibm.team.calm.foundation.common.rtc.feature" url="features/com.ibm.team.calm.foundation.common.rtc.feature_3.1.1000.v20150513_1704.jar" version="3.1.1000.v20150513_1704"/>
+<feature id="com.ibm.team.calm.foundation.sample.service.rtc.feature" url="features/com.ibm.team.calm.foundation.sample.service.rtc.feature_3.0.700.v20140930_0238.jar" version="3.0.700.v20140930_0238"/>
+<feature id="com.ibm.team.calm.foundation.server.rtc.feature" url="features/com.ibm.team.calm.foundation.server.rtc.feature_3.1.600.v20150318_1745.jar" version="3.1.600.v20150318_1745"/>
+<feature id="com.ibm.team.calm.foundation.web.rtc.feature" url="features/com.ibm.team.calm.foundation.web.rtc.feature_3.1.1200.v20150513_1704.jar" version="3.1.1200.v20150513_1704"/>
+<feature id="com.ibm.team.rtc.foundation.web.rtc.feature" url="features/com.ibm.team.rtc.foundation.web.rtc.feature_3.1.1200.v20150513_1704.jar" version="3.1.1200.v20150513_1704"/>
+<feature id="com.ibm.team.connector.common.rtc.feature" url="features/com.ibm.team.connector.common.rtc.feature_3.1.600.v20150513_1704.jar" version="3.1.600.v20150513_1704"/>
+<feature id="com.ibm.team.connector.server.rtc.feature" url="features/com.ibm.team.connector.server.rtc.feature_3.0.100.v20120430_0235.jar" version="3.0.100.v20120430_0235"/>
+<feature id="com.ibm.team.filesystem.common.rtc.feature" url="features/com.ibm.team.filesystem.common.rtc.feature_3.2.500.v20150513_1704.jar" version="3.2.500.v20150513_1704"/>
+<feature id="com.ibm.team.filesystem.server.rtc.feature" url="features/com.ibm.team.filesystem.server.rtc.feature_3.2.500.v20150506_1737.jar" version="3.2.500.v20150506_1737"/>
+<feature id="com.ibm.team.interop.client.rest.rtc.feature" url="features/com.ibm.team.interop.client.rest.rtc.feature_3.0.400.v20130626_2007.jar" version="3.0.400.v20130626_2007"/>
+<feature id="com.ibm.team.interop.common.rtc.feature" url="features/com.ibm.team.interop.common.rtc.feature_3.0.1100.v20150513_1704.jar" version="3.0.1100.v20150513_1704"/>
+<feature id="com.ibm.team.interop.server.rtc.feature" url="features/com.ibm.team.interop.server.rtc.feature_3.0.1000.v20150401_0211.jar" version="3.0.1000.v20150401_0211"/>
+<feature id="com.ibm.team.process.definitions.server.rtc.feature" url="features/com.ibm.team.process.definitions.server.rtc.feature_3.1.1000.v20150507_1922.jar" version="3.1.1000.v20150507_1922"/>
+<feature id="com.ibm.team.reports.common.rtc.feature" url="features/com.ibm.team.reports.common.rtc.feature_3.1.1100.v20150513_1704.jar" version="3.1.1100.v20150513_1704"/>
+<feature id="com.ibm.team.reports.server.rtc.feature" url="features/com.ibm.team.reports.server.rtc.feature_3.1.1000.v20150427_2001.jar" version="3.1.1000.v20150427_2001"/>
+<feature id="com.ibm.team.reports.workitem.server.rtc.feature" url="features/com.ibm.team.reports.workitem.server.rtc.feature_3.1.1000.v20150512_1920.jar" version="3.1.1000.v20150512_1920"/>
+<feature id="com.ibm.team.repository.rcp.common.rtc.feature" url="features/com.ibm.team.repository.rcp.common.rtc.feature_3.1.900.v20150513_1704.jar" version="3.1.900.v20150513_1704"/>
+<feature id="com.ibm.team.rtc.common.rtc.feature" url="features/com.ibm.team.rtc.common.rtc.feature_3.0.1300.v20150513_1704.jar" version="3.0.1300.v20150513_1704"/>
+<feature id="com.ibm.team.dev.jdojo.rtc.feature" url="features/com.ibm.team.dev.jdojo.rtc.feature_1.0.700.v20150513_1704.jar" version="1.0.700.v20150513_1704"/>
+<feature id="com.ibm.team.rtc.scriptengine.rtc.feature" url="features/com.ibm.team.rtc.scriptengine.rtc.feature_3.0.1100.v20150513_1704.jar" version="3.0.1100.v20150513_1704"/>
+<feature id="com.ibm.team.rtc.server.rtc.feature" url="features/com.ibm.team.rtc.server.rtc.feature_3.0.1200.v20150519_1650.jar" version="3.0.1200.v20150519_1650"/>
+<feature id="com.ibm.ut.viewlet.feature" url="features/com.ibm.ut.viewlet.feature_1.0.0.v20140926_2026.jar" version="1.0.0.v20140926_2026"/>
+<feature id="com.ibm.team.scm.admin.rtc.feature" url="features/com.ibm.team.scm.admin.rtc.feature_3.2.500.v20150513_1704.jar" version="3.2.500.v20150513_1704"/>
+<feature id="com.ibm.team.scm.common.rtc.feature" url="features/com.ibm.team.scm.common.rtc.feature_3.2.500.v20150513_1704.jar" version="3.2.500.v20150513_1704"/>
+<feature id="com.ibm.team.scm.repotools.rtc.feature" url="features/com.ibm.team.scm.repotools.rtc.feature_1.0.300.v20150513_1704.jar" version="1.0.300.v20150513_1704"/>
+<feature id="com.ibm.team.scm.server.rtc.feature" url="features/com.ibm.team.scm.server.rtc.feature_3.2.500.v20150513_1704.jar" version="3.2.500.v20150513_1704"/>
+<feature id="com.ibm.team.rtc.oslc.feature" url="features/com.ibm.team.rtc.oslc.feature_1.0.200.v20150210_2015.jar" version="1.0.200.v20150210_2015"/>
+<feature id="com.ibm.team.scm.oslc.feature" url="features/com.ibm.team.scm.oslc.feature_1.0.200.v20150415_0425.jar" version="1.0.200.v20150415_0425"/>
+<feature id="com.ibm.team.scm.svn.common.rtc.feature" url="features/com.ibm.team.scm.svn.common.rtc.feature_3.1.800.v20150513_1704.jar" version="3.1.800.v20150513_1704"/>
+<feature id="com.ibm.team.scm.svn.server.rtc.feature" url="features/com.ibm.team.scm.svn.server.rtc.feature_3.1.800.v20150513_1704.jar" version="3.1.800.v20150513_1704"/>
+<feature id="com.ibm.team.svnkit.rtc.feature" url="features/com.ibm.team.svnkit.rtc.feature_1.0.400.v20150513_1704.jar" version="1.0.400.v20150513_1704"/>
+<feature id="com.ibm.team.tpt.common.rtc.feature" url="features/com.ibm.team.tpt.common.rtc.feature_3.1.1000.v20150513_1704.jar" version="3.1.1000.v20150513_1704"/>
+<feature id="com.ibm.team.tpt.server.rtc.feature" url="features/com.ibm.team.tpt.server.rtc.feature_3.1.1200.v20150331_1830.jar" version="3.1.1200.v20150331_1830"/>
+<feature id="com.ibm.team.workitem.common.rtc.feature" url="features/com.ibm.team.workitem.common.rtc.feature_3.2.400.v20150513_1704.jar" version="3.2.400.v20150513_1704"/>
+<feature id="com.ibm.team.workitem.java.common.rtc.feature" url="features/com.ibm.team.workitem.java.common.rtc.feature_3.1.900.v20150513_1704.jar" version="3.1.900.v20150513_1704"/>
+<feature id="com.ibm.team.workitem.server.rtc.feature" url="features/com.ibm.team.workitem.server.rtc.feature_3.1.1200.v20150512_1920.jar" version="3.1.1200.v20150512_1920"/>
+<feature id="com.ibm.team.workitem.web.rtc.feature" url="features/com.ibm.team.workitem.web.rtc.feature_3.1.1200.v20150507_0229.jar" version="3.1.1200.v20150507_0229"/>
+<feature id="com.ibm.team.workitem.sample.money.rtc.feature" url="features/com.ibm.team.workitem.sample.money.rtc.feature_3.0.400.v20130614_0105.jar" version="3.0.400.v20130614_0105"/>
+<feature id="com.ibm.team.rtc.common.service.rtc.feature" url="features/com.ibm.team.rtc.common.service.rtc.feature_3.0.1000.v20150424_1738.jar" version="3.0.1000.v20150424_1738"/>
+<feature id="com.ibm.team.social.connector.server.rtc.feature" url="features/com.ibm.team.social.connector.server.rtc.feature_3.0.1000.v20150212_0216.jar" version="3.0.1000.v20150212_0216"/>
+<feature id="org.apache.velocity.jfs.feature" url="features/org.apache.velocity.jfs.feature_1.0.100.v20120904_2342.jar" version="1.0.100.v20120904_2342"/>
+<feature id="com.ibm.team.rtc.relm.feature" url="features/com.ibm.team.rtc.relm.feature_1.0.300.v20140904_0112.jar" version="1.0.300.v20140904_0112"/>
+<feature id="com.ibm.team.rtc.javax.servlet.feature" url="features/com.ibm.team.rtc.javax.servlet.feature_1.0.0.v20130925_1715.jar" version="1.0.0.v20130925_1715"/>
+<feature id="com.ibm.team.repotools.rcp.jfs.feature" url="features/com.ibm.team.repotools.rcp.jfs.feature_1.1.1000.v20150421_1655.jar" version="1.1.1000.v20150421_1655"/>
+<feature id="com.ibm.team.git.common.rtc.feature" url="features/com.ibm.team.git.common.rtc.feature_1.0.300.v20150430_1807.jar" version="1.0.300.v20150430_1807"/>
+<feature id="com.ibm.team.git.server.rtc.feature" url="features/com.ibm.team.git.server.rtc.feature_1.0.300.v20150513_1704.jar" version="1.0.300.v20150513_1704"/>
+<feature id="org.antlr.rtc.feature" url="features/org.antlr.rtc.feature_1.0.0.v20150318_1745.jar" version="1.0.0.v20150318_1745"/>
+<category-def label="RTC Server Update Site" name="RTC Server Update Site">
+<description>This category contains the various plugins of the RTC Server Component</description>
+</category-def>
+</site>

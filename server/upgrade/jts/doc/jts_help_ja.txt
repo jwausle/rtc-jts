@@ -1,0 +1,28 @@
+
+
+インストール済みの JTS をアップグレードする
+
+メモ:
+      - このスクリプトは JTS をアップグレードします。 詳しくは、ヘルプ・トピック『Rational solution for CLM のアップグレード』を参照してください。
+      - このヘルプを表示する場合を除き、このスクリプトは JazzInstallRoot/server ディレクトリーから実行してください。
+
+使用法:
+    jts_upgrade
+         -oldJTSHome <value> -- 旧インストール済み環境の JTS サーバー構成ディレクトリーの絶対パス。  標準的なインストールの場合、このパスは <JTS installation>/server/conf です。
+         [-jtsContextRoot jts] -- JTS コンテキスト・ルート。
+         [-oldJTSVersion <なし>] -- アップグレードする JTS のバージョン。  デフォルトでは、古い JTS に対して repotools -version を実行する操作でこの値が判別されます。
+         [-lpaContextRoot admin] -- LPA コンテキスト・ルート。
+         [-updateTomcatFiles <yes (default) | no>] -- Tomcat 構成ファイルを更新するかどうか。
+         [-oldTomcatHome <なし>] -- 旧インストール済み環境の Tomcat ホーム・ディレクトリーの絶対パス。 デフォルトで、oldTomcatHome パラメーター値は oldJTSHome パラメーター値から派生します。
+         [-newJTSHome conf] -- 新規インストール済み環境の JTS サーバー構成ディレクトリーのパス。
+         [-newTomcatHome <なし>] -- 新規インストール済み環境の Tomcat ホーム・ディレクトリーのパス。 デフォルトで、newTomcatHome パラメーター値は newJTSHome パラメーター値から派生します。         
+         [-noPrompt] -- インポートする前に表を作成する場合にプロンプトを出さない。
+         [-noEditor] -- teamserver.properties ファイルに対してエディターを開かない。
+[-ignoreLPA] -- LPA アプリケーションのアップグレードを無視する
+         [-noVerify] --teamserver.properties ファイルの検査を実行しない。
+                  [-noStepPrompt] -- ステップを実行する前にプロンプトを出さない。
+
+
+例:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

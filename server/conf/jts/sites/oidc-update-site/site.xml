@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?><site>
+<description>
+	            Enable Single Sign-On with OpenID Connect
+	        </description>
+<feature id="com.ibm.team.server.oidc.enabled.feature" url="features/com.ibm.team.server.oidc.enabled.feature_1.0.0.v20141125_1845.jar" version="1.0.0.v20141125_1845">
+<category name="oidcEnabled"/>
+</feature>
+<category-def label="OpenID Connect Enablement Component" name="oidcEnabled"/>
+</site>

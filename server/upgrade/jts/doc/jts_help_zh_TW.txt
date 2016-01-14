@@ -1,0 +1,27 @@
+
+
+升級已安裝的 JTS
+
+附註：
+      - 這個 Script 會升級 JTS。如需相關資訊，請參閱「升級 Rational CLM 解決方案」說明主題。
+      - 除非您正在顯示這項說明，否則必須從 JazzInstallRoot/server 目錄來執行這個 Script。
+
+用法：
+    jts_upgrade
+         -oldJTSHome <value> -- 舊安裝架構中 JTS 伺服器配置目錄的完整路徑。若為一般安裝，這個路徑是 <JTS installation>/server/conf。
+         [-jtsContextRoot jts] -- JTS 環境定義根目錄。
+         [-oldJTSVersion <無>] -- 要升級的 JTS 版本。依預設，這是透過對舊 JTS 執行 repotools -version 來判斷。
+         [-lpaContextRoot admin] -- LPA 環境定義根目錄
+         [-updateTomcatFiles <yes (default) | no>] -- 是否更新 Tomcat 配置檔。
+         [-oldTomcatHome <無>] -- 舊安裝架構中 Tomcat 起始目錄的完整路徑。依預設，oldTomcatHome 參數值衍生自 oldJTSHome 參數值。
+         [-newJTSHome conf] -- 新安裝架構中 JTS 伺服器配置目錄的路徑。
+         [-newTomcatHome <無>] -- 新安裝架構中 Tomcat 起始目錄的路徑。依預設，newTomcatHome 參數值衍生自 newJTSHome 參數值。
+         [-noPrompt] --  匯入之前，不提示就開始建立表格。
+         [-noEditor] -- 不使用編輯器開啟 teamserver.properties 檔。
+         [-ignoreLPA] -- 忽略升級 LPA 應用程式
+         [-noVerify] -- 不執行 teamserver.properties 檔驗證。
+         [-noStepPrompt] -- 在執行步驟之前不先提示。
+
+範例：
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

@@ -1,0 +1,36 @@
+
+
+Önceden kurulu bir RM'yi yükseltme
+
+Notlar:
+      - Bu komut dosyası RM'yi yükseltir. Daha fazla bilgi için "CLM için Rational çözümünü yükseltme" başlıklı yardım konusuna bakın.
+      - Bu yardım konusunun görüntülenmesi sırası dışında, bu komut dosyası JazzInstallRoot/server dizininden çalıştırılmalıdır.
+
+Kullanım:
+    rm_upgrade
+         -oldApplicationHome <değer> --Eski kuruluşun RM sunucu yapılandırması dizininin tam yolu.  Tipik bir kuruluş için bu yol: <RM installation>/server/conf.
+         [-oldJTSHome <value>] --Eski kuruluşun JTS sunucu yapılandırması dizininin tam yolu.  Tipik bir kuruluş için bu yol şöyledir: <JTS installation>/server/conf.
+         [-applicationContextRoot rdm] --RM bağlam kökü.
+         [-db.jdbc.location <none>] -- RM 5.0 veritabanı konumu yolu; bu veritabanı 4.0.X sürümündeki JTS DB'nin tam kopyası olmalıdır.
+         [-db.jdbc.password <none>] -- JDBC veritabanı parolası. 
+         [-db.db2i.schema.name <none>] -- DB2i Şema Adı. Yalnızca DB2i veritabanı tipi için kullanılır.
+         [-db.db2.dsn.dbname <none>] -- DB2 DSN veritabanı adı. Yalnızca DB2z veritabanı tipi için kullanılır.
+         [-db.schemaPrefix <none>] -- DB Şema Öneki. Yalnızca DB2z veritabanı tipi için kullanılır.
+  		 [-oldApplicationVersion <none>] --Yükseltilmekte olan sürüm.  Varsayılan olarak bu, eski RM uygulamasına karşı repotools -version çalıştırılarak belirlenir.
+         [-updateTomcatFiles <yes (varsayılan) | no>] --tomcat yapılandırma dosyalarının güncellenip güncellenmeyeceği.
+         [-oldApplicationTomcatHome <none>] --Eski kuruluşun RM Tomcat kök dizini tam yolu.  Varsayılan olarak, oldApplicationTomcatHome parametre değeri oldApplicationHome parametre değerinden türetilir.
+         [-oldJTSTomcatHome <none>] --Eski kuruluşun JTS Tomcat kök dizini tam yolu.  Varsayılan olarak, oldJTSTomcatHome parametre değeri oldJTSHome parametre değerinden türetilir.
+         [-newApplicationHome conf] --Yeni kuruluşun RM sunucusu yapılandırma dizini yolu.
+         [-newJTSHome <none>] --Yeni kuruluşun kullanacağı JTS sunucu yapılandırma dizini tam yolu. Varsayılan olarak, newJTSHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-newJTSContextRoot jts] --Yeni kuruluşun JTS Bağlam kökü.
+	     [-newApplicationTomcatHome <none>] --Yeni kuruluşun RM Tomcat ana dizini yolu. Varsayılan olarak, newApplicationTomcatHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-newJTSTomcatHome <none>] --Yeni kuruluşun kullanacağı JTS'nin JJTS Tomcat ana dizini yolu. Varsayılan olarak, yeni JTSTomcatHome parametre değeri newJTSHome parametre değerinden türetilir.
+         [-ignoreJTSVersionCheck] --Uygulama sürümünün newJTSHome'da bulunan JTS sürümüyle uyumlu olduğunu doğrulamayı denemeyin.  Bu bağımsız değişken yalnızca JTS'in uygulama sisteminden erişilemeyen ayrı bir sistemde olduğu dağıtımlı konuşlandırmada kullanılabilir.
+         [-noPrompt] --Tablolar yaratılmadan ya da değiştirilmeden önce sorulmasın.
+         [-noEditor] --teamserver.properties dosyalarında bir düzenleyici açılmasın.
+         [-noVerify] --teamserver.properties dosyaları doğrulaması gerçekleştirilmesin.
+         [-noStepPrompt] --Bir adım gerçekleştirilmeden önce sorulmasın.
+
+Örnekler:
+   upgrade/rm/rm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer4_0/rm/server/conf 
+

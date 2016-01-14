@@ -1,0 +1,3204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+ 
+<!--  Shared targets -->
+<!--  Use this with AutoPD 1.2.2 or later. Must include autopd share target to use this.-->
+
+<project name="rational_shared"> 
+	<!-- Load "custom" tasks -->
+	<taskdef file="${autopdrootdir}/properties/autopdtaskdef.properties" loaderref="ISA" />
+	
+
+	<property name="isadcTempOut" value="${autopdtmp}/tmpOut"/>
+	
+	<dirname property="rational.rational.shared.targets.basedir" file="${ant.file.rational_shared}" />
+	<dirname property="rational.rational.shared.targets.parentdir" file="${rational.rational.shared.targets.basedir}" />
+	<dirname property="rational.rational.shared.targets.bundle.basedir" file="${rational.rational.shared.targets.parentdir}" />
+	
+	<!-- import the common file --> 
+    <import>
+        <javaresource name="scripts/sharedtargets.xml"/>
+    </import>
+	
+    <import>
+        <javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+    </import>
+	
+	<!-- automation files -->
+	<!-- <autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_automation_recovery_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/> -->
+	
+	<!-- for custom tasks -->
+	<!-- <autopdimport file="${autopdimportdir}/scripts/RATL_CUSTOM/rational.custom.taskdef.xml" osgiBundle="com.ibm.esupport.client.product.rational.custom.shared"/> -->
+	
+	<!-- common properties -->
+	<!-- CHANGE ME - if this is not the default location of install -->
+	<!-- Example: ClearCase will be /opt/rational/clearcase or /opt/ibm/RationalSDLC
+		-->
+	<property name="ratl.unix.default.dir.pre71" value="/opt/rational"/>  
+	<property name="ratl.unix.default.dir.71" value="/opt/ibm/RationalSDLC"/>  <!-- Linux -->
+	<property name="ratl.unix.default.dir.71.v2" value="/opt/IBM/RationalSDLC"/>  <!-- UNIX -->
+	
+	<!-- ################## -->
+	<!--     DEEBUG         -->
+	<!-- ################## -->
+	<!-- Slightly different that rational_automation --> 
+	<!-- USE: use this ant script before program entry to allow debug to be enabled/disabled base on environment	
+			- Allows the autoPD script to trigger rational debug output.
+			- These information are stored with 			
+			- To trigger debug (example)
+				Through environment var:  
+				- windows: set rtl_autopd_debug=TRUE
+					- run ISADC
+				- linux : export rtl_autopd_debug=TRUE 
+				Thru Java -D option : 
+					-Drtl_autopd_debug=TRUE		
+	  -->
+	<target name="checkEnableDebug">		
+		<property environment="env"/>
+		<!--
+		<echo message="env.rtl_autopd_debug = ${env.rtl_autopd_debug}"/>
+		<echo message="rtl_autopd_debug = ${rtl_autopd_debug}"/>
+		-->
+		<autopd_unset_property name="isRunningDEBUG"/>
+		<condition property="isRunningDEBUG">
+			<or>
+				<equals arg1="${env.rtl_autopd_debug}" arg2="TRUE" casesensitive="false"/>
+				<equals arg1="${rtl_autopd_debug}" arg2="TRUE" casesensitive="false"/>
+			</or>
+		</condition>
+		<autopd_if isTrue="${isRunningDEBUG}">
+			<echo message="RATL.DEBUG: Enabled"/>
+			<autopdproperty name="RATIONAL.DEBUG.ALL" value="true"/>
+		</autopd_if>		
+	</target>
+	
+	<!-- Call "rtl.enable.debug" target to switch on debug flag -->
+	<!-- for example :
+		<target name="my.target" depends="rtl.enable.debug">
+		If your target contains usage of rtl.debugecho, 
+		all mesages pass to rtl.debugecho will be displayed. 
+	-->	
+	<target name="rtl.enable.debug">
+		<autopdproperty name="RATIONAL.DEBUG.ALL" value="true"/>		
+	</target>
+	<target name="rtl.enable.debug.log">
+		<autopdproperty name="RATIONAL.DEBUG.ALL" value="true"/>
+		<autopdproperty name="RATIONAL.DEBUG.LOG" value="true"/>
+		
+		<autopdproperty name="RATIONAL.DEBUG.LOG.File" value="${autopdtmp}/log/Collector_Output.log"/>
+		<mkdir dir="${autopdtmp}/log"/>
+		<echo file="${RATIONAL.DEBUG.LOG.File}" message=""/>  <!-- clear the content of the file -->
+	</target>
+	
+	<!-- Call "rtl.disabe.debug" target to switch off debug flag -->
+	<target name="rtl.disable.debug">
+		<autopdproperty name="RATIONAL.DEBUG.ALL" value="false"/>
+	</target>
+	<target name="rtl.disable.debug.log">
+		<autopdproperty name="RATIONAL.DEBUG.ALL" value="false"/>
+		<autopdproperty name="RATIONAL.DEBUG.LOG" value="false"/>		
+	</target>
+	
+	<target name="rtl.disable.debug.log.and.collect">
+		<autopdproperty name="RATIONAL.DEBUG.ALL" value="false"/>
+		<autopdproperty name="RATIONAL.DEBUG.LOG" value="false"/>
+		<autopd_unset_property name="has.debug.log.file"/>
+		<available file="${RATIONAL.DEBUG.LOG.File}" type="file" property="has.debug.log.file"/>
+		<autopd_if isTrue="${has.debug.log.file}">
+			<copy todir="${isadcTempOut}/autopdzip/rational" outputencoding="UTF-8">
+				<fileset file="${RATIONAL.DEBUG.LOG.File}"/>
+			</copy>
+		</autopd_if>
+	</target>
+	
+	<!-- macro to echo message when in debug                 -->	
+	<!-- usage:  <rtl.debugecho message="my debug messae "/> -->
+	<macrodef name="rtl.debugecho" >
+		<attribute name="message"/>
+		<sequential>
+			<autopd_if isTrue="${RATIONAL.DEBUG.ALL}">
+				<autopd_if isTrue="${RATIONAL.DEBUG.LOG}">  <!-- debug log -->
+					<echo file="${RATIONAL.DEBUG.LOG.File}" append="true" message="@{message}${line.separator}"/>
+				</autopd_if>
+				<autopd_if isNotTrue="${RATIONAL.DEBUG.LOG}">  <!-- normal echo -->
+					<echo message="RATL.DEBUG: @{message}"/>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>	
+	
+	<!-- macro to prompt message when in debug               -->	
+	<!-- usage:  <rtl.debug_prompt message="my debug messae "/> -->
+	<macrodef name="rtl.debug_prompt" >
+		<attribute name="message"/>
+		<sequential>
+			<autopd_if isTrue="${RATIONAL.DEBUG.ALL}">
+				<echo message="RATL.DEBUG: @{message}"/>
+				<inputdialogtask_v2 doSkip="true" bundle="properties/RATLSHARE/autopd">
+			  	    <fieldtask label="RATL.DEBUG: Continue with next step? @{message}"  type="prompt" name="prompt1"/>
+			  	</inputdialogtask_v2>
+			</autopd_if>
+		</sequential>
+	</macrodef>	
+	
+	
+<!-- ################################### -->
+<!--          Utilitities                -->
+<!-- ################################### -->
+	
+	<!-- Setup -->
+	<target name="common_ratl_pre_collection_tasks"
+		depends="load_sharedelements_tasks,		
+		set_problem_type_with_nls_bundle,
+		setup_autopd_v2,
+		validate_os,
+		checkEnableDebug,
+		cleanTmpOut" >
+	</target>
+			
+	<!-- Post data collection tasks -->
+	<target name="common_ratl_post_collection_tasks"
+		depends="ratl.collect.exclude.list,
+		cisa_scan,
+		zip_autopd_log,
+		zipCollection,
+		set_rational_upload,
+		ftp_message_shared,
+		ftp_collected_information_shared">
+	</target>
+	
+	
+	<target name="zipCollection">
+		<zip destfile="${pmrfilename}" update="true" encoding="UTF-8">
+			<zipfileset dir="${isadcTempOut}" includes="**" />
+		</zip>
+		
+		
+		<!-- Clean out the tmpOut dir so that the next run is clean-->
+		<delete dir="${isadcTempOut}" failonerror="false"/>
+	</target>
+	
+	
+	<target name="cleanTmpOut">
+		<!-- Clean out the tmpOut dir so that the run is clean-->
+		<delete dir="${isadcTempOut}"/>
+	</target>
+	
+			
+	<!-- =================================== -->
+	<!--         Windows & Unix / Linux      -->
+	<!-- =================================== -->
+	
+	<!-- ################################################ -->
+	<!-- Tempory solution for CISA                        -->	
+	<!-- ################################################ -->
+	<target name="cisa_scan" description="CISA Scan">		
+		<autopd_unset_property name="dont_run_cisa_scan"/>
+		<condition property="dont_run_cisa_scan">
+			<or>
+				<equals arg1="true" arg2="${isOS400}"/>
+				<equals arg1="true" arg2="${isHPUX}"/>
+				<equals arg1="true" arg2="${isSunOS}"/>
+				<equals arg1="true" arg2="${isInventoryAlreadyRunByISA}"/>				
+				<not>
+					<user_access file="${autopdrootdir}" accessType="rw"/>  <!-- CISA writes to the top ISADC dir -->
+				</not>
+			</or>
+		</condition>
+			
+		<autopd_if isNotTrue="${dont_run_cisa_scan}" >
+			<echo message=" "/>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<wsnlsecho key="ratl.shared.info.2070.a" 
+						bundle="properties/RATLSHARE/autopd"
+						message="[{0}] Step {1}: Collecting Software Inventory Information"
+						replace="${autopdts};;${step.count}"
+						id="2070"
+						level="info"
+						messagePrefix="CWPDD"/>
+			
+			<if isTrue="${isIsaWorkbench}">
+				<collect_cisa_inventory_info 
+					filename="${autopdtmp}/autopd/inventory_rcf.xml" 
+					criteria="default.HardwareSoftwareFixes" />
+			</if>
+			<if isNotTrue="${isIsaWorkbench}">
+				<collect_cisa_inventory_info_v2 
+					filename="${autopdtmp}/autopd/inventory_rcf.xml" 
+					criteria="default.HardwareSoftwareFixes" />
+			</if>			
+			
+			<!-- 4.1.3.20140828:
+			      NOTE: inventory_rcf.xml within cisa/inventory location gets updated after collect_cisa_inventory_info ran.
+			            Code is updated to collect the inventory_rcf & rcftransform.xsl from this directory          -->
+			<copy todir="${isadcTempOut}/autopdzip/autopd" encoding="UTF8" outputencoding="UTF-8">
+				<fileset dir="${autopdinstancearea}/cisa/inventory">
+					<include name="inventory_rcf.xml" />
+					<include name="rcftransform.xsl" /> 
+				</fileset>
+			</copy>
+			
+			<!-- ISADC / inventory_rcf is in ${autopdtmp}/autopd -->
+			<copy todir="${isadcTempOut}/autopdzip/autopd" encoding="UTF8" outputencoding="UTF-8">		
+				<fileset dir="${autopdtmp}/autopd" >
+					<include name="inventory_rcf.xml" /> 
+				</fileset>
+			</copy>
+		</autopd_if>    
+ 	</target>
+	
+	<!-- call this method before ftp tasks to set remote to Rational -->
+	<target name="set_rational_upload">
+		<!-- HTTP -->
+		<autopdproperty name="upload_to" value="Rational"/>
+		<autopdproperty name="default.https.uploadto" value="Rational"/>
+		
+		<!-- set for Rational uploads - FTP only-->
+		<autopdproperty name="ftp.os" value="rational"/>
+		<autopdproperty name="ftp.directory.list" value="rational"/>
+		<autopdproperty name="ftp.directory.list.details" value="Rational"/>			
+	</target>
+	
+	
+	<!-- ################################################ -->
+	<!-- code to retrieve value from a constructed key-->
+	<!-- example:
+		<property name="myKey" value="cc.v6.install.dir" />
+		<property name="cc.v6.install.dir" value="C:\\Program Files\\Rational"/>
+		
+		<echo message="myKey = ${myKey}"/>
+		<getKeyValue key="${myKey}"/>
+		<echo message="${myKey} = ${key.value}"/>
+	-->
+	<!-- ################################################ -->
+				 
+	<macrodef name="getKeyValue">
+		<attribute name="key"/>
+		<sequential>
+			<autopdproperty name="key.value" value="${@{key}}"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+	    exec_script: exec_script_samedir
+		- Input : file:  Full path to the script file.
+				  execdir : Directory to run the batch file in
+		- Output: ${result.batch.success} = true - success
+									   	  = unset - failure . Either at finding the files, or at executing the scripts.
+	              ${result.error} = if result returns error, result.error will contain error string
+	              ${result.output} = output of the batch execution.
+	      Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.
+	    ################################################   -->	
+	<macrodef name="exec_script_samedir">
+		<attribute name="file"/>
+		<sequential>
+			<dirname file="@{file}" property="file.dir"/>
+			<!-- actual execution -->
+			<exec_script file="@{file}" execdir="${file.dir}"/>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="exec_script">
+		<attribute name="file"/>
+		<attribute name="execdir"/>
+		<sequential> 
+					
+			<!-- unset values -->
+			<autopd_unset_property name="resources.available"/>
+		    <autopd_unset_property name="result.output"/>
+			<autopd_unset_property name="result.error"/>				
+		    <autopd_unset_property name="result.batch.exec"/>
+			
+			<!-- check to see if file & exec directory is available -->
+			<condition property="resources.available">
+				<and>
+					<available file="@{file}" type="file"/> 
+					<available file="@{execdir}" type="dir"/>
+				</and>
+			</condition>
+			
+			<!-- file or exec directory not found -->
+			<autopd_if isNotTrue="${resources.available}">
+				<wsnlsecho key="ratl.shared.warn.2053" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Missing required input. Please check whether the file: {0} or directory: {1} exists."
+	    				replace="@{file};;@{execdir}"
+	    				id="2053"
+	    				level="warn"
+						messagePrefix="CWPDD"/>
+				<autopdproperty name="result.batch.exec" value="1"/>
+				<persistproperty property="result.batch.exec"/>
+				
+				<!-- AUTOMATION LOG -->
+				<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+			</autopd_if>
+			
+			<!-- Continue.. -->
+			<autopd_if isTrue="${resources.available}">
+				<fix_for_command_line      	
+					outputProperty="file.path.cmd"
+					inputString="@{file}"/>
+				
+				<wsnlsecho key="ratl.shared.info.2044" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Executing batch file : {0} in {1}."
+					replace="${file.path.cmd};;@{execdir}"
+					id="2044"
+					level="info"
+					messagePrefix="CWPDD"/>				
+				
+	
+				<!-- WINDOWS  -->
+				<exec executable="cmd.exe" resultproperty="result.batch.exec" os="${os.windows}"
+						outputproperty="result.output" 
+						errorproperty="result.error"
+						failifexecutionfails="false" failonerror="false"
+						dir="@{execdir}">
+					    <arg line="/c ${file.path.cmd}"/>
+				</exec>
+				<!-- UNIX/LINUX  -->
+				<exec executable="sh" resultproperty="result.batch.exec" os="${os.unixkind}"
+						outputproperty="result.output" 
+						errorproperty="result.error"
+						failonerror="false" failifexecutionfails="false"
+						dir="@{execdir}">
+					<arg line=" -f ${file.path.cmd}" />
+				</exec>
+				
+				<!-- put the output in the autopd.echolog location  -->
+				<autopdproperty name="local.exec.out" value="${autopdtmp}/exec.out.txt"/>
+				<concat destfile="${local.exec.out}"
+						append="true">${result.output} ${result.error}</concat>
+				
+				<!-- notify result -->
+				<autopd_unset_property name="result.batch.success"/>
+				<condition property="result.batch.success">
+					<equals arg1="0" arg2="${result.batch.exec}"/>
+				</condition>
+				<autopd_if isNotTrue="${result.batch.success}">
+					<wsnlsecho key="ratl.shared.warn.2054" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Executing batch file {0} in {1} failed. See file: {2} for more information."
+		    				replace="${file.path.cmd};;@{execdir};;${local.exec.out}"
+		    				id="2054"
+		    				level="warn"
+		    				messagePrefix="CWPDD"/>
+					<!-- AUTOMATION LOG -->
+					<logErrorMessage  problem.id="2092" component="${ant.file}"/>
+					
+					<copy todir="${isadcTempOut}/runtimelog" outputencoding="UTF-8">
+						<fileset file="${local.exec.out}"/>
+					</copy>	
+				</autopd_if>
+				
+				<autopd_if isTrue="${result.batch.success}">
+					<wsnlsecho key="ratl.shared.info.2048" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Batch file {0} executed."
+		    				replace="${file.path.cmd}"
+		    				id="2048"
+		    				level="info"
+		    				messagePrefix="CWPDD"/>
+				</autopd_if>				
+	
+			</autopd_if>
+	
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+	 collect_dir_listing
+		input : targetDir = target directory to have a listing displayed.
+				outputFile = target file to write the listing
+				zipPrefix = location in zip file to include this outputFile.				
+		-->
+	<macrodef name="collect_dir_listing">
+		<attribute name="targetDir"/>
+		<attribute name="outputFile"/>
+		<attribute name="zipPrefix"/>
+		<sequential>
+			
+			<!-- WINDOWS -->
+			<autopd_unset_property name="isDirAvailable"/>
+			<available file="@{targetDir}" type="dir" property="isDirAvailable"/>
+			
+			<autopd_unset_property name="result.output"/>
+			<autopd_unset_property name="result.error"/>
+			<autopd_unset_property name="result.batch.exec"/>
+			<autopd_if isTrue="${isDirAvailable}">				
+				<exec executable="cmd.exe" resultproperty="result.batch.exec" os="${os.windows}"
+						outputproperty="result.output" 
+						errorproperty="result.error"
+						failonerror="false" failifexecutionfails="false"
+						dir="@{targetDir}">
+					    <arg line="/c dir"/>
+				</exec>
+				
+				<!-- LINUX/UNIX -->
+				<exec executable="ls" resultproperty="result.batch.exec" os="${os.unixkind}"
+						outputproperty="result.output" 
+						errorproperty="result.error"
+						failonerror="false" failifexecutionfails="false"
+						dir="@{targetDir}">
+					<arg line=" -la" />
+				</exec>
+				<concat destfile="@{outputFile}">${result.output} ${result.error}</concat>	
+				<!-- Collecting the results -->
+				<copy todir="${isadcTempOut}/@{zipPrefix}" outputencoding="UTF-8">
+					<fileset file="@{outputFile}"/>
+				</copy>
+				
+			</autopd_if>
+			
+			<!-- directory not found -->
+			<autopd_if isNotTrue="${isDirAvailable}">
+				<wsnlsecho key="ratl.shared.info.2064" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Directory {0} not available to be listed."
+    				replace="@{targetDir}"
+    				id="2048"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+				
+				<!-- AUTOMATION LOG -->
+				<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+			</autopd_if>			
+		</sequential>
+	</macrodef>
+	
+	<!-- Recursive directory listing -->
+	<macrodef name="collect_dir_listing_recursive">
+		<attribute name="targetDir"/>
+		<attribute name="outputFile"/>
+		<attribute name="zipPrefix"/>
+		<sequential>
+			
+			<!-- WINDOWS -->
+			<autopd_unset_property name="isDirAvailable"/>
+			<available file="@{targetDir}" type="dir" property="isDirAvailable"/>
+			
+			<autopd_unset_property name="result.output"/>
+			<autopd_unset_property name="result.error"/>
+			<autopd_unset_property name="result.batch.exec"/>
+			<autopd_if isTrue="${isDirAvailable}">		
+				<autopd_if isTrue="${isWindows}">
+						<win_pathFixup type="\" inputDir="@{outputFile}" defaultDir="@{outputFile}"/>
+					    <autopdproperty name="outputFile.clean" value="${inputDir.out}"/>
+							
+						<!-- use native redirect to make sure it does not hit ANT 1.8.1 issue for large output -->
+						<exec executable="cmd.exe" resultproperty="result.batch.exec" os="${os.windows}"								
+								failonerror="false" failifexecutionfails="false"
+								dir="@{targetDir}">
+							    <arg line='/c dir /s > "${outputFile.clean}" 2&gt;&amp;1'/>
+						</exec>
+				</autopd_if>
+				
+				<!-- LINUX/UNIX - rewrote to not keep data in memory, leverage shell for io. -->
+				<autopd_if isNotTrue="${isWindows}">
+					<win_pathFixup type="/" inputDir="@{outputFile}" defaultDir="@{outputFile}"/>
+					<autopdproperty name="outputFile.clean" value="${inputDir.out}"/>
+												
+					<exec executable="/bin/sh" resultproperty="result.batch.exec"						
+							failonerror="false" failifexecutionfails="false"
+							dir="@{targetDir}">
+						<arg value="-c" />
+						<arg value="ls -laR > ${outputFile.clean}" />
+					</exec>
+				</autopd_if>
+									
+				<!-- Collecting the results -->
+				<copy todir="${isadcTempOut}/@{zipPrefix}" outputencoding="UTF-8">
+					<fileset file="${outputFile.clean}"/>
+				</copy>
+				
+			</autopd_if>
+			
+			<!-- directory not found -->
+			<autopd_if isNotTrue="${isDirAvailable}">
+				<wsnlsecho key="ratl.shared.info.2064" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Directory {0} not available to be listed."
+    				replace="@{targetDir}"
+    				id="2048"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+				
+				<!-- AUTOMATION LOG -->
+				<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+			</autopd_if>			
+		</sequential>
+	</macrodef>
+	
+	<!-- input:  path.var, where ${@{path.var}} yields the path information
+	     output:  @{path.var}.clean - yields the path information for the currently running system 
+	     Example:
+	     	<autopdproperty name="my.path" value="C:/Program Files/Java\jre\bin\some.properties"/>
+	     	<path_cleanup path.var="my.path"/>
+	     	<echo message="Clean up path = ${my.path.clean}"/>
+	-->
+	<macrodef name="path_cleanup">
+		<attribute name="path.var"/>
+		<sequential>
+			<!-- WINDOWS -->
+			<autopd_if isTrue="${isWindows}">
+				<win_pathFixup type="\" inputDir="${@{path.var}}" defaultDir="${@{path.var}}"/>
+			</autopd_if>
+			
+			<!-- NOT WINDOWS -->
+			<autopd_if isNotTrue="${isWindows}">
+				<win_pathFixup type="/" inputDir="${@{path.var}}" defaultDir="${@{path.var}}"/>
+			</autopd_if>
+			<autopdproperty name="@{path.var}.clean" value="${inputDir.out}"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+		has.cmd.in.path : Looks for the specified file in user PATH
+		- Input : commandName (like sc.exe, bin.bat, shell files.)
+		- Output: ${is.cmd.available} 
+			= true.  Cmd available
+			= unset - any other result.
+			${cmd.available} = command path calculated from PATH
+			${user.env.path} = User PATH environment. Non empty value is persisted.
+			${has.user.env.path} = true if value is set. When true, value is persisted.
+    ################################################   -->	
+	<macrodef name="has.cmd.in.path">	
+		<attribute name="commandName"/>
+		<sequential>
+			<!-- do this only once -->
+			<autopd_if isNotTrue="${has.user.env.path}">
+				
+				<property environment="env"/>
+
+				<autopd_unset_property name="user.env.path"/>
+				<autopd_unset_property name="has.user.env.path"/>
+				
+				<!-- check PATH then Path -->				
+				<autopd_unset_property name="hasPath"/>
+				<condition property="hasPath">
+					<and>
+						<isset property="env.PATH" />
+						<not>
+							<equals arg1="" arg2="${env.PATH}"/>
+						</not>
+					</and>
+				</condition>
+				<autopd_if isTrue="${hasPath}">
+					<autopdproperty name="user.env.path" value="${env.PATH}"/>
+				</autopd_if>
+				
+				<autopd_if isNotTrue="${hasPath}">
+					<!-- try env.Path - see : http://ant.apache.org/manual/CoreTasks/property.html -->
+					<autopd_unset_property name="hasPath"/>
+					<condition property="hasPath">
+						<and>
+							<isset property="env.Path" />
+							<not>
+								<equals arg1="" arg2="${env.Path}"/>
+							</not>
+						</and>
+					</condition>
+					<autopd_if isTrue="${hasPath}">
+						<autopdproperty name="user.env.path" value="${env.Path}"/>
+					</autopd_if>
+				</autopd_if>
+				
+				<!-- settings -->
+				<autopd_if isTrue="${hasPath}">
+					<autopdproperty name="has.user.env.path" value="${hasPath}"/>
+					<persistproperty property="has.user.env.path"/>
+					<persistproperty property="user.env.path"/>
+				</autopd_if>
+			</autopd_if>
+
+			<!-- actual check -->
+			<autopd_unset_property name="cmd.available.file"/>
+			<autopd_unset_property name="cmd.available"/>
+			<autopd_unset_property name="is.cmd.available"/>			
+			<autopd_if isTrue="${has.user.env.path}">
+				<whichresource property="cmd.available.file" resource="@{commandName}" classpath="${user.env.path}" />
+				<condition property="is.cmd.available">
+					<isset property="cmd.available.file"/>
+				</condition>
+				
+				<!-- trim.  output to whichresource => file: -->
+				<autopd_if isTrue="${isWindows}">
+					<trim_filename key="cmd.available" filename="${cmd.available.file}" prefixTrim="file:/" />
+				</autopd_if>
+				<autopd_if isNotTrue="${isWindows}">
+					<trim_filename key="cmd.available" filename="${cmd.available.file}" prefixTrim="file:" />
+				</autopd_if>
+				
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- ##############################################
+	  Consolidated methods
+	 ################################################   -->
+	<!-- determines if tools to kill process is available 
+	  OUTPUT: 
+	    has.required.cmds
+		required.cmds.error = Text that can be logged		
+	  -->
+	<macrodef name="system.can.kill.process">
+		<sequential>
+			<autopd_if isTrue="${isWindows}">
+				<win_can.execute.kill.process/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<unix_can.execute.kill.process/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- executes the process kill -->
+	<!--
+	INPUT: pid for pid, and image.win/image.unix for image name.
+	    log.output = true | false  - to log the output. 
+	    out.file = file name to write the output at. Full Path. 
+	    	used only if log.output is true.  
+	
+	OUTPUT:
+		  has.process.kill.error - true | false - if process kill had error. 
+		  log.content = string that can be used to log execution flow.
+		  
+		  check.process.exec.output : 
+		  	Win: Output of tasklist /FI "PID eq @{pid}"  | unset
+		  	Unix:Output of ps -@{pid}  | unset 
+		  	
+		  has.pid.match.image.name  : true | unset :  if output of tasklist matches image.name
+		  kill.exec.output      : 
+		  	Win: Output of taskkill /F /PID @{pid}
+		  	Unix:Output of kill -9 @{pid} 	
+		  	
+		  log.output = false | true : to log file 
+		  out.file - output file.
+		  	  
+	 -->
+	<macrodef name="system.kill.process">
+		<attribute name="pid"/>
+		<attribute name="image.win"/>
+		<attribute name="image.unix"/>
+		<attribute name="log.output" default="false"/>  <!-- or true -->
+		<attribute name="out.file"   default="NONE"/>    <!-- set the out.file name -->
+		
+		<sequential>
+			<autopd_if isTrue="${isWindows}">
+				<win_kill.process pid="@{pid}" image.name="@{image.win}"/>			
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<unix_kill.process pid="@{pid}" image.name="@{image.unix}"/>
+			</autopd_if>
+				
+			<!-- write log to outfile -->			
+			<autopd_if isTrue="@{log.output}">
+				<echo file="@{out.file}" append="true" message="${log.content}"/>
+			</autopd_if>
+		
+			
+		</sequential>
+	</macrodef>
+
+	<!-- ################################################
+	    internal_check_64_bit_JVM
+		- check to see if this is a 64 bit JVM used. 
+		OUTPUT: is.64.bit.JVM : true | unset 
+			- true if os.arch results in a string containing 64. 
+				(32 bit - x86 is IBM and SUN JDK for both platforms.. so far.. )
+				(64 bit - amd64 )
+	################################################   -->	
+	<macrodef name="internal_check_64_bit_JVM">
+		<sequential>
+			<autopd_unset_property name="is.64.bit.JVM"/>
+			<condition property="is.64.bit.JVM">
+				<and>
+					<isset property="os.arch"/>
+					<contains substring="64" string="${os.arch}" />
+				</and>
+			</condition>
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	INPUT: prompt: true | others.  Will prompt the user. 
+	User gets the option to continue or cancel. Cancel will exit autoPD.
+	-->
+	<macrodef name="check_64_bit_JVM_warn"> 
+		<attribute name="prompt" default="false"/>
+		<sequential>
+			<internal_check_64_bit_JVM/>
+			<autopd_if isTrue="${is.64.bit.JVM}">
+				<autopd_if isTrue="${isWindows}">
+					<wsnlsecho key="prompt.64.bit.JVM.warn.2069a" 
+							bundle="properties/RATLSHARE/autopd"
+							message="WARNING: Running ISADC on 64-bit JVM is not supported."
+							id="2069a"
+							level="warn"
+							messagePrefix="CWPDD"/>				
+					<wsnlsecho key="prompt.64.bit.JVM.win.info.1" 
+							bundle="properties/RATLSHARE/autopd"
+							message="The script will not detect product installation and other system information properly, but may collect some data that can be useful for support team."
+							id="2069a"
+							level="warn"
+							messagePrefix="CWPDD"/>				
+					
+					<autopd_if isTrue="@{prompt}">
+						<managePrompt component="${ant.file}">
+						<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+							<fieldtask name="prompt" type="prompt" label="prompt.64.bit.JVM.warn.2069a"/>
+							<fieldtask name="label2" type="label" label="prompt.64.bit.JVM.win.info.1"/>
+							<fieldtask name="label3" type="label" label="${line.separator}"/>
+							<fieldtask name="label1" type="label" label="prompt.64.bit.JVM.ok.cancel"/>
+						</inputdialogtask_v2>
+						</managePrompt>
+					</autopd_if>
+				</autopd_if>
+				<autopd_if isNotTrue="${isWindows}">
+					<wsnlsecho key="prompt.64.bit.JVM.warn.2069a" 
+							bundle="properties/RATLSHARE/autopd"
+							message="WARNING: Running ISADC on 64-bit JVM is not supported."
+							id="2069a"
+							level="warn"
+							messagePrefix="CWPDD"/>				
+					<wsnlsecho key="prompt.64.bit.JVM.non.win.info.1" 
+							bundle="properties/RATLSHARE/autopd"
+							message="The script is not tested on 64-bit JVM, and may not collect all the data needed for the support team."
+							id="2069a"
+							level="warn"
+							messagePrefix="CWPDD"/>
+					<autopd_if isTrue="@{prompt}">
+						<managePrompt component="${ant.file}">
+						<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+							<fieldtask name="prompt" type="prompt" label="prompt.64.bit.JVM.warn.2069a"/>
+							<fieldtask name="label2" type="label" label="prompt.64.bit.JVM.non.win.info.1" />
+							<fieldtask name="label3" type="label" label="${line.separator}"/>
+							<fieldtask name="label1" type="label" label="prompt.64.bit.JVM.ok.cancel"/>
+						</inputdialogtask_v2>
+						</managePrompt>
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- utility -->
+	<target name="check_64_bit_JVM">
+		<!--
+		<check_64_bit_JVM_warn prompt="true"/>
+		-->
+	</target>	
+	
+	
+	<!-- ################################################
+ 	        WORKAROUND
+	   -->
+	<!-- output = is.empty -->
+	<macrodef name="run.if.not.empty">
+		<attribute name="input"/>
+		<element name="runit" implicit="true"/>
+		<sequential>
+			<autopd_unset_property name="is.empty"/>
+			<condition property="is.empty">
+				<or>
+					<equals arg1="" arg2="@{input}"/>
+					<contains string="@{input}" substring="$${"/>
+					<contains string="@{input}" substring="@@{"/>
+				</or>
+			</condition>
+			<autopd_if isNotTrue="${is.empty}">
+				<runit/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+
+<!-- =================================== -->
+<!--         Windows                     -->
+<!-- =================================== -->
+
+	<!-- ################################################
+	    win_windows_only_script :
+		- Creates a prompt in which it let's the user know that this script only runs within Windows environment.
+	################################################   -->	
+	<macrodef name="win_windows_only_script">
+		<sequential>
+			
+			<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+				<fieldtask name="prompt" type="prompt" label="ratl.shared.info.2061" />
+				<fieldtask name="line1" type="label" label="ratl.shared.info.2062"/>
+			</inputdialogtask_v2>
+			
+			<wsnlsecho key="ratl.shared.info.2062" 
+					bundle="properties/RATLSHARE/autopd"
+					message="This script can only be run in Windows environment."
+					id="2062"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- AUTOMATION LOG -->
+			<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+	win_getHeapSize :
+		- Get windows heap size from 
+			SYSTEM\CurrentControlSet\Control\Session Manager\SubSystems\Windows
+		- Result: output in file : getWindowsHeapSize.txt
+	################################################   -->
+	<macrodef name="win_getHeapSize"
+			  description="Returns Windows Heap size." >
+		<sequential>
+			<autopd_unset_property name="winHeap"/>
+			<windows_registry_access propertyName="winHeap"
+				registryKey="SYSTEM\CurrentControlSet\Control\Session Manager\SubSystems\Windows" />
+	
+			<util.logToFile msg="Retrieveing Windows Heap Size from Registry: SYSTEM\CurrentControlSet\Control\Session Manager\SubSystems\Windows ${line.separator}Windows heapsize = ${winHeap}${line.separator}" 
+			output="getWindowsHeapSize.txt"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+	    win_loadRegistry :
+		- Input : file:  full path of registry file name to be loaded
+		  NOTE: it seems that this will always return with regload.sucess= true. 
+		  Alternative method needed to check whether a registry key is available 
+		- Output: 
+			${regload.success} = true
+							   = other - failure
+			${result.error} = if result returns error, result.error will contain error string
+			${result.output} = output of the batch execution.		
+		Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.								
+	################################################   -->	
+	<macrodef name="win_loadRegistry">
+		<attribute name="file"/>
+		<sequential>
+			
+			<!-- unset -->
+			<autopd_unset_property name="result.output"/>
+			<autopd_unset_property name="result.error"/>
+			<autopd_unset_property name="result.load.registry"/>
+			<autopd_unset_property name="regload.success"/>
+			<autopd_unset_property name="file.existing"/>
+			
+			<!-- check for file existence --> 
+			<condition property="file.existing">
+				<available file="@{file}" property=""/>
+			</condition>
+			
+			<!-- file NOT found -->
+			<autopd_if isNotTrue="${file.existing}">
+				<wsnlsecho key="ratl.shared.warn.2049" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Cannot load registry file.  File {0} not found."
+	    				replace="@{file}"
+	    				id="2049"
+	    				level="warn"
+	    				messagePrefix="CWPDD"/>
+				<autopdproperty name="result.load.registry" value="1"/>
+				
+				<!-- AUTOMATION LOG -->
+				<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+				
+			</autopd_if>
+			
+			<!-- file found -->
+			<autopd_if isTrue="${file.existing}">
+				<fix_for_command_line      	
+						outputProperty="file.path.cmd" 
+						inputString="@{file}"/>
+				
+				<wsnlsecho key="ratl.shared.info.2041" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Updating registry with file: {0}"
+	    				replace="${file.path.cmd}"
+	    				id="2041"
+	    				level="info"
+	    				messagePrefix="CWPDD"/>
+				
+				<!-- EXECUTING -->
+				<exec executable="regedit.exe" resultproperty="result.load.registry" os="${os.windows}"
+					outputproperty="result.output"
+					errorproperty="result.error"
+					failonerror="false" failifexecutionfails="false">
+				    <arg line="/s ${file.path.cmd}"/>
+				</exec>
+				
+				<!-- log the output -->
+				<autopdproperty name="local.exec.out" value="${autopdtmp}\load.registry.out.txt"/>
+				<concat destfile="${local.exec.out}"
+						append="true">${result.output} ${result.error}</concat>
+				
+				<echo message="result.load.registry = ${result.load.registry}"/>
+				
+				<!-- notify result -->
+				<condition property="regload.success">
+					<equals arg1="0" arg2="${result.load.registry}"/>
+				</condition>
+				<autopd_if isNotTrue="${regload.success}">
+					<wsnlsecho key="ratl.shared.warn.2050" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Registry update failed.  See file: {0} for more information."
+		    				replace="${local.exec.out}"
+		    				id="2050"
+		    				level="warn"
+		    				messagePrefix="CWPDD"/>
+
+					<!-- AUTOMATION LOG -->
+					<logErrorMessage  problem.id="2092" component="${ant.file}"/>
+					
+					<copy todir="${isadcTempOut}/runtimelog" outputencoding="UTF-8">
+						<fileset file="${local.exec.out}"/>
+					</copy>	
+					
+				</autopd_if>
+				<autopd_if isTrue="${regload.success}">
+					<wsnlsecho key="ratl.shared.info.2045" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Registry update is successful."
+		    				id="2045"
+		    				level="info"
+		    				messagePrefix="CWPDD"/>
+				</autopd_if>
+
+			</autopd_if>
+
+		</sequential>
+	</macrodef>
+	<!-- ################################################
+	 win_checkRegistryDir
+			input : regkey = autopd input key for registry
+			output: reg.value = directory | unset
+					reg.isValidDirectory = true | unset .  If a valid directory resulted
+		-->
+	<macrodef name="win_checkRegistryDir">
+		<attribute name="regkey"/>
+		<sequential>
+			<autopd_unset_property name="reg.value"/>
+			<autopd_unset_property name="reg.isValidDirectory"/>
+			
+			<windows_registry_access propertyName="reg.value"
+			     registryKey="@{regkey}" />
+			
+			<!-- check to see if product dir is available -->
+			<condition property="reg.isValidDirectory">
+				<and>
+					<isset property="reg.value"/>
+					<available file="${reg.value}" type="dir"/>
+				</and>
+			</condition>
+			
+		</sequential>
+	</macrodef>
+	
+
+	<!-- ################################################
+	    win_checkRegistryKeyData : 
+	    Verifies whether a specified registrykey exists and contains a data key=value pair matching data.pattern
+	    
+		- INPUT : 
+	      regkey:  the full key to a registry key (branch) 
+	      data.pattern: data patten to be used to verify content of the output. One or more () must be available. 	      
+	      NOTE: these entries are not validated. Data pattern must not be empty 
+	     
+	     OUTPUT:
+	      reg.data.matched: data matched within the first () of the data.pattern 
+	      has.validation.error : true if registry output does not contain the data.pattern specified. 	        
+	      validation.error.msg : First reason why this is errored. 
+		Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.								
+	################################################   -->	
+		
+	<!-- Check CQ Windows registry key - to make sure there is an entry -->
+	<macrodef name="win_checkRegistryKeyData">
+		<attribute name="regkey"/>
+		<attribute name="data.pattern"/> 
+		<sequential>
+			<autopdproperty name="has.validation.error" value="false"/>
+			<autopdproperty name="validation.error.msg" value=""/>
+			<autopd_unset_property name="reg.data.matched"/>
+			
+			<!-- check -->
+			<autopdproperty name="registry.check.outfile"  value="${autopdtmp}\win_reg.out.txt"/>
+			<delete file="${registry.check.outfile}" failonerror="false"/>
+			
+			<!-- set up for exec - fix path name -->
+			<win_pathFixup type="\" inputDir="${registry.check.outfile}" defaultDir="${registry.check.outfile}"/> 
+			<autopdproperty name="registry.check.outfile.path.cmd" value="${inputDir.out}"/>			
+			
+			<!-- extract the key via regedit /e /a -->
+			<exec executable="regedit.exe" failifexecutionfails="false" failonerror="false"
+				os="${os.windows}">
+				<arg line='/e /a "${registry.check.outfile.path.cmd}" "@{regkey}"'/>
+			</exec>
+	
+			<!-- check to see if a file has been generated -->
+			<autopd_unset_property name="has.registry.check.out"/>
+			<available file="${registry.check.outfile.path.cmd}" property="has.registry.check.out"/>
+			<autopd_if isNotTrue="${has.registry.check.out}">
+				<autopdproperty name="has.validation.error" value="true"/>
+				<saveresourcebundleproperty 
+					bundle="properties/RATLSHARE/autopd"
+					key="ratl.shared.warn.reg.no.entry" 
+					propertyName="validation.error.msg" 
+					message="Registry does not contain an entry for key [{0}]"
+					replace="@{regkey}"/>				
+			</autopd_if>
+			<autopd_if isTrue="${has.registry.check.out}">
+				<regex_extract_value 
+						file="${registry.check.outfile.path.cmd}"
+						searchPattern='@{data.pattern}'
+						subPatternIndex="1"
+						extractedValue="reg.data.matched"
+						returnOption="firstMatch"
+						match_across_multiple_lines="false"
+					/>
+				
+				<autopd_unset_property name="has.validation.error"/>
+				<condition property="has.validation.error">
+					<not>
+						<isset property="reg.data.matched"/>
+					</not>
+				</condition>
+				
+				<autopd_if isTrue="${has.validation.error}">
+					<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							key="ratl.shared.warn.reg.no.pattern.match" 
+							propertyName="validation.error.msg" 
+							message="Registry key [{0}] does not contain an entry matching given pattern."
+							replace="@{regkey}"/>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- ################################################
+			win_pathFixup: Fix a path such that it is  
+			input: inputDir : directory to be fixed up 
+					defaultDir: if directory is empty or not defined - then use this value 
+			output: ${inputDir.out} = fixed value
+	
+		-->
+	<macrodef name="win_pathFixup">
+		<attribute name="inputDir"/>    <!-- must check for unset  -->
+		<attribute name="defaultDir"/>  <!-- must check for unset  -->
+		<attribute name="type"/>      <!-- type = \ , \\ , or /  - must not contain !!-->
+									  <!-- note that "\" is ok, but not in ISADC -->
+		<sequential>
+	
+			<autopd_unset_property name="isEmptyPath"/>
+			<autopdproperty name="inputDir.out" value="@{inputDir}"/>
+						
+			<!-- Check for empty path and path start with ${ or @{ --> 
+			<!-- ${, @{ is when an unset value is passed...  till i find a better way for it -->
+			<condition property="isEmptyPath">
+				<or>
+					<equals arg1="" arg2="${inputDir.out}"/>
+					<contains string="${inputDir.out}" substring="$${"/>
+					<contains string="${inputDir.out}" substring="@@{"/>
+				</or>
+			</condition>
+			<autopd_if isTrue="${isEmptyPath}">
+				<autopdproperty name="inputDir.out" value="@{defaultDir}"/>
+			</autopd_if>
+			
+			<!-- do some cleaning -->
+			<!-- Note: autopdreplace will hang if replacing toking is contained in output string -->
+			<autopdreplace property="inputDir.out" token="/" value="!!"/>
+			<autopdreplace property="inputDir.out" token="\\\\" value="!!"/>
+			<autopdreplace property="inputDir.out" token="\\" value="!!" />
+            <autopdreplace property="inputDir.out" token="!!" value="@{type}"/>
+
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+		win_hasCmdInPath : Looks for the specified file in user PATH
+		- Seems like this would work for unix. Extract it out to common items. 
+    ################################################   -->	
+	<macrodef name="win_hasCmdInPath">	
+		<attribute name="commandName"/>
+		<sequential>
+			<has.cmd.in.path commandName="@{commandName}"/>			
+		</sequential>
+	</macrodef>
+	
+	<!-- input: var
+	 output: var.value - value of the var
+	 	   : varNotFound : true - if environment value not available
+	 	   
+	 Alternative:  <property environment="env"/>
+	 	return ${env.${var.upper}} may work 
+	-->	
+    <macrodef name="win_getEnvironmentValue">
+    	<attribute name="var"/>
+    	<sequential>
+    		<autopd_unset_property name="var.value"/>
+    		<autopd_unset_property name="var.upper"/>
+    		<autopd_unset_property name="varNotFound"/>
+    		
+    		<autopd_modify_string_case str="@{var}" property="var.upper" type="all"/>    		
+    		<exec executable="cmd.exe" dir="." failonerror="false" failifexecutionfails="false"
+				outputproperty="var.value" os="${os.windows}">
+				<arg value="/c" />
+				<arg value="echo" />
+				<arg value="%${var.upper}%" />
+			</exec>
+
+			<!-- failure when echo results to same thing -->
+			<condition property="varNotFound">
+				<equals arg1="${var.value}" arg2="%${var.upper}%" casesensitive="false"/>
+			</condition>
+
+			<autopd_if isTrue="${varNotFound}">
+				<wsnlsecho key="ratl.shared.info.2065" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Environment {0} not available"
+					replace="${var.upper}"
+					id="2065"
+					level="info"
+					messagePrefix="CWPDD"/>
+			</autopd_if>
+    					
+			
+    	</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+		win_checkServiceAvailable :  
+		Executes the sc query serviceName to check whether a service is available.
+		Note: Updated because sc.exe is not available on all windows machines.
+		- Input : serviceName - service Name.  (used by sc.exe)
+				  serviceDiaply - service Display name used if prompting user.
+				  prompt: true | false.  
+				  	- true : prompts user.
+				  	- false: does not prompt user. 
+		- Output: ${service.available} 
+			= true.  Service available / registered w/ system
+			= unset - false | unknown. 
+			
+			${result.unknown} = used only when prompt=false. true - if sc not available, and user chooses not to prompt.
+			${result.error} = if result returns error, result.error will contain error string
+			${result.output} = output of the batch execution.
+		Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.			
+    ################################################   -->			
+	<macrodef name="win_checkServiceAvailable">
+		<attribute name="serviceName"/>
+		<attribute name="serviceDisplay"/>
+		<attribute name="prompt" default="true"/>
+		<sequential>
+			<!-- unset -->
+			<autopd_unset_property name="result.output"/>
+			<autopd_unset_property name="result.error"/>
+			<autopd_unset_property name="result.unknown"/>			
+			<autopd_unset_property name="sc.execute.stat"/>
+			<autopd_unset_property name="service.available"/>
+
+			<fix_for_command_line 
+					outputProperty="serviceName.cmd" 
+					inputString="@{serviceName}"/>
+			
+			<!-- check to see if sc.exe is available -->
+			<has.cmd.in.path commandname="sc.exe"/>
+			
+			<!-- if sc is available --> 
+			<autopd_if isTrue="${is.cmd.available}">
+				<exec executable="sc.exe" resultproperty="sc.execute.stat" os="${os.windows}"
+					outputproperty="result.output" 
+					errorproperty="result.error"
+					failonerror="false" failifexecutionfails="false">
+				    <arg line="query ${serviceName.cmd}"/>
+				</exec>
+				
+				<!-- check result -->
+				<condition property="service.available">
+					<and>
+						<equals arg1="0" arg2="${sc.execute.stat}"/>
+						<not>
+							<!-- when service is not available -->
+							<contains string="${result.output}" substring="FAILED 1060"/>
+						</not>
+					</and>
+				</condition>
+				<!-- force a "false" -->
+				<autopd_if isNotTrue="${service.available}">
+					<autopdproperty name="service.available" value="false" />
+				</autopd_if>
+				
+			</autopd_if>
+			
+			<!-- if sc is not available...-->
+			<autopd_if isNotTrue="${is.cmd.available}">
+
+				<!-- Prompt by default -->				
+				<autopd_if isTrue="@{prompt}">
+					
+					<!-- AUTOMATION -->
+					<managePrompt_continue component="${ant.file}">
+						<prompt>							
+							<!-- ACTUAL PROMPT -->
+							<autopd_unset_property name="user.verify"/>
+							<!-- NLS ? -->
+							<autopdinput message="Please verify service '@{serviceDisplay}' is available on your machine. You can do so via 'Control Panel'->'Administrative Tools'-> 'Services'" 
+							     validargs="Yes,No" 
+							     addproperty="user.verify" />		
+			
+							<autopd_unset_property name="user.verify.yes"/>
+							<condition property="user.verify.yes">
+							     <equals arg1="Yes" arg2="${user.verify}" />
+							</condition>
+							
+							<autopd_if isTrue="${user.verify.yes}">
+								<autopdproperty name="service.available" value="true"/>
+							</autopd_if>							
+						</prompt>
+						<setDefault>
+							<autopdproperty name="result.unknown" value="true"/>
+						</setDefault>
+					</managePrompt_continue>
+				</autopd_if>
+				
+				<!-- Don't know whether the service is available or not -->
+				<autopd_if isNotTrue="@{prompt}">
+					<autopdproperty name="result.unknown" value="true"/>
+				</autopd_if>
+				
+			</autopd_if>	
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+		win_getServiceDetails :  
+		Executes the sc qc serviceName to get detailed information about a service. 
+		Note: Updated because sc.exe is not available on all windows machines.
+		- Input : serviceName - service Name.  (used by sc.exe)
+				  serviceDiaply - service Display name used if prompting user.				
+		- Output: ${service.available} 
+			= true.  Service available / registered w/ system
+			= unset - false | unknown. 
+			
+			${result.unknown} = used only when prompt=false. true - if sc not available, and user chooses not to prompt.
+			${result.error} = if result returns error, result.error will contain error string
+			${result.output} = output of the batch execution. - parse this data to get what is needed. 
+			${is.cmd.available} = if sc is available. 
+		Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.			
+    ################################################   -->			
+	<macrodef name="win_getServiceDetails">
+		<attribute name="serviceName"/>
+		<attribute name="serviceDisplay"/>
+		<sequential>
+			<!-- unset -->
+			<autopd_unset_property name="result.output"/>
+			<autopd_unset_property name="result.error"/>
+			<autopd_unset_property name="result.unknown"/>			
+			<autopd_unset_property name="sc.execute.stat"/>
+			<autopd_unset_property name="service.available"/>
+
+			<fix_for_command_line 
+					outputProperty="serviceName.cmd" 
+					inputString="@{serviceName}"/>
+			
+			<!-- check to see if sc.exe is available -->
+			<has.cmd.in.path commandname="sc.exe"/>
+			
+			<!-- if sc is available --> 
+			<autopd_if isTrue="${is.cmd.available}">
+				<exec executable="sc.exe" resultproperty="sc.execute.stat" os="${os.windows}"
+					outputproperty="result.output" 
+					errorproperty="result.error"
+					failonerror="false" failifexecutionfails="false">
+				    <arg line="qc ${serviceName.cmd}"/>
+				</exec>
+				
+				<!-- check result -->
+				<condition property="service.available">
+					<and>
+						<equals arg1="0" arg2="${sc.execute.stat}"/>
+						<not>
+							<!-- when service is not available -->
+							<contains string="${result.output}" substring="FAILED 1060"/>
+						</not>
+					</and>
+				</condition>
+				<!-- force a "false" -->
+				<autopd_if isNotTrue="${service.available}">
+					<autopdproperty name="service.available" value="false" />
+				</autopd_if>
+				
+			</autopd_if>			
+		</sequential>
+	</macrodef>
+	
+	<!-- INPUT: result.out - no validation - output from win_checkServiceAvailable
+	           - > make sure ${service.available} is true... 
+	     OUTPUT:
+	     has.valid.service.bin.path = true | unset
+	     service.bin.path = BINARY_PATH_NAME - with quotes removed.  
+	  -->
+	<macrodef name="win_parseServiceDetails">
+		<attribute name="result.output"/>  <!-- result.output from running win_getServiceDetails -->
+		<sequential>
+
+			<autopd_unset_property name="service.bin.path"/>			
+			<autopd_unset_property name="has.valid.service.bin.path"/>
+				
+			<autopd_unset_property name="has.valid.result.output"/>
+			<condition property="has.valid.result.output">
+				<not>
+					<or>
+						<equals arg1="" arg2="@{result.output}"/>
+						<contains string="@{result.output}" substring="$${"/>
+					</or>
+				</not>
+			</condition>
+			<autopd_if isTrue="${has.valid.result.output}">
+
+				<!-- write result to temp file -->
+				<autopdproperty name="outfile" value="${autopdtmp}/scqc.out.txt"/>
+				<echo message="@{result.output}" file="${outfile}"/>
+				
+				<!-- grab BINARY_PATH_NAME - quotes may be included, assuming .exe extension -->								
+				<regex_extract_value 
+						file="${outfile}"
+						searchPattern='^\s+BINARY_PATH_NAME\s+:\s+("[A-Za-z0-9:\\\.\s\(\)]*\.exe"|[A-Za-z0-9:\\\.\s\(\)]*.exe)\s?'
+						subPatternIndex="1"
+						extractedValue="service.bin.path"
+						returnOption="firstMatch"
+						match_across_multiple_lines="false"
+					/>
+				
+				<!-- trim it & validate it-->
+				<trim_filename key="service.bin.path" filename="${service.bin.path}" prefixtrim='"' suffixtrim='"'/>				
+				<autopd_unset_property name="has.valid.service.bin.path"/>
+				<available file="${service.bin.path}" type="file" property="has.valid.service.bin.path"/>
+				
+				 <rtl.debugecho message="service.bin.path= ${service.bin.path}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+			win_checkServiceStarted:   
+			- Input : service:  Full service name (to match with "net start") 
+			NOTE: Keep track of the properties. 
+			If you use it within another macro that is using the same properties 
+			the values will get unsetted. 
+			- Output: ${service.started} 
+				= true.  service is in the net start list. 
+				= unset - false | unknown. 
+				${result.error} = if result returns error, result.error will contain error string
+				${result.output} = output of the batch execution.			
+	    ################################################   -->	
+	<macrodef name="win_checkServiceStarted">
+		<attribute name="serviceDisplay"/>
+		<sequential>
+			<autopd_unset_property name="result.output"/>   <!-- contains the stdout -->
+			<autopd_unset_property name="result.property"/>
+			<autopd_unset_property name="result.error"/>
+			<autopd_unset_property name="service.started"/>	
+			
+			<!-- EXECUTING : net start - listing all services-->
+			<exec executable="net" 
+					outputproperty="result.output"
+				    resultproperty="result.property"
+					errorproperty="result.error">
+			    <arg line="start"/>
+			</exec>
+
+			<!-- check matching -->
+			<condition property="service.started">
+				<contains string="${result.output}" substring="@{serviceDisplay}"/>
+			</condition>
+
+		
+		</sequential>
+	</macrodef>
+	<!-- ################################################
+		win_startService :
+		- Input : serviceDisplay:  Full service name 
+		- Output: ${result.net.start} 
+			= true.  Success or if the service already has been started.(acceptable error)
+			= unset ${result.net.start}  - any other result code
+	          ${result.error} = if result returns error, result.error will contain error string
+	          ${result.output} = output of the batch execution.
+	  Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.
+    ################################################   -->
+	 <macrodef name="win_startService">
+		<attribute name="serviceDisplay"/>
+		<sequential>
+			
+			<!-- quote the service-->
+			<autopdproperty name="service.cmd" value='"@{serviceDisplay}"'/>
+			
+			<wsnlsecho key="ratl.shared.info.2042" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Starting service : {0}"
+    				replace="${service.cmd}"
+    				id="2042"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+			
+			<!-- check service started? don't quote -->
+			<win_checkServiceStarted serviceDisplay="@{serviceDisplay}"/>
+			<autopd_if isTrue="${service.started}">
+				<wsnlsecho key="ratl.shared.info.2046a" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Service {0} already started."
+	    				replace="${service.cmd}"
+	    				id="2046a"
+	    				level="info"
+						messagePrefix="CWPDD"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${service.started}">
+			
+				<!-- EXECUTING -->
+				<autopd_unset_property name="result.output"/>
+				<autopd_unset_property name="result.error"/>
+				<autopd_unset_property name="result.net.start"/>
+				<autopd_unset_property name="result.net.start.actual"/>
+				
+				<exec executable="net" resultproperty="result.net.start.actual"  os="${os.windows}"
+						outputproperty="result.output"
+						errorproperty="result.error">
+				    <arg line="start ${service.cmd}"/>
+				</exec>
+				
+				<!-- log the output -->
+				<autopdproperty name="local.exec.out" value="${autopdtmp}\start.service.out.txt"/>
+				<concat destfile="${local.exec.out}"
+						append="true">${result.output} ${result.error}</concat>
+	
+				<!-- Check for valid start service message -->
+				<condition property="result.net.start">
+					<or>
+						<equals arg1="0" arg2="${result.net.start.actual}"/>
+						<and>
+							<!-- if error code - but for already running service -->
+							<equals arg1="2" arg2="${result.net.start.actual}"/>
+							<contains string="${result.error}" substring="NET HELPMSG 2182" casesensitive="false" />
+						</and>
+					</or>
+				</condition>
+				
+				<!-- Notify  -->
+				<autopd_if isNotTrue="${result.net.start}">
+					<wsnlsecho key="ratl.shared.warn.2051" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Service {0} did not start.  See file: {1} for more information."
+		    				replace="${service.cmd};;${local.exec.out}"
+		    				id="2051"
+		    				level="warn"
+							messagePrefix="CWPDD"/>
+					
+					<!-- AUTOMATION LOG -->
+					<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+					
+					<copy todir="${isadcTempOut}/runtimelog" outputencoding="UTF-8">
+						<fileset file="${local.exec.out}"/>
+					</copy>	
+				</autopd_if>
+				<autopd_if isTrue="${result.net.start}">
+					<wsnlsecho key="ratl.shared.info.2046" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Service {0} started."
+		    				replace="${service.cmd}"
+		    				id="2046"
+		    				level="info"
+							messagePrefix="CWPDD"/>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+		win_stopService :
+		- Input : serviceDisplay:  Full service name 
+		- Output: ${result.net.stop} 
+			= true.  Success or if the service already has been stopped.(acceptable error)
+			= unset ${result.net.stop} - any other result code
+          ${result.error} = if result returns error, result.error will contain error string
+          ${result.output} = output of the batch execution.
+  Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.
+    ################################################   -->
+	 <macrodef name="win_stopService">
+		<attribute name="serviceDisplay"/>
+		<sequential>
+			
+			<!-- check for file existence --> 
+			<!-- quote the service-->
+			<autopdproperty name="service.cmd" value='"@{serviceDisplay}"'/>
+
+			<wsnlsecho key="ratl.shared.info.2043" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Stopping service : {0}"
+    				replace="${service.cmd}"
+    				id="2043"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+
+			<!-- EXECUTING -->
+			<!-- check service stopped? don't quote -->
+			<win_checkServiceStarted serviceDisplay="@{serviceDisplay}"/>
+			<autopd_if isNotTrue="${service.started}">
+				<wsnlsecho key="ratl.shared.info.2047a" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Service {0} already stopped."
+	    				replace="${service.cmd}"
+	    				id="2047a"
+	    				level="info"
+						messagePrefix="CWPDD"/>
+			</autopd_if>
+			<autopd_if isTrue="${service.started}">
+				<!-- unset -->
+				<autopd_unset_property name="result.output"/>
+				<autopd_unset_property name="result.error"/>
+				<autopd_unset_property name="result.net.stop"/>
+				<autopd_unset_property name="result.net.stop.actual"/>			
+				
+				<exec executable="net" resultproperty="result.net.stop.actual" os="${os.windows}"
+					outputproperty="result.output"
+					errorproperty="result.error">
+				    <arg line="stop ${service.cmd}"/>
+				</exec>
+				
+				<!-- log the output -->
+				<autopdproperty name="local.exec.out" value="${autopdtmp}\stop.service.out.txt"/>
+				<concat destfile="${local.exec.out}"
+						append="true">${result.output} ${result.error}</concat>
+				
+				<!-- Check for valid stop service message -->
+				<condition property="result.net.stop">
+					<or>
+						<equals arg1="0" arg2="${result.net.stop.actual}"/>
+						<and>
+							<!-- if error code - but for already running service -->
+							<equals arg1="2" arg2="${result.net.stop.actual}"/>
+							<contains string="${result.error}" substring="NET HELPMSG 3521" casesensitive="false" />
+						</and>
+					</or>
+				</condition>
+				
+				<!-- Notify if failed -->
+				<autopd_if isNotTrue="${result.net.stop}">
+					<wsnlsecho key="ratl.shared.warn.2052" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Service {0} did not stop.  See file: {1} for more information."
+		    				replace="${service.cmd};;${local.exec.out}"
+		    				id="2052"
+		    				level="warn"
+							messagePrefix="CWPDD"/>
+					
+					<!-- AUTOMATION LOG -->
+					<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+					
+					<copy todir="${isadcTempOut}/runtimelog" outputencoding="UTF-8">
+						<fileset file="${local.exec.out}"/>
+					</copy>	
+					
+				</autopd_if>
+				<autopd_if isTrue="${result.net.stop}">
+					<wsnlsecho key="ratl.shared.info.2047" 
+		    				bundle="properties/RATLSHARE/autopd"
+		    				message="Service {0} stopped."
+		    				replace="${service.cmd}"
+		    				id="2047"
+		    				level="info"
+							messagePrefix="CWPDD"/>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+
+	<!-- 
+	   Verify that tasklist and taskkill is available on Windows system 
+	   This is to be used with win_kill.process 
+	   OUTPUT:
+		has.required.cmds
+		required.cmds.error = Text to be logged
+		-->
+	<property name="win.cmd.tasklist" value="tasklist.exe"/>
+	<property name="win.cmd.taskkill" value="taskkill.exe"/>
+	<macrodef name="win_can.execute.kill.process">
+		<sequential>			
+			<autopd_if isTrue="${isWindows}">
+				<autopd_unset_property name="has.required.cmds"/>
+				<autopd_unset_property name="required.cmds.error" />
+				<has.cmd.in.path commandname="${win.cmd.tasklist}"/>
+				<autopdproperty name="has.tasklist.in.path" value="${is.cmd.available}"/>
+				
+				<has.cmd.in.path commandname="${win.cmd.taskkill}"/>
+				<autopdproperty name="has.taskkill.in.path" value="${is.cmd.available}"/>
+				
+				<autopd_unset_property name="has.required.cmds"/>
+				<condition property="has.required.cmds">
+					<and>
+						<equals arg1="true" arg2="${has.tasklist.in.path}" casesensitive="false"/>
+						<equals arg1="true" arg2="${has.taskkill.in.path}" casesensitive="false"/>
+					</and>
+				</condition>
+				<autopd_if isNotTrue="${has.required.cmds}">
+					<autopdproperty name="required.cmds.error" value="Cannot find ${win.cmd.tasklist} and ${win.cmd.taskkill}. Skipping cqrpc check..."/>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+					
+	<!-- 
+		Code to kill process of pid that matches image.name 
+		Depends on: internal.can.execute.kill.process.win to ensure required cmds are available. 
+		INPUT: 
+		  pid = PID to be terminated
+		  image.name = Image name this process should be associated to. 
+				
+		OUTPUT:
+		  check.process.exec.output      : Output of tasklist /FI "PID eq @{pid}"  | unset
+		  has.pid.match.image.name  : true | unset :  if output of tasklist matches image.name
+		  kill.exec.output      : Output of taskkill /F /PID @{pid}
+		  
+		  has.process.kill.error = true | false 	  
+		  log.content : Output that can be logged. 
+		  
+		-->
+	<macrodef name="win_kill.process">
+		<attribute name="pid"/>
+		<attribute name="image.name"/>
+		<sequential>
+			<autopdproperty name="log.content" value=""/>
+			<autopdproperty name="has.process.kill.error" value="true"/>
+			
+			<autopd_if isTrue="${isWindows}">
+				<!-- RESET -->
+				<autopd_unset_property name="check.process.exec.output"/>
+				<autopd_unset_property name="has.pid.match.image.name"/>
+				<autopd_unset_property name="kill.exec.output"/>
+				
+				
+				<!-- VALIDATE ENTRY -->
+				<autopd_if isTrue="${has.required.cmds}">
+
+					<wsnlsecho key="ratl.shared.info.pid.kill" 
+					    	bundle="properties/RATLSHARE/autopd"
+					    	message="Attempt to kill process {0} with name {1}"
+					    	replace="@{pid};;@{image.name}"
+					    	id="2071"
+					    	level="info"
+							messagePrefix="CWPDD"/>
+					
+					<!-- Verify pid is matches from the image.name -->
+					<autopdproperty name="cmd.executed" value='tasklist /FI "PID eq @{pid}"'/>
+					<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							key="ratl.general.executing" 
+							propertyName="executing.cmd.msg" 
+							message="Running command: {0}"
+							replace="${cmd.executed}"/>
+					
+					<echo message="${executing.cmd.msg}"/>
+
+		    		<exec executable="cmd.exe" dir="." failifexecutionfails="false" failonerror="false"
+		    			outputproperty="check.process.exec.output" 
+		    		    os="${os.windows}">    			
+						<arg value="/c" />
+						<arg line='tasklist /FI "PID eq @{pid}"' />
+					</exec>
+					
+					<!-- LOG -->
+					<autopdproperty name="log.content" value='${log.content}${executing.cmd.msg}${line.separator}'/>					
+					<autopdproperty name="log.content" value="${log.content}${check.process.exec.output}${line.separator}${line.separator}"/>
+					<autopdproperty name="log.content" value="${log.content}====================${line.separator}"/>
+					
+					<!-- Check to make sure image.name is in the list -->
+					<condition property="has.pid.match.image.name">
+						<contains string="${check.process.exec.output}" substring="@{image.name}" casesensitive="false"/>
+					</condition>
+					
+					<!-- Kill it if image.name matches -->
+					<autopd_if isNotTrue="${has.pid.match.image.name}">
+						<!-- LOG -->
+						<autopdproperty name="log.content" value="${log.content}PID @{pid} with name=@{image.name} not found.${line.separator}"/>					
+					</autopd_if>
+					<autopd_if isTrue="${has.pid.match.image.name}">
+						<autopdproperty name="cmd.executed" value='taskkill /F /PID @{pid}'/>
+						<saveresourcebundleproperty 
+								bundle="properties/RATLSHARE/autopd"
+								key="ratl.general.executing" 
+								propertyName="executing.cmd.msg" 
+								message="Running command: {0}"
+								replace="${cmd.executed}"/>
+						
+						<echo message="${executing.cmd.msg}"/>
+
+			    		<exec executable="cmd.exe" dir="." failifexecutionfails="false" failonerror="false"
+			    			outputproperty="kill.exec.output" 
+			    		    os="${os.windows}">    			
+							<arg value="/c" />
+							<arg line='taskkill /F /PID @{pid}' />
+						</exec>
+						
+						<autopd_unset_property name="has.output.error"/>
+						<regex_match pattern="^ERROR.*" 
+						     propertyName="has.output.error" 
+						     string="${kill.exec.output}"/>
+						
+						<autopd_if isNotTrue="${has.output.error}">
+							<!-- all good -->
+							<autopdproperty name="has.process.kill.error" value="false"/>
+						</autopd_if>
+							
+						<!-- LOG -->
+						<autopdproperty name="log.content" value="${log.content}PID @{pid} with name=@{image.name} found.${line.separator}"/>
+						<autopdproperty name="log.content" value="${log.content}${line.separator}====================${line.separator}"/>
+						<autopdproperty name="log.content" value="${log.content}${executing.cmd.msg}${line.separator}"/>
+						<autopdproperty name="log.content" value="${log.content}${kill.exec.output}${line.separator}"/>
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+
+	<!-- ################################################
+			win_collectRegistryInfo :
+			- Input : filename:  a file name, no quotes. This will reside in ${autopdtmp}
+					  regkey : registry key. no brackets.  This is the branch top in which to be collected.
+			- Output: ${win_collectReg.result} 
+				= Return code.  
+			    = Additionally, the pmrfile is updated with the result file
+	  Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.
+	 ################################################   -->
+	<macrodef name="win_collectRegistryInfo">
+		<attribute name="filename"/>  <!-- no quotes -->
+		<attribute name="regkey"/>	  <!-- no brackets -->
+		<attribute name="prefix" default=""/>	  <!-- prefix path -->
+		<sequential>
+			
+			<echo message=""/>
+			<wsnlsecho key="ratl.shared.info.2056" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Collecting registry information for key=[{0}] into file {1}"
+    				replace="@{regkey};;@{filename}"
+					id="2056"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+			
+			<autopd_unset_property name="win_collectReg.result"/>
+			
+			<!-- set up file path name -->
+			<autopdproperty name="registry.outfile"  value="${autopdtmp}\@{filename}"/>
+			<win_pathFixup type="\" inputDir="${registry.outfile}" defaultDir="${registry.outfile}"/> 
+			<autopdproperty name="registry.outfile.fix" value="${inputDir.out}"/>			
+						
+			<!-- run it -->
+			<exec 
+				failifexecutionfails="false" failonerror="false"
+				executable="regedit.exe" resultproperty="win_collectReg.result"
+				os="${os.windows}">
+				<arg line='/e "${registry.outfile.fix}" "@{regkey}"'/>
+			</exec>
+			
+			<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+				<fileset file="${registry.outfile.fix}"/>
+			</copy>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- alternate method.  More expensive. -->
+	<macrodef name="win_collectRegistryInfo_alternate">
+			<attribute name="filename"/>  <!-- no quotes -->
+			<attribute name="regkey"/>	  <!-- no brackets -->
+			<attribute name="prefix" default=""/>	  <!-- prefix path -->
+			<sequential>
+				
+				<echo message=""/>
+				<wsnlsecho key="ratl.shared.info.2056" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Collecting registry information for key=[{0}] into file {1}"
+	    				replace="@{regkey};;@{filename}"
+						id="2056"
+	    				level="info"
+	    				messagePrefix="CWPDD"/>
+				
+				<autopd_unset_property name="win_collectReg.result"/>
+				<!-- create a .bat file & execute -->
+				<echo file="${autopdtmp}/@{filename}_execution.bat">@echo off ${line.separator} regedit /e "${autopdtmp}/@{filename}" "@{regkey}"</echo>
+				<exec 
+					executable="${autopdtmp}/@{filename}_execution.bat"
+					failifexecutionfails="false" failonerror="false">
+				</exec>
+								
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+					<fileset file="${autopdtmp}/@{filename}"/>
+				</copy>
+				
+			</sequential>
+		</macrodef>
+
+	
+	<!-- ################################################
+			win_collectWinMSDInfo :
+			- Input : filename: target output file name. no quotes. This will reside in ${autopdtmp}
+			- Output: 
+			    = pmrfile is updated with the result file if available.
+	  Please note that while these are not echoed in autopd status, these are echoed in echoinstance.log file.
+	 ################################################   -->
+	<!-- msinfo32.executable is always resides in this location -->
+	<property name="win_msinfo32.executable" value="msinfo32.exe"/>
+	<property name="win_winmsd.executable" value="winmsd.exe"/>
+	<macrodef name="win_collectWinMSDInfo">
+		<attribute name="filename"/>  <!-- no quotes -->		
+		<sequential>
+
+			<echo message=""/>
+			<wsnlsecho key="ratl.shared.info.2057" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Collecting full winMSD information into file {0}. Please wait. This will take a few moments..."
+						replace="@{filename}"
+						id="2057"
+						level="info"
+						messagePrefix="CWPDD"/>
+						
+			<!-- check to see if winmsd or msinfo32.exe is available -->
+			<internal_win_whichwinMSD/>
+			<autopd_if isTrue="${haswinMSD}">
+			
+				<exec executable="${winMSD.touse}" dir="${autopdtmp}" failifexecutionfails="false" failonerror="false">
+					<arg line="/report"/>
+					<arg value="@{filename}"/>
+				</exec>
+				
+				<!-- zip the output -->
+				<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+					<fileset dir="${autopdtmp}">
+						<include name="@{filename}" />
+					</fileset> 
+				</copy>
+			
+			</autopd_if>
+			
+			<!-- if no winMSD - no op --> 
+			<autopd_if isNotTrue="${haswinMSD}">
+				<wsnlsecho key="ratl.shared.warn.2059" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Cannot find winmsd.exe and msinfo32.exe in system path."
+						id="2059"
+						level="warn"
+						messagePrefix="CWPDD"/>
+				
+				<!-- AUTOMATION LOG -->
+				<logErrorMessage  problem.id="2091" component="${ant.file}"/>
+			</autopd_if>
+			
+		</sequential>
+		
+	</macrodef>
+	
+	<!-- internal use only.
+		returns:  
+			${haswinMSD}  : true - if a version of winMSD is found.
+							: unset : value not available
+			${winMSD.touse}: set - value is the winMSD to use for this OS
+				   			:unset : value not available
+	-->
+	<macrodef name="internal_win_whichwinMSD">
+		<sequential>
+			
+			<autopd_unset_property name="winMSD.touse"/>
+			<autopd_unset_property name="haswinMSD"/>
+			
+			<!-- check the standard msinfo32.exe in <commons>\Microsoft Shared\MSInfo\msinfo32.exe -->
+			<!--
+			 NOTE:
+			 in Win2003/64 bit - this value returns C:\Program Files (x86)\Common Files
+			 and if this version is used, msinfo32.exe will not thread properly. 
+			 <windows_registry_access propertyName="windows.current.version"
+					registryKey="SOFTWARE\Microsoft\Windows\CurrentVersion\CommonFilesDir" />
+					
+			Hard coding msinfo32 path
+			 -->		
+			<autopdproperty name="common.msinfo32" value="C:\Program Files\Common Files\Microsoft Shared\MSInfo\msinfo32.exe"/>
+			<autopd_unset_property name="has.common.msinfo32"/>
+			<available file="${common.msinfo32}" type="file" property="has.common.msinfo32"/>
+			<autopd_if isTrue="${has.common.msinfo32}">
+				<autopdproperty name="winMSD.touse" value="${common.msinfo32}"/>
+				<autopdproperty name="haswinMSD" value="true"/>
+			</autopd_if>
+
+			<!-- original path -->
+			<autopd_if isNotTrue="${has.common.msinfo32}">
+				<has.cmd.in.path commandname="${win_msinfo32.executable}"/>
+				<autopd_if isTrue="${is.cmd.available}">
+					<autopdproperty name="winMSD.touse" value="${cmd.available}"/>
+					<autopdproperty name="haswinMSD" value="true"/>
+				</autopd_if>
+				<autopd_if isNotTrue="${is.cmd.available}">
+					<has.cmd.in.path commandname="${win_winmsd.executable}"/>
+					<autopd_if isTrue="${is.cmd.available}">
+						<autopdproperty name="winMSD.touse" value="${cmd.available}"/>
+						<autopdproperty name="haswinMSD" value="true"/>			
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+		
+	
+<!-- =================================== -->
+<!--         Linux                       -->
+<!-- =================================== -->	
+	<!-- #####################
+	checkLinuxUnixPlatform : 
+		Output: ${isLinuxUnixPlatform}
+			- true : if the platform is linux/aix/sunos 
+			- unset : else.
+	########################## -->
+	<macrodef name="checkLinuxUnixPlatform">
+		<sequential>
+			<!-- run this once ... since will be on the same platform-->			
+			<autopd_if isNotTrue="${isLinuxUnixPlatform}">
+				<autopd_unset_property name="isZOS"/>
+				<condition property="isZOS">
+					<equals arg1="z/OS" arg2="${os.name}"/>
+				</condition>
+				<condition property="isLinuxUnixPlatform">
+					<or>
+						<istrue value="${isAIX}"/>
+						<istrue value="${isSunOS}"/>
+						<istrue value="${isLinux}"/>
+						<istrue value="${isHPUX}"/>
+						<istrue value="${isZOS}"/>
+					</or>
+				</condition>
+				<!-- persistproperty only works on values that has been set -->
+				<autopd_if isTrue="${isLinuxUnixPlatform}">
+					<persistproperty property="isLinuxUnixPlatform"/>
+				</autopd_if>
+			</autopd_if>
+	    </sequential>
+	</macrodef>
+	
+	<!-- execute unix system infomration and concate them to autopdecho out -->
+	<!-- This is to be used with :  checkLinuxUnixPlatform                  -->
+	<macrodef name="getLinuxUnixInfo">
+		<sequential>
+			<checkLinuxUnixPlatform/>
+			<autopd_if isTrue="${isLinuxUnixPlatform}">
+				<autopdproperty name="target.sys.unix.output" value="${autopdtmp}/Linux_UnixSystemInfo.txt"/>
+				<echo message=" " file="${target.sys.unix.output}"/>  <!-- clear it -->
+				
+				<wsnlsecho key="ratl.shared.info.2055" 
+					    				bundle="properties/RATLSHARE/autopd"
+					    				message="Collecting system information..."
+					    				id="2055"
+					    				level="info"
+					    				messagePrefix="CWPDD"/>
+				
+				
+			    <!-- OS memory installed - call at the end -->
+				<autopdproperty name="cmd.os.mem.install" value="free -m"/>  
+				<autopd_if isTrue="${isAIX}">
+					<autopdproperty name="cmd.os.mem.install" value="bootinfo -r"/>
+				</autopd_if>
+				<autopd_if isTrue="${isSunOS}">
+					<autopdproperty name="cmd.os.mem.install" value='/usr/sbin/prtconf | grep "Memory size"'/>
+				</autopd_if>
+				<autopd_if isTrue="${isZOS}">
+					<autopdproperty name="cmd.os.mem.install" value='ulimit -a'/>
+				</autopd_if>
+				
+				<!-- whoami -->
+				<autopdproperty name="cmd.os.whoami.install" value="whoami"/>
+				<autopd_if isTrue="${isSunOS}">
+					<autopdproperty name="cmd.os.whoami.install" value="id"/>
+				</autopd_if>
+				<autopd_if isTrue="${isZOS}">
+					<autopdproperty name="cmd.os.whoami.install" value="id"/>
+				</autopd_if>
+				
+				<!-- df -->
+				<autopdproperty name="cmd.os.df.install" value="df -m"/>
+				<autopd_if isTrue="${isSunOS}">
+					<autopdproperty name="cmd.os.df.install" value="df -a"/>
+				</autopd_if>
+				<autopd_if isTrue="${isZOS}">
+					<autopdproperty name="cmd.os.df.install" value="df"/>
+				</autopd_if>
+
+			    <!-- header - to let the user know what's included -->
+				<echo file="${target.sys.unix.output}" 
+			      message='This file contains output from:${line.separator}${cmd.os.whoami.install}${line.separator}uname -a${line.separator}umask${line.separator}${cmd.os.df.install}${line.separator}env${line.separator}ps -aef${line.separator}${cmd.os.mem.install}${line.separator}'/>
+				
+				<!-- whoami -->
+				<autopdproperty name="echo.command.name" value="${cmd.os.whoami.install}"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 
+						message="Running command: {0}" 
+						replace="${echo.command.name}"/>
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				
+				<exec executable="/bin/sh" resultproperty="result.batch.exec" os="${os.unixkind}"
+						failifexecutionfails="false" failonerror="false">
+					<arg value="-c"/>
+					<arg value="${cmd.os.whoami.install} >> ${target.sys.unix.output}"/>
+				</exec>
+				<autopd_if isTrue="${isZOS}">
+					<exec executable="${cmd.os.whoami.install}" resultproperty="result.batch.exec"
+							failifexecutionfails="false" failonerror="false"
+							output="${target.sys.unix.output}" append="true">						
+					</exec>
+				</autopd_if>
+								
+				<!-- uname -a -->
+				<autopdproperty name="echo.command.name" value="uname -a"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 						
+						message="Running command: {0}"
+						replace="${echo.command.name}"/>
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.sys.unix.output}"/>
+
+				<exec executable="uname" resultproperty="result.batch.exec"
+					output="${target.sys.unix.output}" 
+					error="${target.sys.unix.output}" 
+					append="true" failifexecutionfails="false" failonerror="false" >
+					<arg line=" -a" />
+				</exec>
+				
+				<!-- umask -->
+				<autopdproperty name="echo.command.name" value="umask"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 
+						message="Running command: {0}" 
+						replace="${echo.command.name}"/>
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.sys.unix.output}"/>			
+				<exec executable="/bin/sh" resultproperty="result.batch.exec"
+						output="${target.sys.unix.output}"  
+						append="true" failifexecutionfails="false" failonerror="false">
+					<arg value="-c"/>
+					<arg value="umask"/>
+				</exec>				
+				
+				<!-- df -m / df -a / df -->
+				<autopdproperty name="echo.command.name" value="${cmd.os.df.install}"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 
+						message="Running command: {0}" 
+						replace="${echo.command.name}"/>
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.sys.unix.output}"/>					
+				<autopd_if isTrue="${isSunOS}">
+					<exec executable="df" resultproperty="result.batch.exec" os="${os.unixkind}"
+							output="${target.sys.unix.output}"
+							error="${target.sys.unix.output}"
+							append="true" failifexecutionfails="false" failonerror="false"  >
+						<arg line=" -a" />
+					</exec>
+				</autopd_if>
+				<autopd_if isNotTrue="${isSunOS}">
+					<!-- zOS is not considered as os.unixkind by ANT... -->
+					<exec executable="df" resultproperty="result.batch.exec" os="${os.unixkind}"
+						output="${target.sys.unix.output}"
+						error="${target.sys.unix.output}"
+						append="true" failifexecutionfails="false" failonerror="false"  >
+					<arg line=" -m" />
+					</exec>
+				</autopd_if>
+				
+				<autopd_if isTrue="${isZOS}">
+					<exec executable="df" resultproperty="result.batch.exec"
+							output="${target.sys.unix.output}"
+							error="${target.sys.unix.output}"
+							append="true" failifexecutionfails="false" failonerror="false"  >
+					</exec>
+				</autopd_if>
+				
+				<!-- env -->
+				<autopdproperty name="echo.command.name" value="env"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 
+						message="Running command: {0}" 
+						replace="${echo.command.name}"/>
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.sys.unix.output}"/>	
+				<exec executable="/bin/sh" resultproperty="result.batch.exec" os="${os.unixkind}"
+						failifexecutionfails="false" failonerror="false">
+					<arg value="-c"/>
+					<arg value="env >> ${target.sys.unix.output}"/>
+				</exec>
+				<autopd_if isTrue="${isZOS}">
+					<exec executable="env" resultproperty="result.batch.exec"
+							output="${target.sys.unix.output}"
+							append="true" failifexecutionfails="false" failonerror="false"  >
+					</exec>
+				</autopd_if>
+				
+
+				<!-- ps -aef -->				
+				<autopdproperty name="echo.command.name" value="ps -aef"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 
+						message="Running command: {0}" 
+						replace="${echo.command.name}"/>
+	
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<exec executable="/bin/sh" resultproperty="result.batch.exec" os="${os.unixkind}"
+						failifexecutionfails="false" failonerror="false">
+					<arg value="-c"/>
+					<arg value="ps -aef >> ${target.sys.unix.output}"/>
+				</exec>
+				<autopd_if isTrue="${isZOS}">
+					<exec executable="ps" resultproperty="result.batch.exec"
+							output="${target.sys.unix.output}"
+							append="true" failifexecutionfails="false" failonerror="false"  >
+						<arg line='-aef'/>
+					</exec>
+				</autopd_if>
+
+
+				<!-- OS memory installed  - see top for cmd.os.mem.install definition -->
+				<autopdproperty name="echo.command.name" value="${cmd.os.mem.install}"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.executing" 
+						propertyName="echo.output" 
+						message="Running command: {0}" 
+						replace="${echo.command.name}"/>
+	
+				<echo message="${echo.output}"/>
+				<echo message="${line.separator}${line.separator}Memory Installed: ${echo.command.name}${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.sys.unix.output}"/>
+				<exec executable="/bin/sh" resultproperty="result.batch.exec"
+						output="${target.sys.unix.output}" 
+						error="${target.sys.unix.output}" 
+						append="true" failifexecutionfails="false" failonerror="false">
+					<arg value="-c"/>
+					<arg value="${cmd.os.mem.install}"/>
+				</exec>
+				
+				<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+					<fileset file="${target.sys.unix.output}"/>
+				</copy>
+					
+			</autopd_if>  <!-- if LinuxUnix platform -->
+				
+	    </sequential>
+	</macrodef>
+	
+
+
+	<!-- 
+		Code to kill process of pid that matches image.name 
+		Depends on: can.execute.kill.process to ensure required cmds are available. 
+		INPUT: 
+		  pid = PID to be terminated
+		  image.name = Image name this process should be associated to. 
+				
+		OUTPUT:
+		  check.process.exec.output : Output of ps @{pid}  | unset
+		  has.pid.match.image.name  : true | unset :  if output of tasklist matches image.name
+		  kill.exec.output      : Output of kill -9 @{pid} 
+		  
+		  has.process.kill.error - true | false - if process kill had error. 
+		  log.content = string that can be used to log execution flow.
+		-->
+	<macrodef name="unix_kill.process">
+		<attribute name="pid"/>
+		<attribute name="image.name"/> 
+		<sequential>
+			
+			<autopdproperty name="log.content" value=""/>
+			<autopdproperty name="has.process.kill.error" value="true"/>
+			
+			<autopd_if isNotTrue="${isWindows}">
+				<!-- RESET -->
+				<autopd_unset_property name="check.process.exec.output"/>
+				<autopd_unset_property name="has.pid.match.image.name"/>
+				<autopd_unset_property name="kill.exec.output"/>
+				
+				<!-- VALIDATE ENTRY -->
+				<autopd_if isTrue="${has.required.cmds}">
+					
+                    <!-- Verify pid is matches from the image.name -->					
+					<autopdproperty name="cmd.executed" value='ps @{pid}'/>
+					<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							key="ratl.general.executing" 
+							propertyName="executing.cmd.msg" 
+							message="Running command: {0}"
+							replace="${cmd.executed}"/>					
+					<echo message="${executing.cmd.msg}"/>
+						
+		    		<exec executable="sh" failifexecutionfails="false" failonerror="false"
+		    			outputproperty="check.process.exec.output" 
+		    		    os="${os.unixkind}">    			
+						<arg value="-c" />
+						<arg value="ps @{pid}"/>
+					</exec>
+					
+					<!-- LOG -->
+					<autopdproperty name="log.content" value='${log.content}Executing : Executing : ps @{pid}${line.separator}'/>
+					<autopdproperty name="log.content" value="${log.content}${check.process.exec.output}${line.separator}${line.separator}"/>
+					<autopdproperty name="log.content" value="${log.content}====================${line.separator}"/>
+					
+					<!-- Check to make sure image.name is in the list -->
+					<condition property="has.pid.match.image.name">
+						<contains string="${check.process.exec.output}" substring="@{image.name}" casesensitive="true"/>
+					</condition>
+					
+					<!-- Kill it if image.name matches -->					
+					<autopd_if isNotTrue="${has.pid.match.image.name}">
+						<!-- LOG -->
+						<autopdproperty name="log.content" value="${log.content}PID @{pid} with name=@{image.name} not found.${line.separator}"/>
+					</autopd_if>					
+					<autopd_if isTrue="${has.pid.match.image.name}">
+						<autopdproperty name="cmd.executed" value='kill -9 @{pid}'/>
+						<saveresourcebundleproperty 
+								bundle="properties/RATLSHARE/autopd"
+								key="ratl.general.executing" 
+								propertyName="executing.cmd.msg" 
+								message="Running command: {0}"
+								replace="${cmd.executed}"/>					
+						<echo message="${executing.cmd.msg}"/>
+			    		<exec executable="sh" failifexecutionfails="false" failonerror="false"
+			    			outputproperty="kill.exec.output" 
+			    		    os="${os.unixkind}">    			
+							<arg value="-c" />
+							<arg value="kill -9 @{pid}" />
+						</exec>
+						
+						<!-- TODO -->
+						<autopdproperty name="has.process.kill.error" value="false"/>
+						
+						<!-- LOG -->
+						<autopdproperty name="log.content" value="${log.content}PID @{pid} with name=@{image.name} found.${line.separator}${line.separator}"/>
+						<autopdproperty name="log.content" value="${log.content}====================${line.separator}"/>
+						<autopdproperty name="log.content" value="${log.content}Executing:  kill -9 @{pid}${line.separator}"/>
+						<autopdproperty name="log.content" value="${log.content}${kill.exec.output}${line.separator}"/>
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- Code to verify that ps, kill & sh is available on non Windows system. 
+	     This is to be used with internal.kill.process.unix
+	     
+	     OUTPUT:
+	        has.required.cmds
+	        required.cmds.error
+	  -->
+	<property name="unix.cmd.ps" value="ps"/>
+	<property name="unix.cmd.kill" value="kill"/>
+	<property name="unix.cmd.sh" value="sh"/>
+	<macrodef name="unix_can.execute.kill.process">
+		<sequential>			
+			<autopd_if isNotTrue="${isWindows}">
+				<autopd_unset_property name="has.required.cmds"/>
+				<has.cmd.in.path commandname="${unix.cmd.ps}"/>
+				<autopdproperty name="has.ps.in.path" value="${is.cmd.available}"/>
+				
+				<has.cmd.in.path commandname="${unix.cmd.kill}"/>
+				<autopdproperty name="has.kill.in.path" value="${is.cmd.available}"/>
+				
+				<has.cmd.in.path commandname="${unix.cmd.sh}"/>
+				<autopdproperty name="has.sh.in.path" value="${is.cmd.available}"/>
+					
+				<autopd_unset_property name="has.required.cmds"/>
+				<condition property="has.required.cmds">
+					<and>
+						<equals arg1="true" arg2="${has.ps.in.path}" casesensitive="false"/>
+						<equals arg1="true" arg2="${has.kill.in.path}" casesensitive="false"/>
+						<equals arg1="true" arg2="${has.sh.in.path}" casesensitive="false"/>
+					</and>
+				</condition>
+				<autopd_if isNotTrue="${has.required.cmds}">
+					<autopdproperty name="required.cmds.error" value="Cannot find ${unix.cmd.ps}, ${unix.cmd.kill} and ${unix.cmd.sh}. Skipping cqrpc check..."/>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+
+	
+<!-- =================================== -->
+<!--          shared macros              -->
+<!-- =================================== -->
+
+	<!-- ################################################
+	Basic validations
+	#####################################################-->
+		
+	<macrodef name="internal.validate.get.translated.string">
+		<sequential>
+			<autopd_if isNotTrue="${isInitialized.internal.translate.string}">
+				<autopdproperty name="isInitialized.internal.translate.string" value="true"/>				
+				<!-- directory -->
+				<autopd_unset_property name="out.message"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.shared.warn.2066" 
+						propertyName="out.message"						
+						message="Directory specified does not exist"/>
+				<autopdproperty name="missingdir.error" value="${line.separator}**${out.message}**"/>
+				
+				<autopd_unset_property name="out.message"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.shared.warn.2067" 
+						propertyName="out.message"						
+						message="File specified does not exist"/>
+				<autopdproperty name="missingfile.error" value="${line.separator}**${out.message}**"/>
+				
+				<autopd_unset_property name="out.message"/>
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="ratl.shared.warn.2068" 
+						propertyName="out.message"						
+						message="Missing required input"/>
+				<autopdproperty name="requiredfield.error" value="${line.separator}**${out.message}**"/>
+				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- directory -->
+	<!-- 
+	   Validates whether directory is available.  "" is acceptable. 
+	   INPUT:
+		propertyName: property that contains the value to be verified
+	   OUTPUT:
+	    hasValidationError: true / others.. 
+	    propertyName.error:  Error message, if error.  "" if none.
+	    -->	
+	<macrodef name="validate.checkDirExist">
+		<attribute name="propertyName"/>
+		<sequential>
+			
+			<!-- retrive the value contained in the property -->
+			<autopdproperty name="propertyValue" value="${@{propertyName}}"/>
+			<autopdproperty name="@{propertyName}.error" value=""/>  <!-- reset error -->
+			<autopd_unset_property name="hasValidationError"/> 
+
+			<!-- note - dir="" will be marked as available -->
+			<condition property="hasValidationError">	
+				<not>
+					<available file="${propertyValue}" type="dir"/>
+				</not>
+			</condition>
+			
+			<!-- result - bad file -->
+			<autopd_if isTrue="${hasValidationError}">
+				<internal.validate.get.translated.string/>
+				<autopdproperty name="@{propertyName}.error" value="${missingdir.error}"/>
+			</autopd_if>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	   Validates whether file is available.  "" is acceptable. 
+	   INPUT:
+		propertyName: property that contains the value to be verified
+	   OUTPUT:
+	    hasValidationError: true / others... 
+	    propertyName.error:  Error message, if error.  "" if none.
+	    -->	
+	<!-- checked -->
+	<macrodef name="validate.checkFileExist">
+		<attribute name="propertyName"/>
+		<sequential>
+			<!-- retrive the value contained in the property -->
+			<autopdproperty name="propertyValue" value="${@{propertyName}}"/>
+			<autopdproperty name="@{propertyName}.error" value=""/>  <!-- reset error -->
+			<autopdproperty name="hasValidationError" value="false"/>
+			<autopd_unset_property name="hasFileAvailable"/> 
+
+			<!-- "" is acceptable -->
+			<condition property="hasFileAvailable">
+				<or>
+					<equals arg1="" arg2="${propertyValue}"/>				
+					<available file="${propertyValue}" type="file"/>
+				</or>
+			</condition>
+				
+			<!-- result - bad file -->
+			<autopd_if isNotTrue="${hasFileAvailable}">
+				<!-- force true -->
+				<internal.validate.get.translated.string/>
+				<autopdproperty name="hasValidationError" value="true"/>
+				<autopdproperty name="@{propertyName}.error" value="${missingfile.error}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	   Validates whether a non blank input is provided , "" is not valid 
+	   INPUT:
+		propertyName: property that contains the value to be verified
+	   OUTPUT:
+	    hasValidationError: true / others - if entry contains ""
+	    propertyName.error:  Error message, if error.  "" if none.
+	    -->	
+	<macrodef name="validate.requiredInput">
+		<attribute name="propertyName"/>
+		<sequential>
+					
+			<!-- retrive the value contained in the property -->
+			<autopdproperty name="propertyValue" value="${@{propertyName}}"/>
+			<autopdproperty name="@{propertyName}.error" value=""/>  <!-- reset error -->
+			<autopd_unset_property name="hasValidationError"/> 
+
+			<!-- ifs not required... simple check -->
+			<condition property="hasValidationError">
+				<equals arg1="" arg2="${propertyValue}" />
+			</condition>
+						
+			<!-- result - if empty -->
+			<autopd_if isTrue="${hasValidationError}">
+				<internal.validate.get.translated.string/>
+				<autopdproperty name="@{propertyName}.error" value="${requiredfield.error}"/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- Directory -->
+	<!-- 
+	   Validates whether Directory is valid. "" is not valid
+	   use: validate.checkDirExist if "" is a valid input.
+	   INPUT:
+		propertyName: property that contains the value to be verified
+	   OUTPUT:
+	    hasValidationError: true / others
+	    propertyName.error:  Error message, if error.  "" if none.
+	    -->	
+	<macrodef name="validate.checkDirExist.required">
+		<attribute name="propertyName"/>  <!-- property that contains the value of the file to be validated -->
+		<sequential>
+			<validate.requiredInput propertyname="@{propertyName}"/>
+			
+			<!-- check - if not blank .. then if file is available-->
+			<autopd_if isNotTrue="${hasValidationError}">
+				<validate.checkDirExist propertyname="@{propertyName}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- file -->
+	<!-- 
+	   Validates whether file is valid , "" is not valid
+	   use: validate.checkFileExist if "" is a valid input.
+	   INPUT:
+		propertyName: property that contains the value to be verified		
+	   OUTPUT:
+	    hasValidationError: true / others
+	    propertyName.error:  Error message, if error.  "" if none.
+	    -->	
+	<macrodef name="validate.checkFileExist.required">
+		<attribute name="propertyName"/>  <!-- property that contains the value of the file to be validated -->
+		<sequential>
+					
+			<validate.requiredInput propertyname="@{propertyName}"/>
+			
+			<!-- check - if not blank .. then if file is available-->
+			<autopd_if isNotTrue="${hasValidationError}">
+				<validate.checkFileExist propertyname="@{propertyName}" />
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+		
+	<!-- 
+	INPUT: parent.dir = directory to validate
+	       should.contain.dir = the directory that should be contained in above directory. 
+	       
+	OUTPUT:
+	    is.empty : true | false . True if parent.dir provided is empty.
+	    is.valid.parent.dir: true | false - if path provides is available and contains container dir
+		error.msg - error message.
+		-->
+	<macrodef name="validate.checkDirContainsDir">
+		<attribute name="parent.dir"/>
+		<attribute name="should.contain.dir"/>  <!-- also checked -->
+		<sequential>
+			
+			<!-- reset error -->
+			<autopdproperty name="error.msg" value=""/>
+			<autopdproperty name="is.valid.parent.dir" value="false"/>
+			
+			<!-- CHECK EMPTY -->
+			<autopd_unset_property name="is.empty"/>
+			<condition property="is.empty">
+				<or>
+					<equals arg1="" arg2="@{parent.dir}"/>
+					<contains string="@{parent.dir}" substring="$${"/>
+				</or>
+			</condition>
+			<autopd_if isTrue="${is.empty}">
+				<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							key="ratl.shared.dir.validation.empty" 
+							propertyName="error.msg" 
+							message="** Path cannot be empty **"/>
+					
+			</autopd_if>
+			
+			<!-- CHECK dir and its container -->
+			<autopd_if isNotTrue="${is.empty}">
+				<!-- check to see if the path is valid --> 
+				<autopd_unset_property name="is.available"/>
+				<available file="@{parent.dir}" type="dir" property="is.available"/>
+				
+				<autopd_if isNotTrue="${is.available}">
+					<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							key="ratl.shared.dir.validation.notfound" 
+							propertyName="error.msg" 
+							message="** Path {0} not found **"
+							replace="@{parent.dir}"/>
+				</autopd_if>
+				
+				<!-- check to see if the contains path exist -->
+				<autopd_if isTrue="${is.available}">
+					<autopd_unset_property name="is.available"/>
+					<available file="@{parent.dir}/@{should.contain.dir}" type="dir" property="is.available"/>
+					
+					<autopd_if isNotTrue="${is.available}">
+						<saveresourcebundleproperty 
+								bundle="properties/RATLSHARE/autopd"
+								key="ratl.shared.dir.nested.required" 
+								propertyName="error.msg" 
+								message="** Path {0} should contain directory {1} **"
+								replace="@{parent.dir};;@{should.contain.dir}"/>
+					</autopd_if>
+					
+					<!-- ALL CHECKED ! -->
+					<autopd_if isTrue="${is.available}">
+						<autopdproperty name="is.valid.parent.dir" value="true"/>
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+		Utilities 
+    #####################################################-->
+	<!--
+	This will create a backup file of input at input.timestamp	
+	INPUT:  inputFile - name of the file to be made a backup of.
+	OUTPUT: backupFile - name of the backup file.
+	 -->
+	<macrodef name="util.createBackup">
+		<attribute name="inputFile"/>
+		<sequential>
+			<autopdtimestamp property="timestamp" pattern="yyyy.MM.dd-HH.mm.ss.SSS"/>
+			<autopdproperty name="backupFile" value="@{inputFile}.${timestamp}"/>
+			<wsnlsecho key="ratl.shared.info.2069" 
+				bundle="properties/RATLSHARE/autopd"
+				message="Creating backup files for {0} at {1}"
+				replace="@{inputFile};;${backupFile}"
+				id="2069"
+				level="info"
+				messagePrefix="CWPDD"/>
+			<copy file="@{inputFile}" tofile="${backupFile}"  overwrite="true"/>			
+		</sequential>
+	</macrodef>
+	<!-- 
+	Utility - for z/os only
+	  - return ${rtl.is.zos} = true if ${os.name}  == "z/OS" - otherwise - unset
+	  - sets has.checked.rtl.is.zos = true | fals.	  
+	  Use this after validate_os    
+	 -->
+	<!-- checked -->
+	<macrodef name="util.sys.isZOS">
+		<sequential>
+			
+			<autopd_if isNotTrue="${has.checked.rtl.is.zos}">
+				<autopd_unset_property name="rtl.is.zos"/>				
+				<autopd_if isTrue="${os.name.isSet}">
+					<condition property="rtl.is.zos">
+						<equals arg1="z/OS" arg2="${os.name}"/>
+					</condition>
+				</autopd_if>
+				<autopdproperty name="has.checked.rtl.is.zos" value="true"/>
+			</autopd_if>			
+		</sequential>
+	</macrodef>
+	
+	<!--
+	This will move a file to file.timestamp	
+	INPUT:  inputFile - name of the file to be moved. 
+	OUTPUT: moveFile - name of the target moved file.
+	 -->
+	<macrodef name="util.moveFile">
+		<attribute name="inputFile"/>
+		<sequential>
+			<autopdtimestamp property="timestamp" pattern="yyyy.MM.dd-HH.mm.ss.SSS"/>
+			<autopdproperty name="moveFile" value="@{inputFile}.${timestamp}"/>
+			<wsnlsecho key="ratl.shared.info.2070" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Moving {0} to {1}"
+					replace="@{inputFile};;${moveFile}"
+					id="2070"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<move file="@{inputFile}" tofile="${moveFile}" overwrite="true" failonerror="false"/>			
+		</sequential>
+	</macrodef>
+
+	<!--
+	This will remove text within file that matches "password value" 	
+	INPUT:  inputFile - name of the file that may contain the password
+	        outputFile - name of the outputfile.  This can be same as inputFile.
+	        password - password value. 	        
+	OUTPUT (can be reused if needed)
+		isValidFile : if inputFile is valid
+		ifEmptyPassword: if password is empty
+	 -->
+	<macrodef name="util.stripPassword">
+		<attribute name="inputFile"/>
+		<attribute name="outputFile"/>
+		<attribute name="password"/>
+		<sequential>
+			
+			<!-- sanity check - empty source file -->
+			<autopd_unset_property name="isValidFile"/>
+			<available file="@{inputFile}" property="isValidFile" type="file"/>
+			
+			<autopd_if isTrue="${isValidFile}">
+				<!-- sanity check:  empty password causes OutOfMemoryError-->
+				<autopd_unset_property name="isEmptyPassword"/>
+				<condition property="isEmptyPassword">
+					<equals arg1="" arg2="@{password}"/>
+				</condition>
+				
+				<!-- do it -->
+				<autopd_if isNotTrue="${isEmptyPassword}">			
+					<autopd_unset_property name="inputFile.filtered"/>
+					<loadfile srcfile="@{inputFile}" property="inputFile.filtered">
+					  <filterchain>
+					  	<tokenfilter>
+					  	    <replacestring from="@{password}" to="*****"/>
+					  	</tokenfilter>
+					  </filterchain>
+					</loadfile>			
+					<echo file="@{outputFile}" message="${inputFile.filtered}"/>
+				</autopd_if>
+				
+				<!-- else - no password in inputFile, make a copy -->
+				<autopd_if isTrue="${isEmptyPassword}">
+					<!-- copy file over -->
+					<copy file="@{inputFile}" tofile="@{outputFile}" overwrite="true"/>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+
+	<!--
+	Version: 20090706
+	This logs the text into a top level file.  Specify prefix for exact path.	
+	INPUT:  msg - message 
+	        output - name of the output file. 
+	        prefix - optional - path for the file in the resulting zip.  
+	OUTPUT : NONE. 
+	
+	Example:  
+		Works:  <util.logToFile msg="ClearCase is not found" output="CC71_NOT_FOUND.txt" prefix="CC"/>  
+		Does not : <util.logToFile msg="ClearCase is not found" output="CC/CC71_NOT_FOUND.txt" "/>
+	 -->
+	<macrodef name="util.logToFile">
+		<attribute name="msg"/>
+		<attribute name="output"/>  <!-- file name only -->
+		<attribute name="prefix" default=""/>  <!-- default is "" -->
+		<sequential>
+			<echo file="${autopdtmp}/@{output}" message="@{msg}"/>
+			<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+				<fileset file="${autopdtmp}/@{output}"/>
+			</copy>
+			<delete file="${autopdtmp}/@{output}" failonerror="false"/>  <!-- ignore failure -->
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="util.logToFile.append">
+		<attribute name="msg"/>
+		<attribute name="output"/>  <!-- file name only -->
+		<attribute name="prefix" default=""/>  <!-- default is "" -->
+		<sequential>
+			<echo file="${autopdtmp}/@{output}" message="@{msg}" append="true"/>
+			<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+				<fileset file="${autopdtmp}/@{output}"/>
+			</copy>
+			<delete file="${autopdtmp}/@{output}" failonerror="false"/>  <!-- ignore failure -->
+		</sequential>
+	</macrodef>
+	
+	<!-- Utility
+	Script to flatten a file name for easier storage
+	INPUT: file - a string (likely a file name)
+	OUTPUT: flatten_fileName:  file name with paths relaced by _
+	-->
+	<macrodef name="util.get.flattened.name">
+		<attribute name="file"/>
+		<sequential>
+			<autopdproperty name="flatten_fileName" value="@{file}"/>
+			<autopdreplace property="flatten_fileName" token=":" value="_"/>
+			<autopdreplace property="flatten_fileName" token="\\" value="_"/>
+			<autopdreplace property="flatten_fileName" token="/" value="_"/>
+		</sequential>
+	</macrodef>
+
+	<!-- =================================== -->
+	<!--          shared targets             -->
+	<!-- =================================== -->
+	
+	<!-- ################################################
+	zip_autopd_most_recent_log
+		- collects most recent autoPD logs
+	-->
+	<target name="prompt_inspect_logs">
+		
+		<!-- AUTOMATION -->
+		<managePrompt component="${ant.file}">
+			<!-- echo out -->		
+			<echo message=""/>
+			<wsnlsecho key="ratl.shared.info.2060.label1" 
+					bundle="properties/RATLSHARE/autopd"
+					message="If you wish to inspect the collection contents, locate the resulting file: {0}"
+					replace="${pmrfilename}"
+					id="2060"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- for user - prompt -->
+			<saveresourcebundleproperty 
+					bundle="properties/RATLSHARE/autopd"
+					key="ratl.shared.info.2060.label1" 
+					propertyName="output.msg" 
+					replace="${pmrfilename}"
+					message="If you wish to inspect the collection contents, locate the resulting file: {0}"/>
+			
+			<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" nocancel="true">
+				<fieldtask name="prompt" label="ratl.shared.info.2060.prompt" type="prompt"  />
+				<fieldtask name="label1" label="${output.msg}" type="label"  />
+			</inputdialogtask_v2>
+		</managePrompt>
+		
+	</target>
+	
+	<!-- ################################################
+	prompt_product_not_available
+		- Prompt user that product is not available.
+		- Also - adds a file in the collection including this message.
+		
+		-Input:  product.name.  Product name to be displayed.
+				 outfile.  File name to contain the output of this string.
+	-->
+	<macrodef name="prompt_product_not_available">
+		<attribute name="product.name"/>
+		<attribute name="outfile" default="NO_OUTPUT"/>
+		<sequential>
+
+			<!-- get a substituted string -->
+			<saveresourcebundleproperty 
+					bundle="properties/RATLSHARE/autopd"
+					key="ratl.shared.warn.2063" 
+					propertyName="not.found.string" 
+					message="{0} is not found on this machine."
+					replace="@{product.name}" />
+			
+			<saveresourcebundleproperty 
+					bundle="properties/RATLSHARE/autopd"
+					key="ratl.shared.warn.2069" 
+					propertyName="not.found.title" 
+					message="Product Not Found"/>
+	
+			<echo message="${not.found.string}"/>  
+			<!-- AUTOMATION -->
+			<managePrompt component="${ant.file}">
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+					<fieldtask name="prompt" label="${not.found.title}" type="prompt"  />
+					<fieldtask name="label" label="${not.found.string}" type="label"  />
+				</inputdialogtask_v2>
+			</managePrompt>
+		
+			<!-- output the message to a file ? -->
+			<autopd_unset_property name="noOutputFile"/>
+			<condition property="noOutputFile">
+				<or>
+					<equals arg1="NO_OUTPUT" arg2="@{outfile}"/>
+					<equals arg1="" arg2="@{outfile}"/>
+				</or>
+			</condition>
+
+		<autopd_if isNotTrue="${noOutputFile}">
+			<util.logToFile msg="${not.found.string}" output="@{outfile}"/>
+		</autopd_if>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+				Work around for autopdtmp issue 
+		################################################ -->
+		<target name="autopdtmp_workaround">
+			<autopd_unset_property name="isDotTmp"/>
+			<condition property="isDotTmp">
+				<or>
+			     <equals arg1="./tmp" arg2="${autopdtmp}" casesensitive="false" />
+				 <equals arg1=".\tmp" arg2="${autopdtmp}" casesensitive="false" />
+			    </or>
+			</condition>
+			<autopd_if isNotTrue="${useISAGuiCollector}">
+				<autopd_if isTrue="${isDotTmp}">
+					<autopdproperty name="autopdtmp" value="${rational.rational.shared.targets.bundle.basedir}/tmp" />
+					<mkdir dir="${autopdtmp}"/>
+					<persistproperty property="autopdtmp"/>
+				</autopd_if>
+			</autopd_if>
+		</target>
+	
+	<!-- ################################################
+					Work around for windows_registry_access issue 
+			################################################ -->
+	
+	<!-- 
+	    Usage similar to windows_registry_access
+	    Run windows_registry_access against the first registry key
+	      - if key returned blank (undefined or "") , altRegisteryKey is accessed.	      
+	    OUTPUT: propertyName contain the correct registry data. 
+	    -->
+				
+	<macrodef name="rtl.windows_registry_access">
+		<attribute name="propertyName"/>
+		<attribute name="registryKey"/>
+		<attribute name="altRegisteryKey"/>
+		<sequential>			
+			<windows_registry_access propertyName="@{propertyName}"
+					registryKey="@{registryKey}" />
+                        <autopdproperty name="propertyValue" value="${@{propertyName}}"/>
+
+			<autopd_unset_property name="has.valid.property"/>			
+			<condition property="has.valid.property">
+				<and>
+					<isset property="@{propertyName}"/>
+					<not>
+						<equals arg1="" arg2="${propertyValue}"/>
+					</not>
+					<not>
+						<contains string="${propertyValue}" substring="$${"/>
+					</not>
+				</and>
+			</condition>
+							
+			<autopd_if isNotTrue="${has.valid.property}">
+			     <windows_registry_access propertyName="@{propertyName}"
+						registryKey="@{altRegisteryKey}" />
+			</autopd_if>	
+		</sequential>
+	</macrodef>
+	
+	<!-- Verifies that the file is readable before attempting to read the properties from it -->
+	<!-- utility -->
+	<macrodef name="ratl_autopd_property_reader">
+		<attribute name="key"/>
+		<attribute name="name"/>	
+		<attribute name="filename"/>		
+		<sequential>
+			<echo message="Reading property '@{name}' from '@{filename}', storing result in '@{key}'" />
+			<autopd_unset_property name="@{key}"/>
+			<autopd_unset_property name="apr.file.readable"/>
+			
+			<condition property="apr.file.readable">
+				<user_access file="@{filename}" accessType="r"/>
+			</condition>
+			
+			<echo message="@{filename} readable: ${apr.file.readable}" />
+			<autopd_if isTrue="${apr.file.readable}">
+				<!-- read it -->
+				<autopd_property_reader key="@{key}"
+						name="@{name}" filename="@{filename}" />
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- ################################################
+	zip_autopd_most_recent_log
+		- collects most recent autoPD logs
+		NOTE: this should be phased out as ISA team has fixed this. 
+	-->
+	<target name="zip_autopd_most_recent_logs">
+		
+		<!-- gathering autopdinstance log -->
+		<file_filter_by_latest key="latest.autopdlog" 
+				path="${loginstancedir}" 
+				selector="autopdinstance[^a-z]*.log" />
+		<basename property="autopdinstancelog" file="${latest.autopdlog}"/>
+		
+		<!-- gathering echoinstance log -->
+		<file_filter_by_latest key="latest.autopdlog2" 
+				path="${loginstancedir}" 
+				selector="echoinstance[^a-z]*.log" />
+		<basename property="echoinstancelog" file="${latest.autopdlog2}"/>
+		
+		<!-- gathering autopdsetupinstance log -->
+		<file_filter_by_latest key="latest.autopdlog3" 
+				path="${loginstancedir}" 
+				selector="autopdsetupinstance[^a-z]*.log" />	
+		<basename property="autopdsetupinstancelog" file="${latest.autopdlog3}"/>
+				
+		<!-- gathering cisa log -->
+		<file_filter_by_latest key="latest.autopdlog4" 
+				path="${loginstancedir}" 
+				selector="cisa[^a-z]*.log" />	
+		<basename property="cisalog" file="${latest.autopdlog4}"/>
+		
+		<!-- zip the files found -->		
+		<copy todir="${isadcTempOut}/autopdzip/autopd/log" outputencoding="UTF-8">
+			<fileset dir="${loginstancedir}">
+				<include name="${autopdsetupinstancelog}"/>
+				<include name="${echoinstancelog}"/>
+				<include name="${autopdinstancelog}"/>
+				<include name="${cisalog}"/>
+				<selector refid="ratl.readable.no.log"/>
+			</fileset>
+		</copy>
+		
+	</target>
+	
+	<!-- Code to zip directories - ignoring image files, empty folder, file w/ size = 0  -->
+	<!-- Code will fail if there is a resource open (locked) being collected > size 0 -->
+	<macrodef name="zipDirectory.bundle.log">
+		<attribute name="zipDir"/>
+		<attribute name="targetPrefix"/>
+		<attribute name="includesBundleLog" default="false"/>
+		<attribute name="includes" default="NONE"/>
+		<sequential>
+			<autopd_unset_property name="dir_available"/>
+			<available file="@{zipDir}" type="dir" property="dir_available"/>
+				
+			<autopd_unset_property name="hasInclude"/>
+			<condition property="">
+				<and>
+					<not>					
+						<equals arg1="NONE" arg2="@{includes}"/>
+					</not>
+					<not>
+						<contains string="@{includes}" substring="$${"/> 
+					</not>
+				</and>
+			</condition>
+			
+			<autopd_if isTrue="${dir_available}">
+				<!-- set up to capture the excluded list -->
+				<ratl.reset.exclude.list/>
+
+				<!-- has include attribute defined --> 
+				<autopd_if isTrue="${hasInclude}">
+					<copy todir="${isadcTempOut}/@{targetPrefix}" outputencoding="UTF-8">
+						<fileset dir="@{zipDir}" includes="@{includes}">						
+							<exclude name="**/*.jpg"/>
+							<exclude name="**/*.gif"/>
+							<exclude name="**/*.bmp"/>
+							<exclude name="**/bundles/"/>
+							<exclude name="**/*.lck"/>
+							<exclude name="**/*.lock"/>
+							<exclude name="**/*.jar"/>
+							<exclude name="**/*.zip"/>
+							<exclude name="**/*.tar"/>
+							<selector refid="ratl.readable.log.exclude.list"/>
+							<!-- exclude file of size 0 -->
+							<size value="0" units="Ki" when="more"/>
+						</fileset>
+					</copy>
+				</autopd_if>  <!-- has include -->
+				
+				<!-- does not have include attribute defined -->
+				<autopd_if isNotTrue="${hasInclude}">
+					 <copy todir="${isadcTempOut}/@{targetPrefix}" outputencoding="UTF-8">
+						<fileset dir="@{zipDir}">
+							<exclude name="**/*.jpg"/>
+							<exclude name="**/*.gif"/>
+							<exclude name="**/*.bmp"/>
+							<exclude name="**/bundles/"/>
+							<exclude name="**/*.lck"/>
+							<exclude name="**/*.lock"/>	
+							<exclude name="**/*.jar"/>
+							<exclude name="**/*.zip"/>
+							<exclude name="**/*.tar"/>
+							<exclude name="**/*.instance"/>
+							<selector refid="ratl.readable.log.exclude.list"/>
+							<!-- exclude file of size 0 -->							
+							<size value="0" units="Ki" when="more"/>
+			     		</fileset>												
+					</copy>
+				</autopd_if>  <!-- does not have include -->
+
+				<!-- catch the bundle logs -->
+				<autopd_if isTrue="@{includesBundleLog}">
+					<copy todir="${isadcTempOut}/@{targetPrefix}" outputencoding="UTF-8">
+						<fileset dir="@{zipDir}">
+							<include name="**/bundles/**/*.log"/>
+							<selector refid="ratl.readable.log.exclude.list"/>
+							<!-- exclude file of size 0 -->							
+							<size value="0" units="Ki" when="more"/>
+			     		</fileset>												
+					</copy>
+				</autopd_if>
+
+			    <!-- log and zip the exclude list -->
+				<ratl.log.exclude.list dir.path="${zipDir}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+	
+	<target name="zipDirectory"> 
+	   <fail unless="zipDir"/>
+	   <fail unless="targetPrefix"/>
+	   
+	  <!-- check to see if directory is available -->
+	   <autopd_unset_property name="dir_available"/>
+	   <available file="${zipDir}" type="dir" property="dir_available"/> 
+	   <condition property="hasInclude">
+	   		<isset property="includes"/>
+	   </condition>
+		
+		<autopd_if isTrue="${dir_available}">		
+			
+			<!-- set up to capture the excluded list -->
+			<ratl.reset.exclude.list/>
+
+			<!-- has include attribute defined --> 
+			<autopd_if isTrue="${hasInclude}">
+				<copy todir="${isadcTempOut}/${targetPrefix}" outputencoding="UTF-8">
+					<fileset dir="${zipDir}" includes="${includes}">						
+						<exclude name="**/*.jpg"/>
+						<exclude name="**/*.gif"/>
+						<exclude name="**/*.bmp"/>
+						<exclude name="**/bundles/"/>
+						<exclude name="**/*.lck"/>
+						<exclude name="**/*.lock"/>
+						<exclude name="**/*.jar"/>
+						<exclude name="**/*.zip"/>
+						<exclude name="**/*.tar"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+						<!-- exclude file of size 0 -->
+						<size value="0" units="Ki" when="more"/>
+					</fileset>
+				</copy>
+			</autopd_if>  <!-- has include -->
+			
+			<!-- does not have include attribute defined -->
+			<autopd_if isNotTrue="${hasInclude}">
+				 <copy todir="${isadcTempOut}/${targetPrefix}" outputencoding="UTF-8">
+					<fileset dir="${zipDir}">
+						<exclude name="**/*.jpg"/>
+						<exclude name="**/*.gif"/>
+						<exclude name="**/*.bmp"/>
+						<exclude name="**/bundles/"/>
+						<exclude name="**/*.lck"/>
+						<exclude name="**/*.lock"/>	
+						<exclude name="**/*.jar"/>
+						<exclude name="**/*.zip"/>
+						<exclude name="**/*.tar"/>
+						<exclude name="**/*.instance"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+						<!-- exclude file of size 0 -->							
+						<size value="0" units="Ki" when="more"/>
+		     		</fileset>												
+				</copy>
+			</autopd_if>  <!-- does not have include -->
+
+
+		    <!-- log and zip the exclude list -->
+			<ratl.log.exclude.list dir.path="${zipDir}"/>
+			
+		</autopd_if>
+			
+	</target>
+	
+	<!-- Code to zip directories - does not ignore any items .  Will exclude .lck & .lock-->
+	<!-- Code will fail if there is a resource open (locked) being collected > size 0 -->
+	<target name="zipDirectory.all"> 
+	   <fail unless="zipDir"/>
+	   <fail unless="targetPrefix"/>
+	   
+	  <!-- check to see if directory is available -->
+	   <autopd_unset_property name="dir_available"/>
+	   <available file="${zipDir}" type="dir" property="dir_available"/> 
+	   <condition property="hasInclude">
+	   		<isset property="includes"/>
+	   </condition>
+		
+		
+		<autopd_if isTrue="${dir_available}">
+		
+			<!-- has include attribute defined --> 
+			<autopd_if isTrue="${hasInclude}">
+				<copy todir="${isadcTempOut}/${targetPrefix}" outputencoding="UTF-8">
+					<fileset
+						dir="${zipDir}" includes="${includes}">	
+						<selector refid="ratl.readable.log.exclude.list"/>					
+					</fileset>
+				</copy>
+			</autopd_if>  <!-- has include -->
+			
+			<!-- does not have include attribute defined -->
+			<autopd_if isNotTrue="${hasInclude}">
+				 <copy todir="${isadcTempOut}/${targetPrefix}" outputencoding="UTF-8">
+					<fileset dir="${zipDir}">
+						<selector refid="ratl.readable.log.exclude.list"/>
+		     		</fileset>												
+				</copy>
+			</autopd_if>  <!-- does not have include -->
+
+ 			<!-- log and zip the exclude list -->
+			<ratl.log.exclude.list dir.path="${zipDir}"/>
+		   
+		</autopd_if>
+			
+	</target>
+
+
+</project>

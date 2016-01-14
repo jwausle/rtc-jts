@@ -1,0 +1,29 @@
+
+
+Обновление установленной версии QM
+
+Примечания:
+      - Этот сценарий обновляет QM. См. раздел справки "Обновление Rational solution for CLM".
+      - За исключением вывода данной справки, этот сценарий должен выполняться из каталога JazzInstallRoot/server.
+
+Формат:
+    qm_upgrade
+         -oldApplicationHome <значение> --Полный путь к домашнему каталогу QM в предыдущей версии. Для обычной установки это <каталог-установки-QM>/server/conf.
+         [-applicationContextRoot jazz] --Корневой контекст QM.
+         [-oldApplicationVersion <нет>] --Обновляемая версия. По умолчанию она определяется командой repotools -version, выполняемой с прежним приложением QM.
+         [-updateTomcatFiles <yes (по умолчанию) | no>] --Требуется ли обновлять файлы конфигурации tomcat.
+         [-oldTomcatHome <нет>] --Полный путь к корневому каталогу Tomcat в предыдущей версии. По умолчанию значение параметра oldTomcatHome создается на основе значения параметра oldApplicationHome.
+         [-newApplicationHome conf] --Путь к каталогу конфигурации сервера QM в новой версии.
+         [-newJTSHome <нет>] --Путь к каталогу конфигурации сервера JTS в новой версии. По умолчанию значение параметра newJTSHome создается на основе значения параметра newApplicationHome.
+         [-jtsContextRoot jts] --Корневой контекст JTS.
+         [-newApplicationTomcatHome <нет>] --Путь к домашнему каталогу Tomcat QM в новой версии. По умолчанию значение параметра newApplicationTomcatHome создается на основе значения параметра newApplicationHome.
+         [-newJTSTomcatHome <нет>] --Путь к домашнему каталогу Tomcat JTS в новой версии. По умолчанию значение параметра newJTSTomcatHome создается на основе значения параметра newJTSHome.
+         [-ignoreJTSVersionCheck] --Не проверять, совместима ли версия приложения с версией JTS, расположенной в newJTSHome.  Этот параметр следует использовать только в распределенной среде, где JTS расположен в отдельной системе, которая недоступна из системы приложения.
+         [-noPrompt] --Не показывать приглашение перед созданием или изменением таблиц.
+         [-noEditor] --Не открывать редактор для файлов teamserver.properties.
+         [-noVerify] --Не выполнять проверку файлов teamserver.properties.
+         [-noStepPrompt] --Не показывать приглашение перед выполнением операции.
+
+Примеры:
+    upgrade/qm/qm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer3.0.x/jazz/server/conf -importFromFile /tmp/qmData.tar
+

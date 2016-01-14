@@ -1,0 +1,3572 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2011, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!-- Rational WAS Utilities       --> 
+<!-- Contains some code migrated from rational_serverside_shared -->
+<!-- compatible with AutoPD 2.0.1 -->
+<!-- must use this after validate_os -->
+
+<project name="rational_wasutil_shared"> 
+
+	<dirname property="rational.wasutil.shared.targets.basedir" file="${ant.file.rational_wasutil_shared}" />
+	<dirname property="rational.wasutil.shared.targets.parentdir" file="${rational.wasutil.shared.targets.basedir}" />
+	<dirname property="rational.wasutil.shared.targets.bundle.basedir" file="${rational.wasutil.shared.targets.parentdir}" />
+	
+	<!-- import the common file --> 
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_im_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATL_CUSTOM/rational.custom.taskdef.xml" osgiBundle="com.ibm.esupport.client.product.rational.custom.shared"/>
+
+	<!-- ISADC needs -->
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+	
+	<!-- ===================================================== -->
+	<!-- CONFIGURATIONS -->
+	<!-- ===================================================== -->
+	<property name="was.prefix" value="WAS_COLLECTION"/>
+	<property name="ihs.prefix" value="IHS_COLLECTION"/>
+	
+	<!-- listing of WAS ids defined within installation manager -->
+	<!-- UPDATE THIS if id for WAS or IHS changed. Code will search: com.ibm.websphere.BASE* etc.  
+	     You'll need id from installed.xml: <package kind='offering' id='<include me>'> -->
+	<property name="was.im.ids" value="com.ibm.websphere.BASE@com.ibm.websphere.EXPRESS@com.ibm.websphere.ND"/>
+	<property name="ihs.im.ids" value="com.ibm.websphere.IHS"/>
+	<property name="was.plugins.dir.name" value="Plugins"/>  <!-- in case this changes -->
+		
+	<!-- used by: ratl.was.parse.stopServer.status, ratl.was.parse.startServer.status
+	  -->
+	<property name="was.stop.status.success" value="ADMU4000I"/>
+	<property name="was.stop.status.already.stopped" value="ADMU0509I"/>
+	<property name="was.auth.error.required" value="ADMU4113E"/>
+	<property name="was.start.status.success" value="ADMU3000I"/>
+	<property name="was.start.status.already.started" value="ADMU3027E"/>
+	
+	<!-- ===================================================== -->
+	<!-- method to detect WAS install location -->
+	<!-- ===================================================== -->
+	<!-- ===================================================== -->
+	<!-- Convinent method for getting to a WAS profile         -->
+	<!-- ===================================================== -->
+	<!-- returns: 
+	   has.was.app.server.location = Is there any found? 
+	   was.app.server.location = The actual location (verified to be available)
+	   has.was.user.profile
+	   was.user.profile 
+	  -->
+	<macrodef name="ratl.was.util.getWASUserProfile">
+		<sequential>
+			<!-- grab WAS install info -->
+			<ratl.was.util.getWASInstall />
+			
+			<!-- if available, get WAS profile info -->
+			<autopd_if isTrue="${has.was.app.server.location}">
+				<ratl.was.util.getUserProfile was.app.server.location="${was.app.server.location}"/>				
+			</autopd_if>		
+		</sequential>
+	</macrodef>
+	
+
+	<!-- OUTPUT:
+	     Check .nifregistry & install.xml for WAS location.  
+	      - If none is found : <internal.prompt.was.install.nolist/> will be invoked
+	      - If multiple entries are found :  <internal.prompt.multipleWASinstall/> will be invoked. 
+	      - If one entry is found - this is tested, and returned. 
+	   
+		 has.was.app.server.location = Is there any found?  
+	         was.app.server.location = The actual location (verified to be available)
+
+	     -->
+
+	<macrodef name="ratl.was.util.getWASInstall">
+		<sequential>
+            <wsnlsecho key="ratl.server.was.location" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Determining WAS installation location ..."
+    				id="2090"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+            
+			<internal.get.all.was.install/>
+			<internal.prompt.was.install server.uri.list="${was.install.list}" />			
+			
+			<!-- if one selected -->
+			<autopd_if isTrue="${has.was.app.server.location}">
+				<ratl.was.util.set.was.home.root target.path="${was.app.server.location}"/>
+			</autopd_if>
+			
+			<rtl.debugecho message="getWASInstall: has.was.app.server.location = ${has.was.app.server.location}"/>
+			<rtl.debugecho message="getWASInstall: was.app.server.location = ${was.app.server.location}"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- Get all WAS install found on this system. 
+	     Wrapper for internal.get.all.was.install
+	   
+	    OUTPUT:
+	     See:  internal.get.all.was.install
+		 has.was.install.list = true | unset , Whether there is a list entry.  
+	      was.install.list = "" or list of directories separated by @
+	     -->
+	<macrodef name="ratl.was.util.getAllWASInstall.noprompt">
+		<sequential>
+            <wsnlsecho key="ratl.server.was.location" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Determining WAS installation location ..."
+    				id="2090"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+            
+			<internal.get.all.was.install/>
+			
+			<!-- log -->
+			<autopd_if isTrue="${has.was.install.list}">
+				<rtl.debugecho message="WAS installs found: ${was.install.list}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${has.was.install.list}">
+				<rtl.debugecho message="WAS install not found on system."/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- get all WAS install location  -->
+	<!--
+	
+	OUTPUT: 
+	  has.was.install.list = true | unset , Whether there is a list entry.  
+	      was.install.list = "" or list of directories separated by @
+	  -->
+	<macrodef name="internal.get.all.was.install">
+		<sequential>
+	
+			<!-- look for it in .nifregistry --> 
+			<internal.get.nifregistry.location/>
+			<autopd_if isTrue="${has.nifregistry.location}">
+				<!-- collect .nifregistry if available -->
+				<copy todir="${isadcTempOut}/${was.prefix}" outputencoding="UTF-8">
+					<fileset file="${nifregistry.location}"/>
+				</copy>
+				
+				<!-- this returns: ${server.uri.list} separated by @ , returns "" if empty -->
+				<internal.read.nifregistry.for.was nifregistry.file="${nifregistry.location}"/>
+			</autopd_if>
+			
+			<!-- look for WAS in installation manager, returns ${product.install.path.list} separated by @--> 
+			<getMultiProductInfoFromIM_noprompt product.id.list="${was.im.ids}" 
+				collect.im.data="false" display.include.path="false"/>
+			
+			<!-- consolidate --> 
+			<autopdproperty name="was.install.list" value=""/>
+				
+			<!-- loop through the list - from .nifregistry and from IM -->
+			
+			<!-- ISADC WORKWROUND -->
+			<run.if.not.empty input="${server.uri.list},${product.install.path.list}">
+				<autopdloop delimiter="," param="list" paramlist="${server.uri.list},${product.install.path.list}">
+					<autopd_unset_property name="has.list"/>
+					<condition property="has.list">
+						<and>
+							<isset property="list"/>
+							<not>
+								<equals arg1="" arg2="${list}"/>
+							</not>
+							<not>
+								<contains string="${list}" substring="$${" />
+							</not>
+						</and>
+					</condition>
+					<autopd_if isTrue="${has.list}">
+						<autopdproperty name="was.install.list" value="${was.install.list}@${list}"/>
+					</autopd_if>
+				</autopdloop>
+			</run.if.not.empty>
+			
+			<trim_filename key="was.install.list" filename="${was.install.list}" prefixtrim="@"/>
+		
+			<!-- check -->
+			<autopd_unset_property name="has.was.install.list"/>
+			<condition property="has.was.install.list">
+				<not>
+					<equals arg1="" arg2="${was.install.list}"/>
+				</not>
+			</condition>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- property persisted: ${ratl.was.install.path} 
+         to be used with other items -->
+	<!-- This is the WAS root, above the profiles , bin, etc directory -->
+	<macrodef name="ratl.was.util.set.was.home.root">
+		<attribute name="target.path"/>
+		<sequential>
+			<autopdproperty name="ratl.was.install.path" value="@{target.path}"/>
+			<persistproperty property="ratl.was.install.path"/>
+		</sequential>
+	</macrodef>
+
+	<!-- 
+	    Looks for .nifregistry file base on technote (for system admin)
+	    If not found, look for .nifregistry file within user.home 
+	    http://www-01.ibm.com/support/docview.wss?rs=180&uid=swg21255887#finding_nifregistry
+	    http://publib.boulder.ibm.com/infocenter/dmndhelp/v6r1mx/index.jsp?topic=/com.ibm.websphere.wesb610.doc/doc/rins_vpd.html   
+	     INPUT: none
+	     OUTPUT:
+	       has.nifregistry.location : true | unset 
+	           nifregistry.location : actual location of .nifregistry 
+	     -->
+	<macrodef name="internal.get.nifregistry.location">
+		<sequential>
+			<!-- ==========   get .nifregistry  ========== --> 
+			<!-- system (install by root or Administrator  -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="nifregistry.location" value="C:\WINDOWS\.nifregistry"/>
+			</autopd_if>
+			
+			<autopd_if isTrue="${isAIX}">
+				<autopdproperty name="nifregistry.location" value="/usr/.ibm/.nif/.nifregistry"/>
+			</autopd_if>
+
+			<!-- default -->
+			<autopd_unset_property name="is_NotWindows_or_AIX"/>
+			<condition property="is_NotWindows_or_AIX">
+				<not>
+					<or>
+						<equals arg1="true" arg2="${isWindows}"/>
+						<equals arg1="true" arg2="${isAIX}"/>
+					</or>
+				</not>
+			</condition>
+						
+			<autopd_if isTrue="${is_NotWindows_or_AIX}">
+				<autopdproperty name="nifregistry.location" value="/opt/.ibm/.nif/.nifregistry"/>
+			</autopd_if>
+			
+			<!-- check file -->
+			<autopd_unset_property name="has.nifregistry.location"/>
+			<available file="${nifregistry.location}" property="has.nifregistry.location" type="file"/>
+			
+			<autopd_if isNotTrue="${has.nifregistry.location}">
+				<!-- check ${user.home}/.nif/.nifregistry -->
+				<autopdproperty name="nifregistry.location" value="${user.home}/.nif/.nifregistry"/>
+				<autopd_unset_property name="has.nifregistry.location"/>
+				<available file="${nifregistry.location}" property="has.nifregistry.location" type="file"/>				
+			</autopd_if>
+			
+			
+			<!-- log -->
+			<autopd_if isTrue="${has.nifregistry.location}">
+				<rtl.debugecho message="getNifregistry: nifregistry.location = ${nifregistry.location}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${has.nifregistry.location}">
+				<rtl.debugecho message="getNifregistry: .nifregistry not found"/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	   Scans the .nifregistry file for a valid input.  Look for productid = BASE, BASETRIAL, ND, EXPRESS
+	   http://publib.boulder.ibm.com/infocenter/dmndhelp/v6r1mx/index.jsp?topic=/com.ibm.websphere.wesb610.doc/doc/rins_vpd.html	  	
+	   INPUT:
+	   nifregistry.file: Path to a valid .nifregistry file.
+	      - If multiple WAS is found, will prompt the user. 
+	      - Picks up ND (network deploymnet), BASE (local install), BASETRIAL (trial)  
+	      Sample: 
+	      <nifregistry>
+	      	<pak installrooturi="file:///opt/autoWAS/webui_wasx_nd/WAS/" name="was.sdk.pak" paklocationuri="zip:///opt/autoWAS/webui_wasx_nd/WAS/properties/version/nif/backup/was.sdk.pak" productid="ND"/>
+    		<product installrooturi="file:///opt/autoWAS/webui_wasx_nd/WAS/" lastvisited="2009-12-02 14:37:43-0500" productid="ND" version="8.0.0.0"/>
+    		<product installrooturi="file:///C:/Program%20Files/IBM/WebSphere/AppServer/" lastvisited="2010-02-23 00:34:54+0500" productid="BASE" version="7.0.0.3"/>
+    		 <product installrooturi="file:///C:/WebSphere%207/AppServer/" lastvisited="2011-10-10 18:43:51-0400" productid="BASETRIAL" version="7.0.0.11"/>
+    		...
+	      </nifregistry>
+	   OUTPUT: 
+	    server.uri.list : "" or fill with list of server location uri 
+	    Delimiter = @ 
+ 
+	-->
+	<macrodef name="internal.read.nifregistry.for.was">
+		<attribute name="nifregistry.file"/>
+		<sequential>
+            <wsnlsecho key="ratl.server.was.reading.registry" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Reading .nifregistry file to determine WAS installation location..."
+    				id="2090"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+			<!-- set up -->
+			<autopdproperty name="server.uri.list" value=""/>
+			<autopd_unset_property name="server.list.nd"/>
+			<autopd_unset_property name="server.list.base"/>
+			<autopd_unset_property name="server.list.basetrial"/>
+			
+			<!-- read xml elements - ND first -->
+			<autopd_read_multiple_xml_elements filename="@{nifregistry.file}" 
+			     path="nifregistry!product(productid=ND)" 
+			     delimiter="!"
+			     return_delimiter="@">
+				<xml_attribute name="installrooturi" result="server.list.nd" />
+			</autopd_read_multiple_xml_elements>		
+
+			<!-- read xml elements - BASE second -->
+			<autopd_read_multiple_xml_elements filename="@{nifregistry.file}" 
+			     path="nifregistry!product(productid=BASE)" 
+			     delimiter="!"
+			     return_delimiter="@">
+				<xml_attribute name="installrooturi" result="server.list.base" />
+			</autopd_read_multiple_xml_elements>
+			
+			<!-- read xml element - BASETRIAL third -->
+			<autopd_read_multiple_xml_elements filename="@{nifregistry.file}" 
+			     path="nifregistry!product(productid=BASETRIAL)" 
+			     delimiter="!"
+			     return_delimiter="@">
+				<xml_attribute name="installrooturi" result="server.list.basetrial" />
+			</autopd_read_multiple_xml_elements>
+			
+			<!-- read xml element - EXPRESS fourth -->
+			<autopd_read_multiple_xml_elements filename="@{nifregistry.file}" 
+			     path="nifregistry!product(productid=EXPRESS)" 
+			     delimiter="!"
+			     return_delimiter="@">
+				<xml_attribute name="installrooturi" result="server.list.express" />
+			</autopd_read_multiple_xml_elements>
+			
+			<autopdproperty name="server.uri.list" value=""/>
+			
+			<!-- ISADC WORKWROUND -->
+			<run.if.not.empty input="${server.list.nd},${server.list.base},${server.list.basetrial},${server.list.express}">
+				<!-- loop through the list -->
+				<autopdloop delimiter="," param="list" paramlist="${server.list.nd},${server.list.base},${server.list.basetrial},${server.list.express}">
+					<autopd_unset_property name="has.list"/>
+					<condition property="has.list">
+						<and>
+							<isset property="list"/>
+							<not>
+								<equals arg1="" arg2="${list}"/>
+							</not>
+							<not>
+								<contains string="${list}" substring="$${" />
+							</not>
+						</and>
+					</condition>
+					<autopd_if isTrue="${has.list}">
+						<autopdproperty name="server.uri.list" value="${server.uri.list}@${list}"/>
+					</autopd_if>
+				</autopdloop>
+			</run.if.not.empty>
+			
+			<trim_filename key="server.uri.list" filename="${server.uri.list}" prefixtrim="@"/>
+			
+			<!-- CLEAN UP & Validate -->
+			<ratl.was.util.uri.clean.validate uri.list="${server.uri.list}"/>
+			<autopdproperty name="server.uri.list" value="${uri.list.cleaned}"/>
+			
+			<rtl.debugecho message="readNifregistry: server.list.nd = ${server.list.nd}"/>
+			<rtl.debugecho message="readNifregistry: server.list.base = ${server.list.base}"/>
+			<rtl.debugecho message="readNifregistry: server.list.basetrial = ${server.list.basetrial}"/>
+			<rtl.debugecho message="readNifregistry: server.list.express = ${server.list.express}"/>
+			<rtl.debugecho message="readNifregistry: server.uri.list = ${server.uri.list}"/>
+			
+		</sequential>
+	</macrodef>
+	
+	<!--
+	INPUT: 
+	server.uri.list - list of uri from internal.read.nifregistry.for.was 
+		- NOTE: All input entries has been validated in <internal.get.all.was.install/>
+	
+	OUTPUT: 
+	 has.was.app.server.location : true  - will force user to provide this information
+	     was.app.server.location : full path to a user selected directory
+	 -->
+	<macrodef name="internal.prompt.was.install">
+		<attribute name="server.uri.list" default=""/>  <!-- Dir lists - clean up -->
+		<sequential>
+			
+			<!-- Set up -->
+			<autopd_unset_property name="has.was.app.server.location"/>
+			<autopd_unset_property name="was.app.server.location"/>
+				
+			<!-- IF EMPTY:  Standard prompt / no list -->
+			<autopd_unset_property name="contains.none"/>
+			<condition property="contains.none">
+				<or>
+					<equals arg1="" arg2="@{server.uri.list}"/>
+					<contains string="@{server.uri.list}" substring="$${" />
+				</or>
+			</condition>
+						
+			<autopd_if isTrue="${contains.none}">
+				<internal.prompt.was.install.nolist/>
+			</autopd_if>
+				
+			<!-- IF NOT EMPTY -->
+			<autopd_if isNotTrue="${contains.none}">
+				<!-- all entries has been validated so.. -->
+				<autopdproperty name="has.was.app.server.location" value="true"/>
+				
+				<!-- If MULTIPLE -->
+				<autopd_unset_property name="contains.multiple"/>
+				<regex_match pattern="@" 
+				     propertyName="contains.multiple" 
+				     string="@{server.uri.list}" />
+	
+				<!-- If Multiple = no  - that means one product -->				
+				<autopd_if isNotTrue="${contains.multiple}">
+					<autopdproperty name="was.app.server.location" value="@{server.uri.list}"/>
+				</autopd_if>
+				<!-- If Multiple = yes - prompt user -->
+				<autopd_if isTrue="${contains.multiple}">
+					<!-- select one -->
+					<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" nocancel="true">
+						<fieldtask name="prompt" type="prompt" label="ratl.server.was.install.select.prompt"/>
+						<fieldtask name="was.app.server.location"  type="selectlist" label="ratl.server.was.install.select.label1"
+								list="@{server.uri.list}"
+								listdetails="@{server.uri.list}"
+								delimiter="@"/>
+					</inputdialogtask_v2>
+				</autopd_if>
+								
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- INPUT: none 
+	     OUTPUT: 
+	     has.was.app.server.location : true  - will force user to provide this information
+	         was.app.server.location : full path to a user selected directory
+	     -->
+	<macrodef name="internal.prompt.was.install.nolist">
+		<sequential>
+			
+			<!-- clean up -->
+			<autopd_unset_property name="has.was.app.server.location"/>
+			<autopd_unset_property name="was.app.server.location"/>
+				
+			<!-- Set example -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="example.was.location" value="C:\Program Files\IBM\WebSphere\AppServer"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="example.was.location" value="/opt/IBM/WebSphere/AppServer"/>
+			</autopd_if>
+			<saveresourcebundleproperty 
+		       	    bundle="properties/RATLSHARE/autopd"
+					key="ratl.general.example" 
+					propertyName="output.label"
+					replace="${example.was.location}"
+					message="Example: {0}" />
+			
+			<!-- loop until a available location is found --> 
+			<autopdproperty name="is.countinue" value="true"/>
+			<autopdproperty name="was.app.server.location.error" value=""/>  <!-- property is modified in <validate.checkDirExist.required -->
+			
+			<autopdwhile property="is.countinue">
+
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">  
+					<fieldtask name="prompt" type="prompt" label="ratl.server.was.install.prompt"/>
+					<fieldtask type="label" name="label1" label="ratl.server.was.install.label1"/>
+					<fieldtask type="label" name="label2" label="${output.label}"/>
+					<fieldtask type="filebrowser" browserTargetType="directory" name="was.app.server.location" label="ratl.server.jazz.location"/>
+					<fieldtask type="label" name="error.msg" label="${was.app.server.location.error}"/>
+				</inputdialogtask_v2>
+				
+				<!-- available test -->
+				<validate.checkDirExist.required propertyName="was.app.server.location"/>
+				<autopd_if isNotTrue="${hasValidationError}">
+					<autopdproperty name="is.countinue" value="false"/>
+					<!-- set the return values : was.app.server.location is set from user input -->
+					<autopdproperty name="has.was.app.server.location" value="true"/>
+				</autopd_if>				
+			</autopdwhile>
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	  Common work to trim out and validate the URI
+	  INPUT: uri.list = list of URI's in file:///
+	  OUTPUT: ${uri.list.cleaned}
+	-->
+	<macrodef name="ratl.was.util.uri.clean.validate">
+		<attribute name="uri.list"/>
+		<sequential>
+			<!-- CLEAN UP & Validate -->
+			<autopdproperty name="uri.trimmed.list" value=""/>
+			<!-- ISADC WORKWROUND -->
+			<run.if.not.empty input="@{uri.list}">
+				<autopdloop param="uri.path" paramlist="@{uri.list}" delimiter="@">
+					
+						<internal.get.local.filepath file.uri="${uri.path}"/>
+					
+						<!-- validate directory -->
+						<validate.checkDirExist.required propertyName="file.uri.out"/>
+						<autopd_if isNotTrue="${hasValidationError}">						
+							<!-- add to list if no validation error -->
+							<autopdproperty name="uri.trimmed.list" value="${uri.trimmed.list}@${file.uri.out}"/>
+						</autopd_if>
+				</autopdloop>
+			</run.if.not.empty>
+			
+			<!-- when complete - trim the first @ and set server.uri.list info -->
+			<autopd_unset_property name="uri.list.cleaned"/>
+			<trim_filename key="uri.list.cleaned" filename="${uri.trimmed.list}" prefixTrim="@"/>
+		</sequential>
+	</macrodef>
+	
+
+	<!-- INPUT:
+	     file.uri = stuff pulled from WAS .nifregistry
+	     file.uri.out = output : "" if does not contain file://
+	    -->
+	<macrodef name="internal.get.local.filepath">
+		<attribute name="file.uri"/>
+		<sequential>
+			<autopdproperty name="file.uri.out" value=""/>
+			<autopdproperty name="has.valid.file.uri" value="false"/>
+			
+			<!-- only enter with file://  -->
+			<autopd_unset_property name="has.file.prefix"/>
+			<regex_match pattern="^file://" 
+			     propertyName="has.file.prefix" 
+			     string="@{file.uri}"/>
+			<autopd_if isTrue="${has.file.prefix}">
+				
+				<!-- java custom code.. -->
+				<ratl.fil_url_to_local_path fileurl="@{file.uri}" outputproperty="file.uri.out"/>
+				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+
+	<!-- Prompts the user to select a profile,
+	      - if multiple profiles are found   	
+	      - if no profiles are found.
+	      Automatically return if only one profile in the list.
+	      
+	      OUTPUT:
+	      has.was.user.profile
+	      was.user.profile 
+	  --> 
+	<macrodef name="ratl.was.util.getUserProfile">
+		<attribute name="was.app.server.location"/>
+		<sequential>
+			
+			<wsnlsecho key="ratl.server.was.profile.location" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Determining WAS profile ..."
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>
+		
+			<ratl.was.get.available.was.profiles was.app.server.location="@{was.app.server.location}"/>			
+			<autopd_if isTrue="${has.available.profile.list}">
+				<util.logToFile msg="WAS profiles found for @{was.app.server.location}: ${available.profile.list}" output="WAS_profiles_found.txt" prefix="${was.prefix}"/>
+					
+				<!-- prompt for user selection -->
+				<internal.prompt.was.profile.list profile.list="${available.profile.list}"/>
+
+			</autopd_if>
+			<autopd_if isNotTrue="${has.available.profile.list}">
+				<util.logToFile msg="No WAS profiles found for WAS in @{was.app.server.location}." output="WAS_profiles_not_found.txt" prefix="${was.prefix}"/>
+			</autopd_if>
+								
+			<rtl.debugecho message="getUserProfile: has.was.user.profile = ${has.was.user.profile}"/>
+			<rtl.debugecho message="getUserProfile: was.user.profile  = ${was.user.profile}"/>
+			
+		</sequential>
+	</macrodef>
+	
+	<!--
+	INPUT: 
+	server.uri.list - list of uri from internal.read.nifregistry.for.was 
+		- NOTE: All input entries has been validated in <internal.read.nifregistry.for.was/>
+	
+	OUTPUT: 
+	 has.was.user.profile : true | unset - determines whether user provided this information
+	     was.user.profile : profile user selected
+	 -->
+	<macrodef name="internal.prompt.was.profile.list">
+		<attribute name="profile.list" default=""/>  <!-- Dir lists - clean up -->
+		<sequential>
+			
+			<!-- Set up -->
+			<autopd_unset_property name="has.was.user.profile"/>
+			<autopd_unset_property name="was.user.profile"/>
+				
+			<!-- IF lst is empty, not good. Should've been logged. -->
+			<autopd_unset_property name="contains.none"/>
+			<condition property="contains.none">
+				<equals arg1="" arg2="@{profile.list}"/>
+			</condition>
+			
+			<!-- IF NOT EMPTY -->
+			<autopd_if isNotTrue="${contains.none}">				
+				<!-- all entries should be available via listProfiles-->
+				<autopdproperty name="has.was.user.profile" value="true"/>
+				
+				<!-- If MULTIPLE - look for , as separator -->
+				<autopd_unset_property name="contains.multiple"/>
+				<regex_match pattern="," 
+				     propertyName="contains.multiple" 
+				     string="@{profile.list}" />
+	
+				<!-- If Multiple = no  - that means one profile -->				
+				<autopd_if isNotTrue="${contains.multiple}">
+					<autopdproperty name="was.user.profile" value="@{profile.list}"/>
+				</autopd_if>
+				<!-- If Multiple = yes - prompt user -->
+				<autopd_if isTrue="${contains.multiple}">
+					<!-- select one -->
+					<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" nocancel="true">
+						<fieldtask name="prompt" type="prompt" label="ratl.was.profile.select"/>
+						<fieldtask name="was.user.profile"  type="selectlist" label="ratl.was.profile.profilelist"
+								list="@{profile.list}"
+								listdetails="@{profile.list}"
+								delimiter=","/>
+					</inputdialogtask_v2>
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+	
+	<!-- ===================================================== -->
+	<!-- method to collect basic WAS information               --> 
+	<!-- ===================================================== -->
+
+	<!--  ===================================================== -->
+	<!-- method to get WAS command --> 
+	<!-- INPUT: was.app.cmd.location - full path to the directory of the command.
+	     INPUT: WAS command (under bin) , no .bat or .sh nor / or \	     
+	     OUTPUT: has.was.cmd
+	             was.cmd.path	     
+	  -->
+	<macrodef name="internal.get.was.cmd.path">
+		<attribute name="was.app.cmd.location"/>  
+		<attribute name="was.cmd"/>  <!-- assumes .bat or .sh -->
+		<attribute name="win.ext" default=".bat"/>
+		<attribute name="unix.ext" default=".sh"/>
+		<sequential>
+
+			<!-- WINDOWs -->
+			<autopd_if isTrue="${isWindows}">
+				<!-- convert everything to \ for windows -->
+				<win_pathFixup type="\" inputDir="@{was.app.cmd.location}" defaultDir="@{was.app.cmd.location}"/>
+				<autopdproperty name="was.app.cmd.location.fixed" value="${inputDir.out}"/>				
+				<autopdproperty name="was.cmd.path" value="${was.app.cmd.location.fixed}\@{was.cmd}@{win.ext}"/>
+			</autopd_if>
+				
+			<!-- L/Unix --> 				
+			<autopd_if isNotTrue="${isWindows}">
+				<!-- convert everything to / for linux -->
+				<win_pathFixup type="/" inputDir="@{was.app.cmd.location}" defaultDir="@{was.app.cmd.location}"/>
+				<autopdproperty name="was.app.cmd.location.fixed" value="${inputDir.out}"/>
+				<autopdproperty name="was.cmd.path" value="${was.app.cmd.location.fixed}/@{was.cmd}@{unix.ext}"/>
+			</autopd_if>
+			
+			<!-- check file available -->			
+			<autopd_unset_property name="has.was.cmd"/>
+			<available file="${was.cmd.path}" type="file" property="has.was.cmd"/>
+
+			<rtl.debugecho message="was.cmd.path = ${was.cmd.path}"/>
+			<rtl.debugecho message="has.was.cmd = ${has.was.cmd}"/>
+				
+	    </sequential>
+	</macrodef>
+	
+	
+	<!-- convinent method - allows user to execute internal code only  when WAS cmd is available  -->
+	<!-- INPUT: was app cmd location,  was.cmd, (extensions if other than .sh and .bat) 
+	            
+	            Internal code will execute if has.was.cmd is true. 
+	            Reuse ${was.cmd.path} within internal code
+	  --> 
+	<macrodef name="internal.run.was.cmd.shell">
+		<attribute name="was.app.cmd.location"/>
+		<attribute name="was.cmd"/>
+		<attribute name="unix.ext" default=".sh"/>
+		<attribute name="win.ext" default=".bat"/> 
+		<element name="internal.code" implicit="true"/>
+		<sequential>
+			
+			<!-- get the command --> 
+			<internal.get.was.cmd.path was.cmd="@{was.cmd}" was.app.cmd.location="@{was.app.cmd.location}"
+			    unix.ext="@{unix.ext}" win.ext="@{win.ext}"/>
+			
+			<autopd_if isNotTrue="${has.was.cmd}">
+                <wsnlsecho key="ratl.server.was.missing.batch" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Required batch file is not available at {0}"
+	    				replace="${was.cmd.path}"
+	    				id="2092"
+	    				level="info"
+	    				messagePrefix="CWPDD"/>				
+			</autopd_if>
+			<autopd_if isTrue="${has.was.cmd}">				
+				<internal.run.was.cmd.setup/>
+				
+				<!-- available for nested code: ${was.cmd.path},${outputDir}, ${result.batch.exec}, ${result.output}, ${result.error} -->
+				<internal.code/>
+				
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="internal.run.was.cmd.setup">
+		<sequential>
+			<!-- set up output dir -->
+			<autopdproperty name="outputDir" value="${autopdtmp}/WAS_OUT"/>
+			<mkdir dir="${outputDir}"/>
+				
+			<!-- reset the values -->
+			<autopd_unset_property name="result.batch.exec"/>
+			<autopd_unset_property name="result.output"/>
+			<autopd_unset_property name="result.error"/>
+			
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- ===================================================== -->
+	
+	<!-- code to check whether a profile has security settings enabled -->
+	<!-- Effectivelly call
+	  %WAS_PATH\bin\wsadmin.bat -profileName <profile> -conntype NONE -lang jython -c "AdminTask.isGlobalSecurityEnabled()" 
+	  
+	  OUTPUT: 
+	    has.was.security : true | false - has security enabled or not. 
+	  -->
+	<macrodef name="ratl.was.util.has.security.enabled">
+		<attribute name="was.app.server.location"/>
+		<attribute name="was.user.profile"/>
+		<attribute name="global" default="true"/> 
+		<sequential>
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.check.global.security" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Checking security settings for {0}"
+						replace="@{was.user.profile}"
+						id="2090"
+						level="info"
+						messagePrefix="CWPDD"/>
+			
+			<autopd_unset_property name="has.was.security"/>
+			
+			<internal.get.was.cmd.path was.cmd="wsadmin" was.app.cmd.location="@{was.app.server.location}/bin"/>
+						
+			<autopd_if isNotTrue="${has.was.cmd}">
+				<wsnlsecho key="ratl.server.was.wsadmin.not.found" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Cannot execute wsadmin. {0} is not available."
+							replace="${WSADMIN}"
+							id="2091"
+							level="warn"
+							messagePrefix="CWPDD"/>
+				<util.logToFile msg="Cannot execute wsadmin. ${WSADMIN} is not found" 
+						output="WSADMIN_NOT_FOUND.txt" prefix="${was.prefix}" />				
+			</autopd_if>
+			<autopd_if isTrue="${has.was.cmd}">
+				
+				<autopdproperty name="WSADMIN" value="${was.cmd.path}"/>				
+				<internal.run.was.cmd.setup/>
+				
+				<!-- set up output file - for Windows , L/unix, zOS -->
+				<autopdproperty name="wsadmin.out" value="${autopdtmp}/wsadmin.out"/>
+				<autopd_if isTrue="@{global}">				
+					<autopdproperty name="execution.cmd" value='"${WSADMIN}" -profileName @{was.user.profile} -conntype NONE -lang jython -c "AdminTask.isGlobalSecurityEnabled()"'/>
+					<autopd_unset_property name="result.batch.exec"/>
+					<exec executable="${WSADMIN}" resultproperty="result.batch.exec"
+							output="${wsadmin.out}" 
+							dir="@{was.app.server.location}/bin">
+							<arg line='-profileName @{was.user.profile} -conntype NONE -lang jython -c "AdminTask.isGlobalSecurityEnabled()"'/>					
+					</exec>
+				</autopd_if>
+				<autopd_if isNotTrue="@{global}">  <!-- APP -->
+					<autopdproperty name="execution.cmd" value='"${WSADMIN}" -profileName @{was.user.profile} -conntype NONE -lang jython -c "AdminTask.isAppSecurityEnabled()"'/>
+					<autopd_unset_property name="result.batch.exec"/>
+					<exec executable="${WSADMIN}" resultproperty="result.batch.exec"
+							output="${wsadmin.out}"
+							dir="@{was.app.server.location}/bin">
+							<arg line='-profileName @{was.user.profile} -conntype NONE -lang jython -c "AdminTask.isAppSecurityEnabled()"'/>					
+					</exec>
+				</autopd_if>
+
+				<!-- notify result -->
+				<autopd_unset_property name="result.batch.success"/>
+				<condition property="result.batch.success">
+					<equals arg1="0" arg2="${result.batch.exec}"/>
+				</condition>
+				
+				<autopd_if isNotTrue="${result.batch.success}">
+					<rtl.debugecho message="Failed running failed: ${execution.cmd}"/>					
+				</autopd_if>
+				<autopd_if isTrue="${result.batch.success}">
+					<rtl.debugecho message="Success running: ${execution.cmd} "/>
+					
+					<!-- pull content from output file -->
+					<autopd_unset_property name="result.output"/>
+					<loadfile property="result.output" srcfile="${wsadmin.out}"/>
+					
+					<!-- check -->
+					<autopd_unset_property name="has.true"/>
+					<regex_match pattern="(.*)'true'$" 
+					     propertyName="has.true" 
+					     string="${result.output}"/>
+					
+					<!-- set the property value -->
+					<condition property="has.was.security">
+						<and>
+							<isset property="has.true"/>
+							<equals arg1="true" arg2="${has.true}"/>
+						</and>
+					</condition>
+					
+					<!-- log -->
+					<autopd_if isTrue="${has.was.security}">
+						<rtl.debugecho message="WAS Security enabled"/>
+					</autopd_if>
+					<autopd_if isNotTrue="${has.was.security}">
+						<rtl.debugecho message="WAS Security not enabled"/>
+					</autopd_if>
+					
+				</autopd_if>
+				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- 
+	   Make a list of all WAS profiles that are associated with WAS and trim out
+	   Use : 
+	    %WAS_PATH\bin\manageprofiles.bat -listProfiles 
+	    %WAS_PATH/bin/manageprofiles.sh -listProfiles
+	    and get rid of the [ ] the output => [profile, profile2, ... ]
+	    
+	    Example output:
+	    [AppSrv01]
+	    or
+	    WSVR0027I: The product will expire in 24 days
+	    [AppSrv01]. 
+	    or
+	    Some random error message...
+	    
+	    OUTPUT: 
+	    has.available.profile.list = true | unset 
+	    available.profile.list = content between the [ ] (separated by ,) 
+	  -->
+	<macrodef name="ratl.was.get.available.was.profiles">
+		<attribute name="was.app.server.location"/>		
+		<sequential>
+			<!-- SET UP -->
+			<autopd_unset_property name="has.available.profile.list" />
+			<autopdproperty name="available.profile.list" value=""/> <!-- default is blank -->
+				
+			<internal.run.was.cmd.shell was.cmd="manageprofiles" was.app.cmd.location="@{was.app.server.location}/bin">
+				<autopdproperty name="manageprofiles" value="${was.cmd.path}"/>
+				<rtl.debugecho message="Executing ${manageprofiles} -listProfiles"/>
+				
+				<!-- WINDOWS & L/Unix & z/OS - use output to preserve utf8 -->
+				<autopdproperty name="manageprofiles.out" value="${autopdtmp}/manageprofiles.out"/>
+				<autopd_unset_property name="result.batch.exec"/>
+				<exec executable="${manageprofiles}" resultproperty="result.batch.exec"
+						output="${manageprofiles.out}" >
+						<arg line='-listProfiles'/>
+				</exec> 
+				
+				<!-- check result for 0 -->
+				<!-- notify result -->
+				<autopd_unset_property name="has.available.profile.list"/>
+				<condition property="has.available.profile.list">
+					<equals arg1="0" arg2="${result.batch.exec}"/>
+				</condition>
+				<!-- looks good - clean up the [ ] -->
+				<autopd_if isTrue="${has.available.profile.list}">
+					<!-- load file --> 
+					<autopd_unset_property name="result.output"/>
+					<loadfile property="result.output" srcfile="${manageprofiles.out}"/>
+					<!-- echo list profiles output -->
+					<rtl.debugecho message="${line.separator}OUTPUT: ${result.output}"/>
+						
+					<!-- extract value between [] --> 
+					<!-- valid chars for profile name are: A-Z, a-z, 0-9, ._- -->
+					<autopd_unset_property name="available.profile.list.trimmed"/>
+					<regex_extract_value 
+						file="${manageprofiles.out}"
+						searchPattern="\[([A-Z,a-z,0-9,_,\.\-\,\s]*)\]"
+						subPatternIndex="1"
+						extractedValue="available.profile.list.trimmed"
+						returnOption="firstMatch"
+						match_across_multiple_lines="false"
+					/>
+					
+					<!-- check output - again - same var -->
+					<autopd_unset_property name="has.available.profile.list"/>
+					<condition property="has.available.profile.list">
+						<and>
+							<isset property="available.profile.list.trimmed"/>
+							<not>
+								<equals arg1="" arg2="${available.profile.list.trimmed}"/>
+							</not>
+						</and>
+					</condition>
+					
+					<!-- loop to trim out all the leading/trailing spaces -->
+					<autopd_if isTrue="${has.available.profile.list}">
+						<autopdproperty name="available.profile.list" value=""/>
+						<!-- ISADC WORKWROUND -->
+						<run.if.not.empty input="${available.profile.list.trimmed}">
+							<autopdloop delimiter="," param="profile" paramlist="${available.profile.list.trimmed}">
+								<trim_filename key="profile.trimmed" filename="${profile}" prefixtrim="^\s+"  suffixtrim="\s+$"/>
+								<autopdproperty name="available.profile.list" value="${available.profile.list},${profile.trimmed}"/>						
+							</autopdloop>
+						</run.if.not.empty>
+						<!-- remove beginning , --> 
+						<trim_filename key="available.profile.list" filename="${available.profile.list}" prefixtrim=","/>
+						
+						<!-- verify non empty profile list again --> 
+						<autopd_unset_property name="has.available.profile.list"/>
+						<condition property="has.available.profile.list">
+							<not>
+								<or>
+									<equals arg1="" arg2="${available.profile.list}"/>
+									<contains string="${available.profile.list}" substring="$${"/>
+								</or>
+							</not>
+						</condition>
+					</autopd_if>  <!-- if file scan returned match -->
+					
+				</autopd_if>
+			</internal.run.was.cmd.shell>
+			
+			<!-- log -->
+			<autopd_if isTrue="${has.available.profile.list}">
+				<rtl.debugecho message="getWASProfiles: available.profile.list= ${available.profile.list}${line.separator}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${has.available.profile.list}">
+				<rtl.debugecho message="getWASProfiles: Profile not found${line.separator}"/>
+			</autopd_if>			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- ===================================================== -->
+	<!-- method to list profile paths .
+	     Executes: %WAS_HOME%/bin/manageprofiles.sh -profileName <profile> -getPath 
+	
+	    Example output:
+	    /opt/IBM/WebSphere/AppServer/profiles/AppSrv01
+	    or
+	    WSVR0027I: The product will expire in 24 days
+	    /opt/IBM/WebSphere/AppServer/profiles/AppSrv01
+	
+	     INPUT: WAS app server location
+	          : profile name
+	          	      
+	     OUTPUT: 
+	          has.profile.path = true | unset
+	          profile.path = path (as returned by WAS) 
+	          is.profile.path.available = true | unset, if path is available 
+	  -->
+	<macrodef name="ratl.was.get.profile.path">
+		<attribute name="was.app.server.location"/>	
+		<attribute name="was.profile"/>
+		<sequential>
+			<!-- Check input -->
+			<autopd_unset_property name="is.valid.profile.name"/>
+			<condition property="is.valid.profile.name">
+				<and>
+					<not>
+						<equals arg1="" arg2="@{was.profile}"/>
+					</not>
+					<not>
+						<contains string="@{was.profile}" substring="$${"/>
+					</not>
+				</and>
+			</condition>
+			
+			<!-- check valid profile name -->
+			<autopd_if isNotTrue="${is.valid.profile.name}">
+				<rtl.debugecho message="invalid profile name passed in: '@{was.profile}'"/>
+			</autopd_if>
+			<autopd_if isTrue="${is.valid.profile.name}">
+				
+				<!-- SET UP -->
+				<autopd_unset_property name="has.profile.path"/>
+				<autopd_unset_property name="is.profile.path.available"/>
+				<autopdproperty name="profile.path" value=""/> <!-- default is blank -->
+					
+				<internal.run.was.cmd.shell was.cmd="manageprofiles" was.app.cmd.location="@{was.app.server.location}/bin">				
+					<autopdproperty name="manageprofiles" value="${was.cmd.path}"/>
+					<rtl.debugecho message="Executing ${manageprofiles} -profileName @{was.profile} -getPath"/>
+					
+					<!-- WINDOWS & L/Unix & z/OS -->
+					<autopdproperty name="profile.path.out" value="${autopdtmp}/profile.path.out"/>
+					<exec executable="${manageprofiles}" resultproperty="result.batch.exec"
+							output="${profile.path.out}">
+							<arg line='-profileName @{was.profile} -getPath'/>				
+					</exec>
+					
+					<!-- check result for 0 -->
+					<!-- notify result -->
+					<autopd_unset_property name="has.profile.path"/>
+					<condition property="has.profile.path">
+						<equals arg1="0" arg2="${result.batch.exec}"/>
+					</condition>
+					<!-- no error - check available --> 
+					<autopd_if isTrue="${has.profile.path}">
+						<!-- pull in the data -->
+						<autopd_unset_property name="result.output"/>
+						<loadfile property="result.output" srcfile="${profile.path.out}"/>
+						
+						<!-- log it -->
+						<rtl.debugecho message="${line.separator}OUTPUT: ${result.output}"/>
+												
+						<!-- ISADC WORKWROUND -->
+						<run.if.not.empty input="${result.output}">
+							<!-- loop it. Occasionally you get WAS informational messages -->
+							<autopdloop delimiter="${line.separator}" param="line" paramlist="${result.output}">
+								<autopd_unset_property name="line.trimmed"/>
+								<trim_filename key="line.trimmed" filename="${line}" prefixTrim="^\s+" suffixTrim="\s+$"/>						
+								<autopd_unset_property name="is.line.available"/>
+								<available file="${line.trimmed}" type="dir" property="is.line.available"/>
+								
+								<!-- set output & available - for the first real dir found -->
+								<autopd_if isTrue="${is.line.available}">
+									<autopdproperty name="is.profile.path.available" value="true"/>
+									<autopdproperty name="profile.path" value="${line.trimmed}"/>
+								</autopd_if>
+							</autopdloop>
+						</run.if.not.empty>
+							
+					</autopd_if>
+				</internal.run.was.cmd.shell>
+				
+			</autopd_if>  <!-- if valid profile name -->
+			
+			<rtl.debugecho message="getProfilesPath: was.profile= @{was.profile}"/>
+			<rtl.debugecho message="getProfilesPath: profile.path= ${profile.path}"/>
+			<rtl.debugecho message="getProfilesPath: is.profile.path.available= ${is.profile.path.available}${line.separator}"/>
+			
+		</sequential>
+	</macrodef>
+	
+				
+	<!-- getVersionReport -->
+	<macrodef name="ratl.was.collect.getVersionReport">
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<sequential>
+			
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.getVersionReport" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Collecting WAS genVersionReport information."
+					replace="${autopdts};;${step.count}"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>			
+			
+			<!-- Get the gen version report file  -->
+			<internal.run.was.cmd.shell was.cmd="genVersionReport" was.app.cmd.location="@{was.app.server.location}/bin">
+				<autopdproperty name="genVersionReport" value="${was.cmd.path}"/>
+				
+				<echo message="Executing: ${genVersionReport} ... ${line.separator}${line.separator}" file="${outputDir}/run_genVersionReport.txt" append="true"/>				
+				<exec executable="${genVersionReport}" dir="${outputDir}" output="${outputDir}/run_genVersionReport.txt" append="true">
+				  <arg line="" /> 
+				 </exec>
+			
+				<!-- collect data - output is in a .jar file -->
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+	    			<fileset dir="${outputDir}" includes="versionReport.html"/>
+					<fileset dir="${outputDir}" includes="run_genVersionReport.txt"/>	
+				</copy>
+			</internal.run.was.cmd.shell>		
+			
+		</sequential>
+	</macrodef>
+	
+
+	<!-- WAS getnHistoryReport collector -->
+	<macrodef name="ratl.was.collect.genHistoryReport">
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<sequential>
+			
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.getHistoryReport" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Collecting WAS history report information."
+					replace="${autopdts};;${step.count}"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>	
+			
+			<internal.run.was.cmd.shell was.cmd="genHistoryReport" was.app.cmd.location="@{was.app.server.location}/bin">
+				<autopdproperty name="genHistoryReport" value="${was.cmd.path}"/>
+				
+				<autopdproperty name="genHist.exec.out" value="${autopdtmp}/run_genHistoryReport.txt"/>
+				<exec executable="${genHistoryReport}" dir="${outputDir}" output="${genHist.exec.out}" append="true">
+				  <arg line="" /> 
+				 </exec>	
+			
+				<!-- collect data - output is in a .jar file -->
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+	    			<fileset dir="${outputDir}"  includes="historyReport.html"/>
+	    			<fileset file="${genHist.exec.out}"/>
+				</copy>
+			</internal.run.was.cmd.shell>
+		</sequential>
+	</macrodef>
+	
+	<!-- WAS Version info -->
+	<!-- Wrapper to ${was.root}/bin/versionInfo.sh (.bat> -->
+	<!-- versionInfo -long > versionInfo_Long.txt 
+	     versionInfo -maintenancePackages > versionInfo_maintaincePackages.txt
+	     versionInfo -components > versionInfo_components.txt
+	     
+	     This method make take 5~10 minute to execute.
+	  -->	
+	<macrodef name="ratl.was.collect.getVersionInfo">
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<sequential>
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.getVersionInfo" 
+				bundle="properties/RATLSHARE/autopd"
+				message="[{0}] Step {1}: Collecting WAS versionInfo information."
+				replace="${autopdts};;${step.count}"
+				id="2090"
+				level="info"
+				messagePrefix="CWPDD"/>	
+			
+			<internal.run.was.cmd.shell was.cmd="versionInfo" was.app.cmd.location="@{was.app.server.location}/bin">
+				<autopdproperty name="versionInfo" value="${was.cmd.path}"/>
+				
+				<autopdproperty name="file.out.long" value="versionInfo_Long.txt"/>
+				<echo file="${outputDir}/${file.out.long}" append="true" message="Executing ${versionInfo} -long ${line.separator}${line.separator}"/>
+				<exec executable="${versionInfo}" dir="${outputDir}" 
+					output="${outputDir}/${file.out.long}" append="true"
+					failonerror="false">  <!-- ignore error -->
+				  <arg line="-long" /> 
+				</exec>	
+				
+				<autopdproperty name="file.out.maint" value="versionInfo_maintaincePackages.txt"/>
+				<echo file="${outputDir}/${file.out.maint}" append="true" message="Executing ${versionInfo} -maintenancePackages ${line.separator}${line.separator}"/>
+				<exec executable="${versionInfo}" dir="${outputDir}" 
+					output="${outputDir}/${file.out.maint}" append="true"
+					failonerror="false">  <!-- ignore error -->
+				  <arg line="-maintenancePackages" /> 
+				</exec>
+				
+				<autopdproperty name="file.out.comp" value="versionInfo_components.txt"/>
+				<echo file="${outputDir}/${file.out.comp}" append="true" message="Executing ${versionInfo} -components ${line.separator}${line.separator}"/>
+				<exec executable="${versionInfo}" dir="${outputDir}" 
+					output="${outputDir}/${file.out.comp}" append="true"
+					failonerror="false">  <!-- ignore error -->
+				  <arg line="-components" /> 
+				</exec>
+							
+				<!-- save the file -->
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+					<fileset dir="${outputDir}" includes="${file.out.long}"/>
+					<fileset dir="${outputDir}" includes="${file.out.maint}"/>
+					<fileset dir="${outputDir}" includes="${file.out.comp}"/>
+				</copy>
+			</internal.run.was.cmd.shell>
+			
+		</sequential>
+	</macrodef>
+		
+	
+	<!-- gather WAS java version info -->
+	<!-- OUTPUT: file ${was.prefix}/WAS_java_version.txt
+	    This is collected. 
+	-->
+	<macrodef name="ratl.was.collect.java.version">
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<sequential>
+			
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.java.version" 
+						bundle="properties/RATLSHARE/autopd"
+						message="[{0}] Step {1}: Gathering WAS server installed JVM information from {2}"
+						replace="${autopdts};;${step.count};;@{was.app.server.location}"
+						id="2090"
+						level="info"
+						messagePrefix="CWPDD"/>
+			
+			<!-- Get the java path -->
+			<internal.run.was.cmd.shell was.cmd="java" unix.ext="" win.ext=".exe" was.app.cmd.location="@{was.app.server.location}/java/bin">
+				<autopdproperty name="batch.path" value="${was.cmd.path}"/>
+				
+				<echo message="Executing: ${batch.path} -version${line.separator}${line.separator}" file="${outputDir}/installed_java_version.txt" append="true"/>					
+				<exec executable="${batch.path}" dir="${outputDir}" output="${outputDir}/installed_java_version.txt" append="true">
+				  <arg line="-version"/> 
+				 </exec>
+				
+				<!-- collect data - output is in a .jar file -->
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+					<fileset dir="${outputDir}" includes="installed_java_version.txt"/>	
+				</copy>
+			</internal.run.was.cmd.shell>			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- WAS RAS collector -->
+	<macrodef name="ratl.was.collect.ras.information">
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<sequential>
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.ras.information" 
+							bundle="properties/RATLSHARE/autopd"
+							message="[{0}] Step {1}: Running WAS collector..."
+							replace="${autopdts};;${step.count}"
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>	
+						
+			<internal.run.was.cmd.shell was.cmd="collector" was.app.cmd.location="@{was.app.server.location}/bin">
+				<autopdproperty name="batch.path" value="${was.cmd.path}"/>
+				<autopdproperty name="collector.exec.out" value="${autopdtmp}/WAS_collector_run_log.txt"/> 
+				<exec executable="${batch.path}" dir="${outputDir}" output="${collector.exec.out}" append="true">
+				  <arg line="" />
+				 </exec>
+				
+				<!-- collect data - output is in a .jar file -->
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+	    			<fileset dir="${outputDir}" includes="*.jar"/>
+					<fileset file="${collector.exec.out}" />
+				</copy>
+			</internal.run.was.cmd.shell>
+		</sequential>
+	</macrodef>
+	
+	<!-- gather WAS Server logs -->
+	<!-- INPUT: 
+		was.app.server.location :  Location of was.app.server. Should be validated.   
+		OUTPUT:
+		     - zipped data 	
+		     - <was>\javacore*.txt
+		     - <was>\bin\javacore*.txt	
+		     - <was>\properties\service\productDir\**\*.logs
+		     - <was>\logs\**\*		     
+		     excludes *.dmp, *.phd, *.lock
+		-->
+	<macrodef name="ratl.was.collect.server.logs">
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<sequential>
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.server.logs" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Gathering WAS server logs from {2}"
+					replace="${autopdts};;${step.count};;@{was.app.server.location}"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>	
+			
+			<!-- gather javacore from root -->
+			<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+				<fileset	dir="@{was.app.server.location}">
+					<include name="javacore*.txt"/>
+					<include name="bin/javacore*.txt"/>
+					<include name="properties/service/productDir/**/*.logs"/>
+					<selector refid="ratl.readable.log.exclude.list"/>
+				</fileset>
+			</copy>
+			<ratl.log.exclude.list dir.path="@{was.app.server.location}"/>
+			
+			<!-- find logs dir --> 
+			<autopdproperty name="server.logs.dir" value="@{was.app.server.location}/logs"/>
+			<autopd_unset_property name="has.server.logs.dir"/>
+			<available file="${server.logs.dir}" type="dir" property="has.server.logs.dir"/>
+			
+			<autopd_if isTrue="${has.server.logs.dir}">
+				<!-- gather WAS logs -->
+				<copy todir="${isadcTempOut}/@{prefix}/logs" outputencoding="UTF-8">
+					<fileset dir="${server.logs.dir}">
+						<include name="**/*.*"/>
+						<include name="**/*"/>
+						<exclude name="**/*.dmp"/>
+						<exclude name="**/*.phd"/>
+						<exclude name="**/*.lock"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>
+				</copy>
+				<ratl.log.exclude.list dir.path="@{was.app.server.location}/logs"/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- Move profile logs - given a profile path. -->
+	<macrodef name="ratl.was.move.server.logs">
+		<attribute name="was.app.server.location"/>
+		<attribute name="target.move.dir"/>		
+		<sequential>
+			<echo message=""/>
+			<wsnlsecho key="ratl.server.was.move.server.logs" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Moving WAS server logs from {0}"
+							replace="@{was.app.server.location}"
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>
+			
+			<!-- check to make sure files is available -->
+			<autopd_unset_property name="has.dir.path"/>
+			<available file="@{was.app.server.location}" type="dir" property="has.dir.path"/>
+			<autopd_if isTrue="${has.dir.path}">
+				 
+				<!-- set up & mkdir -->
+				<util.get.flattened.name file="@{was.app.server.location}"/>
+				<autopdproperty name="target.move.dir.was" value="@{target.move.dir}/${flatten_fileName}"/>			
+				<autopdproperty name="logfile" value="${target.move.dir.was}/LOG_FILE_SOURCE.txt"/>
+				<mkdir dir="${target.move.dir.was}"/>
+				
+				<!-- move javacore from WAS root  -->
+				<move todir="${target.move.dir.was}" failonerror="false" >
+					<fileset dir="@{was.app.server.location}" >
+						<include name="javacore*.txt"/>
+						<include name="bin/javacore*.txt"/>
+					</fileset>
+				</move>
+				
+				<!-- move other things -->				
+				<echo message="Existing log files from '@{was.app.server.location}' are moved here. ${line.separator}" file="${logfile}"/>
+				<echo message="Including all files matching javacore*.txt, bin/javacore*.txt${line.separator}" append="true" file="${logfile}"/>
+				
+				<!-- find logs dir --> 
+				<autopdproperty name="server.logs.dir" value="@{was.app.server.location}/logs"/>
+				<autopd_unset_property name="has.server.logs.dir"/>
+				<available file="${server.logs.dir}" type="dir" property="has.server.logs.dir"/>
+				
+				<autopd_if isTrue="${has.server.logs.dir}">
+					<!-- moving -->
+					<mkdir dir="${target.move.dir.was}/logs"/>
+					
+					<!-- move WAS logs -->
+					<move todir="${target.move.dir.was}/logs" failonerror="false" >
+						<fileset dir="${server.logs.dir}">
+							<include name="**/*.*"/>
+							<include name="**/*"/>
+						</fileset>
+					</move>
+					
+					<echo message="Including all files under logs directory" append="true" file="${logfile}"/>
+						
+				</autopd_if>				
+			</autopd_if>
+
+		</sequential>
+	</macrodef>
+	
+	
+	
+	<!-- Shell to gather things for profile -->
+	<!-- INPUT: 
+		was.app.server.location :  Location of was.app.server. Should be validated.
+		profile : name of the profiles to collect.   
+		OUTPUT:
+		     - zipped data 		
+		-->
+	<macrodef name="ratl.was.collect.profile">
+		<attribute name="was.app.server.location"/>
+		<attribute name="profile"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<element name="internal.code" implicit="true"/> 		
+		<sequential>
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.profile" 
+							bundle="properties/RATLSHARE/autopd"
+							message="[{0}] Step {1}: Gathering WAS profile information for {2} from {3}"
+							replace="${autopdts};;${step.count};;@{profile};;@{was.app.server.location}"
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>
+			
+			<!-- find profile --> 
+			<ratl.was.get.profile.path was.app.server.location="@{was.app.server.location}" was.profile="@{profile}"/>
+			<autopd_if isTrue="${is.profile.path.available}">
+				<!-- available are: 
+				     ${has.profile.path}
+				     ${is.profile.path.available}
+				     ${profile.path}
+				     -->
+				<internal.code/>
+				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- Shell to gather things for all profiles in the was.app.server -->
+	<!-- INPUT: 
+		was.app.server.location :  Location of was.app.server. Should be validated.   
+		OUTPUT:
+		     - zipped data 		
+		-->
+	<macrodef name="ratl.was.all.profiles.loop">
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<element name="internal.code" implicit="true"/>   <!-- place to put the code for profile collection -->		
+		<sequential>
+				
+			<!-- get a list of all profiles, and loop --> 
+			<ratl.was.get.available.was.profiles  was.app.server.location="@{was.app.server.location}"/>
+				
+			<!-- ISADC WORKWROUND - nested -->
+			<autopd_unset_property name="is.empty"/>
+			<condition property="is.empty">
+				<or>
+					<equals arg1="" arg2="$${available.profile.list}"/>
+					<contains string="${available.profile.list}" substring="$${"/>
+				</or>			
+			</condition>
+			<autopd_if isNotTrue="${is.empty}">		
+				<autopdloop delimiter="," param="profile" paramlist="${available.profile.list}">
+					<ratl.was.get.profile.path was.app.server.location="@{was.app.server.location}"  was.profile="${profile}"/>
+					
+					<!-- available are: 
+					     ${profile} - profile name
+					     ${has.profile.path}
+					     ${is.profile.path.available} - a check. 
+					     ${profile.path} - system path in which this profile is defined.
+					     -->
+					<internal.code/>				
+				</autopdloop>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	  Collect profile information for all profiles defined by the WAS server.
+	   - Can optionally include more collection. 
+	   - Code goes into gathering code only when profile.path is available. 
+	  -->
+	<macrodef name="ratl.was.collect.all.profiles">
+			<attribute name="was.app.server.location"/>
+			<attribute name="prefix" default="${was.prefix}"/>
+			<attribute name="collect.logs" default="true"/>      <!-- allow calling methods to include/exclude profile logs -->
+			<attribute name="collect.config" default="true"/>    <!-- allow calling methods to include/exclude profile configuration -->
+			<element name="collect.more" implicit="true" optional="true"/>   <!-- place to put the code for profile collection -->
+			<sequential>
+				<stepcount/>
+				<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+				<echo message=" "/>
+				<wsnlsecho key="ratl.server.was.collect.all.profiles" 
+								bundle="properties/RATLSHARE/autopd"
+								message="[{0}] Step {1}: Gathering WAS profile information for all profiles defined by {2}"
+								replace="${autopdts};;${step.count};;@{was.app.server.location}"
+								id="2090"
+								level="info"
+								messagePrefix="CWPDD"/>	
+				
+				<ratl.was.all.profiles.loop was.app.server.location="@{was.app.server.location}">
+					<autopd_if isTrue="${is.profile.path.available}">
+						<autopd_if isTrue="@{collect.config}">
+							<ratl.was.collect.profile.installedApp.dir profile.path="${profile.path}" prefix="@{prefix}/profiles/${profile}"/>
+							<ratl.was.collect.profile.config profile.path="${profile.path}" prefix="@{prefix}/profiles/${profile}"/>
+						</autopd_if>
+						<autopd_if isTrue="@{collect.logs}">
+							<ratl.was.collect.profile.logs profile.path="${profile.path}" prefix="@{prefix}/profiles/${profile}"/>
+						</autopd_if>
+						<!-- vars can be accessed: (see ratl.was.all.profiles.loop 
+						     ${profile}, ${has.profile.path}, ${profile.path},  ${is.profile.path.available}
+						  -->
+						<collect.more />
+					</autopd_if>
+				</ratl.was.all.profiles.loop> 	
+				
+			</sequential>
+		</macrodef>
+	
+	<!-- This code matches the ratl.was.collect.all.profiles content -->
+	<macrodef name="ratl.was.collect.profile.all.nodat">
+		<attribute name="was.app.server.location"/>
+		<attribute name="profile"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<attribute name="collect.logs" default="true"/>      <!-- allow calling methods to include/exclude profile logs -->
+		<attribute name="collect.config" default="true"/>    <!-- allow calling methods to include/exclude profile configuration -->
+		<element name="more.collection" implicit="true" optional="true"/> <!-- optional -->
+		<sequential>
+			<ratl.was.collect.profile 
+				was.app.server.location="@{was.app.server.location}"
+				profile="@{profile}"
+				prefix="@{prefix}">
+			
+				<autopd_if isTrue="@{collect.config}">
+					<ratl.was.collect.profile.installedApp.dir profile.path="${profile.path}" prefix="@{prefix}/profiles/${profile}"/>
+					<ratl.was.collect.profile.config profile.path="${profile.path}" prefix="@{prefix}/profiles/${profile}"/>
+				</autopd_if>
+				<autopd_if isTrue="@{collect.logs}">
+					<ratl.was.collect.profile.logs profile.path="${profile.path}" prefix="@{prefix}/profiles/${profile}"/>
+				</autopd_if>
+				<!-- vars can be accessed: (see ratl.was.all.profiles.loop 
+				     ${profile}, ${has.profile.path}, ${profile.path},  ${is.profile.path.available}
+				  -->			
+				<!-- more -->
+				<more.collection/>
+				
+			</ratl.was.collect.profile>
+		</sequential>
+	</macrodef>
+	
+	<!-- This code collects data for a given profile name.
+	     - additional code can be contribute to collection relative to ${profile.path}
+	  -->
+	<macrodef name="ratl.was.collect.profile.all">
+		<attribute name="was.app.server.location"/>
+		<attribute name="profile"/>
+		<attribute name="prefix" default="${was.prefix}"/>
+		<element name="more.collection" implicit="true" optional="true"/> <!-- optional -->
+		<sequential>
+			<ratl.was.collect.profile 
+				was.app.server.location="@{was.app.server.location}"
+				profile="@{profile}"
+				prefix="@{prefix}">
+			
+				<ratl.was.collect.profile.logs profile.path="${profile.path}" prefix="@{prefix}/@{profile}"/>
+				<ratl.was.collect.profile.installedApp.dir profile.path="${profile.path}" prefix="@{prefix}/@{profile}"/>
+				<ratl.was.collect.profile.dat profile.path="${profile.path}" prefix="@{prefix}/@{profile}"/>
+				<ratl.was.collect.profile.config profile.path="${profile.path}" prefix="@{prefix}/@{profile}"/>
+				
+				<!-- more -->
+				<more.collection/>
+				
+			</ratl.was.collect.profile>
+		</sequential>
+	</macrodef>
+	
+	<!-- gather profile logs, javacore*.txt -->
+	<!-- INPUT: 
+	    Use this with ratl.was.collect.profile
+		profile.path :  Location of profile.path.. Should be validated.   
+		OUTPUT:
+		     - <profile.path>/**/javacore*.txt
+		     - <profile.path>/logs all
+		     excludes *.dmp , *.phd, *.lock	
+		-->
+	<macrodef name="ratl.was.collect.profile.logs">
+		<attribute name="profile.path"/>
+		<attribute name="prefix"/> <!-- normally : ${was.prefix}/@{profile} -->
+		<sequential>
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.profile.logs" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Collecting profile logs directory"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>
+			<!-- profile logs  -->
+			<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+				<fileset	dir="${profile.path}">
+					<include name="**/javacore*.txt"/>
+					<include name="logs/**/*.*"/>
+					<include name="properties/**/*.log" />
+					<exclude name="**/*.dmp"/>
+					<exclude name="**/*.phd"/>
+					<exclude name="**/*.lock"/>
+					<selector refid="ratl.readable.log.exclude.list"/>
+				</fileset>
+			</copy>
+			<ratl.log.exclude.list dir.path="${profile.path}"/>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- Move profile logs - given a profile path. -->
+	<macrodef name="ratl.was.move.profile.logs">
+		<attribute name="profile.path"/>
+		<attribute name="target.move.dir"/>		
+		<sequential>
+			<echo message=""/>
+			<wsnlsecho key="ratl.server.was.move.profile.logs" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Moving WAS profile logs from {0}"
+						replace="@{profile.path}"
+						id="2090"
+						level="info"
+						messagePrefix="CWPDD"/>
+			
+			<autopd_unset_property name="has.dir.path"/>
+			<available file="@{profile.path}" type="dir" property="has.dir.path"/>
+			
+			<autopd_if isTrue="${has.dir.path}">
+				<util.get.flattened.name file="@{profile.path}"/>
+				<mkdir dir="@{target.move.dir}/${flatten_fileName}"/>
+				
+				<move todir="@{target.move.dir}/${flatten_fileName}" failonerror="false" >
+					<fileset dir="@{profile.path}" >
+						<include name="**/javacore*.txt"/>
+						<include name="logs/**/*.*"/>
+						<include name="logs/**/*"/>
+					</fileset>
+				</move>	
+				
+			    <echo message="Existing log files from '@{profile.path}' are moved here. ${line.separator}" file="@{target.move.dir}/${flatten_fileName}/LOG_FILE_SOURCE.txt"/>
+				<echo message="These include all files matching javacore*.txt, logs/*.*, with *.dmp, *.phd, and *.lock files excluded" append="true" file="@{target.move.dir}/${flatten_fileName}/LOG_FILE_SOURCE.txt"/>
+				
+			</autopd_if>
+
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- gather a directory listing of installedApp directory -->
+	<!-- INPUT: 
+		profile.path :  Location of profile. Should be validated.   
+		OUTPUT:
+		     - zipped data 		
+		-->
+	<macrodef name="ratl.was.collect.profile.installedApp.dir">
+		<attribute name="profile.path"/>
+		<attribute name="prefix"/> <!-- normally : ${was.prefix}/@{profile} -->
+		<sequential>			
+			
+			<wsnlsecho key="ratl.server.was.collect.profile.dirlist" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Collecting directory listing for {0}"
+					replace="${profile.path}/installedApps"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<collect_dir_listing_recursive 
+					targetDir="${profile.path}/installedApps"
+					outputFile="${autopdtmp}/DIR_LISTING_installedApps.txt"
+					zipPrefix="@{prefix}"/>	
+		</sequential>
+	</macrodef>
+	
+	<!-- gathers *.dat files under a configured cell: requested by CC/CQ CMServer-->
+	<!-- gather WAS dat files under: <profile>\config\cells\**.*.dat -->
+	<macrodef name="ratl.was.collect.profile.dat">
+		<attribute name="profile.path"/>
+		<attribute name="prefix"/>
+		<sequential>
+			
+			<!-- SETUP -->
+			<autopd_unset_property name="has.was.config.dat.files"/>
+			<autopd_unset_property name="internal.was.dat.files.list"/>
+			
+			<wsnlsecho key="ratl.server.was.collect.profile.dat" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Collecting all *.dat files under profile config cells directory"
+						id="2090"
+						level="info"
+						messagePrefix="CWPDD"/>
+		
+			<!-- define the file set --> 
+			<fileset dir="@{profile.path}" id="internal.was.dat.files">
+				<include name="config/cells/**/*.dat"/>
+		    </fileset>
+		    
+		    <!-- check if *.dat file available -->
+		    <pathconvert pathsep="," property="internal.was.dat.files.list" refid="internal.was.dat.files"/>
+			<condition property="has.was.config.dat.files">
+				<and>
+					<isset property="internal.was.dat.files.list"/>
+					<not>
+						<equals arg1="" arg2="${internal.was.dat.files.list}"/>
+					</not>
+				</and>
+			</condition>
+			
+			<!-- Zip information for user - if no *.dat files found -->
+			<autopd_if isNotTrue="${has.was.config.dat.files}">
+				<echo file="${autopdtmp}/WAS_Config_Dat_Not_Found.txt"	message="Cannot find any *.dat files under @{profile.path}/config/cells"/>
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+					<fileset file="${autopdtmp}/WAS_Config_Dat_Not_Found.txt"/>
+				</copy>		
+			</autopd_if>
+			
+			<!-- collect *.dat files -->
+			<autopd_if isTrue="${has.was.config.dat.files}">
+				<!-- Echo the list of files to the target zip dir -->
+				<echo file="${autopdtmp}/WAS_Config_Dat_File_List.txt"  message="WAS dat files are: ${internal.was.dat.files.list}"/>
+				
+				<!-- collect the files + listing -->
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+					<fileset
+						dir="@{profile.path}">
+						<include name="config/cells/**/*.dat"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>	
+					<fileset file="${autopdtmp}/WAS_Config_Dat_File_List.txt"/>
+				</copy>
+				<ratl.log.exclude.list dir.path="${profile.path}"/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- gather properties, props, config, server.xml -->
+	<!-- INPUT: 
+		profile.path :  Location of profile. Should be validated.   
+		OUTPUT:
+		     - zipped data 	
+		similar to: cm.mbeans.getproperties.config	
+		-->
+	<macrodef name="ratl.was.collect.profile.config">
+		<attribute name="profile.path"/>
+		<attribute name="prefix"/> <!-- normally : ${was.prefix}/@{profile} -->
+		<sequential>
+
+			<wsnlsecho key="ratl.server.was.collect.profile.config" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Collecting profile configuration information"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/> 
+				
+			<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">
+				<fileset dir="@{profile.path}">
+				
+					<!-- properties -->
+					<include name="properties/**/*.properties" />
+					<include name="properties/**/*.props" />
+					<include name="properties/version/profile.version" />
+					
+					<!-- config -->
+					<!-- <include name="config/cells/**/server.xml" /> -->
+					<!-- server.xml -->
+					<include name="**/server.xml"/>
+						
+					<!-- installedApps -->
+					<include name="installedApps/**/WEB-INF/classes/*.properties"/>
+					<include name="installedApps/**/WEB-INF/classes/*.rdf"/>
+					<include name="installedApps/**/WEB-INF/config/*.pref"/>
+					<include name="installedApps/**/WEB-INF/web.xml"/>
+						
+					<!-- other random files -->
+					<include name="**/*portDefs.props"/>				
+					<include name="**/*plugin-cfg.xml"/>
+									
+					<!-- Exclude -->
+					<exclude name="**/wstemp/"/>
+					<exclude name="**/temp/"/>
+					<exclude name="**/templates/"/>
+					<exclude name="**/profileTemplates/"/>
+					<!-- filter for readable only -->
+					<selector refid="ratl.readable.log.exclude.list"/>
+				</fileset>
+			</copy>
+			<ratl.log.exclude.list dir.path="@{profile.path}"/>			
+		</sequential>
+	</macrodef>
+
+	<!-- code to check *.phd & *.dmp files --> 
+	<macrodef name="ratl.was.profile.path.checkdumpfile">
+		<attribute name="profile.path"/>
+		<sequential>
+			<autopdproperty name="profile.path.dir" value="@{profile.path}" />			
+										
+			<!-- double check then collect - no log. -->
+			<autopd_unset_property name="isDirAvailable" />
+		    <available file="${profile.path.dir}" type="dir" property="isDirAvailable"/>
+			<autopd_if istrue="${isDirAvailable}">
+				<fileset dir="${profile.path.dir}" id="internal.profile.dmp.set">
+					<include name="**/*.phd"/>
+					<include name="**/*.dmp"/>
+			    </fileset>
+				
+				<internal.checkdumpfile ref.id="internal.profile.dmp.set" outfile.name="profile" 
+					dir.escription="${profile.path.dir} and nested directories."/>
+				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="ratl.was.server.checkdumpfile">
+		<attribute name="was.app.server.location"/>
+		<sequential>
+			<autopdproperty name="was.server.dir" value="@{was.app.server.location}" />			
+							
+			<!-- double check then collect - no log. -->
+			<autopd_unset_property name="isDirAvailable" />
+		    <available file="${was.server.dir}" type="dir" property="isDirAvailable"/>
+			<autopd_if istrue="${isDirAvailable}">
+				<fileset dir="${was.server.dir}" id="internal.was.server.dmp.set">
+					<include name="*.phd"/>
+					<include name="*.dmp"/>
+					<include name="bin/*.phd"/>
+					<include name="bin/*.dmp"/>
+			    </fileset>
+				
+				<internal.checkdumpfile ref.id="internal.was.server.dmp.set" outfile.name="WASServer" 
+					dir.escription="${was.server.dir}, ${was.server.dir}/bin directories."/>
+				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- assume validate was.app.server -->
+	<macrodef name="internal.checkdumpfile">
+		<attribute name="ref.id"/>
+		<attribute name="outfile.name"/>
+		<attribute name="dir.escription"/>
+		<sequential>
+			
+			<rtl.debugecho message="Checking dumpfile against ref.id = @{ref.id}"/>
+
+			<!-- check to see if anything matched -->
+			<autopd_unset_property name="dmp.phd.list"/>
+		    <pathconvert pathsep="${line.separator}" property="dmp.phd.list" refid="@{ref.id}"/>
+			<autopd_unset_property name="has.dmp.phd.list"/>
+			<condition property="has.dmp.phd.list">
+				<and>
+					<isset property="dmp.phd.list"/>
+					<not>
+						<equals arg1="" arg2="${dmp.phd.list}"/>
+					</not>
+				</and>
+			</condition>
+			
+			<!-- Zip information for user -->
+			<autopd_if isNotTrue="${has.dmp.phd.list}">
+				<echo file="${autopdtmp}/@{outfile.name}_PHD_DMP_Files_NOT_found.txt"
+					message="No dump files found in @{dir.escription}"/>
+				<copy todir="${isadcTempOut}/${was.prefix}" outputencoding="UTF-8">
+					<fileset file="${autopdtmp}/@{outfile.name}_PHD_DMP_Files_NOT_found.txt"/>
+				</copy>	
+			</autopd_if>
+			<autopd_if isTrue="${has.dmp.phd.list}">
+				<echo file="${autopdtmp}/@{outfile.name}_PHD_DMP_Files_Found.txt"
+					message="Dump files found in @{dir.escription} : ${line.separator}${dmp.phd.list}"/>
+				<copy todir="${isadcTempOut}/${was.prefix}" outputencoding="UTF-8">
+					<fileset file="${autopdtmp}/@{outfile.name}_PHD_DMP_Files_Found.txt"/>
+				</copy>							
+			</autopd_if>					
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- for <websphere>/Plugins -->
+	<!-- INPUT: 
+		was.app.server.location :  Location of was.app.server. Should be validated.   
+		OUTPUT:
+		     - zipped data 		
+		-->
+	<macrodef name="ratl.was.collect.plugins">		
+		<attribute name="was.app.server.location"/>
+		<attribute name="prefix" default="${was.prefix}"/> 	
+		<attribute name="collect.logs" default="true"/>
+		<attribute name="collect.config" default="true"/>
+		<sequential>
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.collect.plugins" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Gathering WAS Plugins information"
+					replace="${autopdts};;${step.count}"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>	
+			<rtl.debugecho message="${line.separator}Gathering WAS Plugins information...."/>
+			
+			<!-- find the plugins directory.  -->
+			<dirname file="@{was.app.server.location}" property="was.parent.dir"/>
+			<autopdproperty name="was.plugins.dir" value="${was.parent.dir}/${was.plugins.dir.name}"/>
+			
+			<!-- check available -->
+			<autopd_unset_property name="has.was.plugins.dir"/>
+			<available file="${was.plugins.dir}" property="has.was.plugins.dir" type="dir"/>
+			
+			<!-- if available, collect if not, log it -->
+			<autopd_if isnotTrue="${has.was.plugins.dir}">
+				<rtl.debugecho message="WebSphere Plugins directory not found."/>
+			</autopd_if>
+			<autopd_if isTrue="${has.was.plugins.dir}">
+				
+				<rtl.debugecho message="WebSphere Plugins directory found: ${was.plugins.dir}"/>
+				
+				<!-- configuration files -->
+				<autopd_if isTrue="@{collect.config}">
+				<copy todir="${isadcTempOut}/@{prefix}/Plugins" outputencoding="UTF-8">
+						<fileset
+							dir="${was.plugins.dir}">
+							<include name="config/**/plugin*.xml"/>
+							<include name="config/**/plugin*.kdb"/>
+							<exclude name="config/templates/**/*"/>
+							<selector refid="ratl.readable.log.exclude.list"/>
+						</fileset>
+					</copy>
+				</autopd_if>
+				
+				<!-- log files -->
+				<autopd_if isTrue="@{collect.logs}">
+				<copy todir="${isadcTempOut}/@{prefix}/Plugins" outputencoding="UTF-8">
+						<fileset dir="${was.plugins.dir}">
+							<include name="logs/**/*.log"/>							
+							<selector refid="ratl.readable.log.exclude.list"/>
+						</fileset>
+					</copy>
+				</autopd_if>
+				
+				<ratl.log.exclude.list dir.path="${was.plugins.dir}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+
+	<!-- ======================  Start / Stop WAS Server =================  -->
+	<!-- ================================================================= -->
+	
+	<!-- Known WAS Status --> 
+	<macrodef name="ratl.was.credentials.unset">
+		<sequential>
+			<autopdproperty name="has.ratl.was.credential" value="false"/>
+			<autopd_unset_property name="ratl.was.uid"/>
+			<autopd_unset_property name="ratl.was.passwd"/>
+			<autopd_unset_property name="is.ratl.was.credential.skipped"/>
+			
+			<!-- flag to determine whether the has.valid.was.credential is set or not -->
+			<!-- used mainly for prompting user -->
+			<autopdproperty name="has.credential.checked" value="false"/>
+			<autopd_unset_property name="has.valid.was.credential"/>
+			
+		</sequential>
+	</macrodef>
+
+	<macrodef name="ratl.was.credentials.set">
+		<attribute name="uid"/>
+		<attribute name="passwd"/>
+	    <attribute name="validated" default="false"/>
+		<attribute name="is.valid" default="false"/>
+				
+		<sequential>
+			<autopdproperty name="has.ratl.was.credential" value="true"/>
+			<autopdproperty name="ratl.was.uid" value="@{uid}"/>
+			<autopdproperty name="ratl.was.passwd" value="@{passwd}"/>
+			<autopdproperty name="is.ratl.was.credential.skipped" value="false"/>
+
+			<!-- flag to for validation -->
+			<autopdproperty name="has.credential.checked" value="@{validated}"/>
+			<autopdproperty name="has.valid.was.credential" value="@{is.valid}"/>
+			
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="ratl.was.credentials.set.is.skipped">
+		<sequential>
+			<ratl.was.credentials.unset />			
+			<autopdproperty name="is.ratl.was.credential.skipped" value="true"/>
+		</sequential>
+	</macrodef>
+
+	<!-- call this method if credentials provided for ratl.was.uid + ratl.was.passwd are checked -->
+	<macrodef name="ratl.was.credentials.set.is.valid">
+		<attribute name="value"/>
+		<sequential>
+			<autopd_if isTrue="${has.ratl.was.credential}">  <!-- only set the following values if credentials were stored -->
+				<autopdproperty name="has.credential.checked" value="true"/>
+				<autopdproperty name="has.valid.was.credential" value="@{value}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- 
+	Method will prompt user for credentials, but will not validate.   
+	  - if it was not prompted before: ${has.ratl.was.credential} = false
+	  - if it had validation error : ${has.credential.checked} & not ${has.valid.was.credential}
+	  
+	  This will catch if user has blank uid.  
+	  This will not validate uid/password, as validation happens only when call to WAS is executed.
+
+    INPUT: State of previous calls: 
+       - ${has.ratl.was.credential}, ${has.credential.checked},  ${has.valid.was.credential}
+	  	  
+	OUTPUT: 
+	- is.ratl.was.credential.skipped : if user skipped credentials 
+	- has.ratl.was.credential        : if user provided uid and password
+	- ratl.was.uid                   : value user provided
+	- ratl.was.passwd	             : value user provided. This will be quoted if - blank or contains spaces.
+	-->
+	<macrodef name="ratl.was.prompt.request.credentials">
+		<sequential>
+
+			<autopdproperty name="ratl.was.error.ui.msg" value=""/>
+			
+			<!-- check to see if credential provided was invalid -->
+			<!-- if invalid, run the prompt for credentials -->			
+			<autopd_if isTrue="${has.credential.checked}">
+				<autopd_if isNotTrue="${has.valid.was.credential}">					
+					<!-- copy previous info over for prompt -->
+					<autopdproperty name="has.ratl.was.credential" value="false"/>  <!-- reset -->
+					<autopdproperty name="ratl.was.uid.input" value="${ratl.was.uid}"/>
+					<autopdproperty name="ratl.was.passwd.input" value=""/>
+					<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							propertyName="ratl.was.error.ui.msg"
+							key="ratl.was.error.request.credentials" 
+							message="** Please verify that username and password information is correct **"
+							/>
+				</autopd_if>
+			</autopd_if>
+		    
+			<!-- If this script has not been run before... -->
+			<autopd_if isNotTrue="${has.ratl.was.credential}">
+				<wsnlsecho key="ratl.was.prompt.request.credentials" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Requesting WAS credentials..."
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>
+				
+				<!-- RESET -->
+				<ratl.was.credentials.unset/>
+					
+				<autopdproperty name="loop.continue" value="true"/>					
+				<autopdwhile property="loop.continue">
+					<inputdialogtask_v2 actionProperty="user.script.continue" doskip="true" bundle="properties/RATLSHARE/autopd">
+						<fieldtask name="prompt" label="ratl.was.credentials.request.prompt" type="prompt"  />
+						<fieldtask name="label1" label="ratl.was.credentials.request.label1" type="label"/>
+						<fieldtask name="label2" label="${ratl.was.error.ui.msg}" type="label"/>
+						
+						<fieldtask name="ratl.was.uid.input" label="ratl.was.credentials.request.user" type="plaintext" initialValueSource="persisted" defaultValue="admin" />
+						<fieldtask name="ratl.was.passwd.input" label="ratl.was.credentials.request.oasswd" type="password" initialValueSource="persisted" defaultvalue="" />
+					</inputdialogtask_v2>
+					
+					<!-- check to see if skip has been applied -->
+					<autopd_unset_property name="doSkip"/>
+					<condition property="doSkip">
+						<equals arg1="skip" arg2="${user.script.continue}"/> 
+					</condition>
+					
+					<!-- if skipping ... --> 
+					<autopd_if isTrue="${doSkip}">
+						<autopdproperty name="loop.continue" value="false"/>
+						<wsnlsecho key="ratl.was.skip.request.credentials" 
+									bundle="properties/RATLSHARE/autopd"
+									message="Skipping credentials..."
+									id="2090"
+									level="info"
+									messagePrefix="CWPDD"/>
+						<ratl.was.credentials.set.is.skipped />
+					</autopd_if>
+			
+					<!-- Not skip, check for empty only -->
+					<autopd_if isNotTrue="${doSkip}">			
+						
+						<!-- check that all required inputs are available.-->
+						<autopd_unset_property name="missingInput"/>
+						<condition property="missingInput">
+							<equals arg1="" arg2="${ratl.was.uid.input}"/>
+						</condition>
+						
+						<!-- MISSING INPUT -->
+						<autopd_if isTrue="${missingInput}">
+							<saveresourcebundleproperty key="ratl.was.error.missing.request.credentials"
+									bundle="properties/RATLSHARE/autopd"
+									propertyName="ratl.was.error.ui.msg"
+									message="** Missing input for user id or password **"
+									/>
+							<echo message="${ratl.was.error.ui.msg}"/>
+						</autopd_if>
+						
+						<!-- ALL GOOD - exit loop and post process password --> 
+						<autopd_if isNotTrue="${missingInput}">
+							<!-- stop looping when all inputs are available -->
+							<autopdproperty name="loop.continue" value="false"/>
+		
+							<!-- deal with empty password ? needed for WAS? -->
+							<autopd_unset_property name="isEmptyPassword" />
+							<condition property="isEmptyPassword">
+								<or>
+									<not>
+										<isset property="ratl.was.passwd.input"/>
+									</not>
+									<equals arg1="" arg2="${ratl.was.passwd.input}" />
+								</or>
+							</condition>
+							<autopd_if isTrue="${isEmptyPassword}">
+								<autopdproperty name="ratl.was.passwd.input" value='""'/>  <!-- set it to "" --> 						
+							</autopd_if>
+				
+							<autopd_unset_property name="hasSpacePassword" />  <!-- not likely? -->
+							<condition property="hasSpacePassword">
+								<contains string="${ratl.was.passwd.input}" substring=" " />
+							</condition>
+							<autopd_if isTrue="${hasSpacePassword}">
+								<autopdproperty name="ratl.was.passwd.input" value='"${ratl.was.passwd.input}"'/>  <!-- quote it --> 						
+							</autopd_if>
+			
+							<!-- SET VALUES -->
+							<ratl.was.credentials.set uid="${ratl.was.uid.input}" passwd="${ratl.was.passwd.input}"/>
+				
+						</autopd_if>
+						
+					</autopd_if>  <!-- not skip -->		
+				</autopdwhile>    <!-- While not blank uid entries. -->
+
+			</autopd_if>  <!-- requesting credentials -->
+		</sequential>
+	</macrodef>
+				
+
+	<!-- ============================================================ -->
+    <!--       STOP / START WAS Profiles                              -->
+	<!-- ============================================================ -->
+								
+	<!-- STOP Server Profile -->	
+	<!--	
+	ratl.was.stopWASProfile
+		%WAS_HOME%\bin\stopserver.bat <server> -profileName <profileName> 
+		%WAS_HOME%/bin/stopserver.sh <server> -profileName <profileName>
+	
+	ratl.was.stopWASProfile.uid.password
+		%WAS_HOME%\bin\stopserver.bat <server> -profileName <profileName> -username <uid> -password <passwd>
+		%WAS_HOME%/bin/stopserver.sh <server> -profileName <profileName> -username <uid> -password <passwd>
+	
+	INPUT: 
+	   common.dir = directory in which common directory is located. This should include eWAS directory
+	   out.file   = file name to be created and collected to top level of the .zip
+	   server = server . Default to server1.
+	   profile   = the profile to be stopped.
+	
+	OUTPUT: Reference to the last execution of stopServer 	   
+	   result.batch.success - true | unset:  Determine whether stopServer succeed or failed. 
+	      - success = server stops properly, or server already stopped
+	      - see: <ratl.was.default.handle.stopServer.status/>
+	   has.already.stopped.error = true | unset : stopServer detected "already stopped" msg.
+	   has.authentication.error  = true | unset : stopServer detected "authentication error" msg
+	  -->
+	<!-- basic -->	
+	<macrodef name="ratl.was.stopWASProfile">
+		<attribute name="was.app.server.location"/>		
+		<attribute name="out.file"/>
+		<attribute name="server" default="server1"/>
+	    <attribute name="prompt.auth" default="true"/>  <!-- prompt error if authentication issue detected -->
+		<attribute name="profile"/>  <!-- profiles to stop on -->
+		<sequential>
+						
+			<autopdproperty name="has.run.stopServer" value="false"/>
+			
+			<!-- run it if already passed and validated. in -->
+			<autopd_if isTrue="${has.ratl.was.credential}">
+				<autopd_if isTrue="${has.credential.checked}">
+					<autopdproperty name="has.run.stopServer" value="true"/> <!-- flag. ran -->
+					<ratl.was.stopWASProfile.uid.passwd
+						out.file="@{out.file}"
+						was.app.server.location="@{was.app.server.location}"
+						server="@{server}"
+						profile="@{profile}"
+						prompt.auth="@{prompt.auth}"
+						uid="${ratl.was.uid}"
+						passwd="${ratl.was.passwd}"
+					/>
+				</autopd_if>
+			</autopd_if>
+			
+			<!-- since autopd does not have a good way to do else... -->
+			<autopd_if isNotTrue="${has.run.stopServer}">
+				<ratl.was.stopWASProfile.nopass
+					out.file="@{out.file}"
+					was.app.server.location="@{was.app.server.location}"
+					server="@{server}"
+					profile="@{profile}"
+					prompt.auth="@{prompt.auth}"
+				/>
+			</autopd_if>
+				
+		</sequential>		
+	</macrodef>
+	
+	<!-- no password -->
+	<macrodef name="ratl.was.stopWASProfile.nopass">
+		<attribute name="was.app.server.location"/>		
+		<attribute name="out.file"/>
+		<attribute name="server" default="server1"/>
+	    <attribute name="prompt.auth" default="true"/>  <!-- prompt error if authentication issue detected -->
+		<attribute name="profile"/>  <!-- profiles to stop on -->
+		<sequential>
+			<ratl.was.stopWASProfile.setup
+				was.app.server.location="@{was.app.server.location}"
+				out.file="@{out.file}"
+				server="@{server}"
+				profile="@{profile}"	>
+
+				<ratl.was.server.run.log outfile="${exec.out}" execution.cmd='${STOP.SERVER} @{server} -profileName @{profile}'/>
+				
+				<!-- WINDOWS & L/Unix  -->
+				<autopd_unset_property name="result.batch.exec"/>
+				<exec executable="${STOP.SERVER}" resultproperty="result.batch.exec"
+						output="${exec.out}" append="true">						
+						<arg line='@{server} -profileName @{profile}'/>					
+				</exec>
+				
+				<!-- check status result -->
+				<ratl.was.parse.stopServer.status out.file="${exec.out}" result.batch.exec="${result.batch.exec}"/>
+				<ratl.was.default.handle.stopServer.status 
+					has.already.stopped.error="${has.already.stopped.error}"
+					has.authentication.error="${has.authentication.error}"/>
+
+				<!-- if authentication failed, and request to prompt -->
+				<autopd_if isTrue="@{prompt.auth}">
+					<autopd_if isTrue="${has.authentication.error}">						
+						<ratl.was.stopWASProfile.prompt stop.server="${STOP.SERVER}" profile="@{profile}" server="@{server}" out.file="${exec.out}"/>
+					</autopd_if>
+				</autopd_if>
+				
+			</ratl.was.stopWASProfile.setup>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- with uid and password -->
+	<macrodef name="ratl.was.stopWASProfile.uid.passwd">
+		<attribute name="was.app.server.location"/>		
+		<attribute name="out.file"/>
+		<attribute name="uid"/>
+		<attribute name="passwd"/>
+		<attribute name="profile"/>
+		<attribute name="prompt.auth" default="true"/>  <!-- prompt error & retry if authentication issue detected -->
+		<attribute name="server" default="server1"/>
+		<sequential>
+			<ratl.was.stopWASProfile.setup
+				was.app.server.location="@{was.app.server.location}"
+				out.file="@{out.file}"
+				server="@{server}"
+				profile="@{profile}">	
+				
+				<ratl.was.server.run.log outfile="${exec.out}" 
+					execution.cmd='${STOP.SERVER} @{server} -profileName @{profile} -username @{uid} -password *******'/>
+				
+				<!-- WINDOWS & L/Unix  -->
+				<autopd_unset_property name="result.batch.exec"/>
+				<exec executable="${STOP.SERVER}" resultproperty="result.batch.exec"
+						output="${exec.out}" append="true">					
+						<arg line='@{server} -profileName @{profile} -username @{uid} -password @{passwd}'/>					
+				</exec>
+					
+				<!-- check status result -->
+				<ratl.was.parse.stopServer.status out.file="${exec.out}" result.batch.exec="${result.batch.exec}"/>
+				<ratl.was.default.handle.stopServer.status 
+					has.already.stopped.error="${has.already.stopped.error}"
+					has.authentication.error="${has.authentication.error}"/>
+				
+				<!-- if authentication failed, and request to prompt -->
+				<autopd_if isTrue="@{prompt.auth}">
+					<autopd_if isTrue="${has.authentication.error}">
+						<!-- set the values from what user had provided so it can be used by the prompting. -->
+						<ratl.was.credentials.set passwd="@{passwd}" uid="@{uid}" validated="true" is.valid="false"/>
+						
+						<!-- prompt -->
+						<ratl.was.stopWASProfile.prompt stop.server="${STOP.SERVER}" profile="@{profile}" server="@{server}" out.file="${exec.out}"/>
+					</autopd_if>
+				</autopd_if>
+					
+			</ratl.was.stopWASProfile.setup>
+		</sequential>
+	</macrodef>
+
+	<!-- use this within the: ratl.was.stopWASProfile.setup block -->
+	<!-- 
+	   Code will prompt the user for credentials before running stopServer.
+	   Code will loop till : successful execution of stopServer or user skipped. 
+	   
+	INPUT: 
+	   STOP.SERVER = Full path to the stopServer.bat or stopServer.sh file. (pre-calculated)
+	   server    = server .
+	   profile   = the profile to be stopped.
+	   out.file  = the output file of all the code execution.
+	
+	OUTPUT: Reference to the last execution of stopServer command.   
+	   result.batch.success - true | unset:  Determine whether stopServer succeed or failed. 
+	      - success = server stops properly, or server already stopped
+	      - see: <ratl.was.default.handle.stopServer.status/>
+	   has.already.stopped.error = true | unset : stopServer detected "already stopped" msg.
+	   has.authentication.error  = true | unset : stopServer detected "authentication error" msg
+	   
+	   NOTE: when user desides to "skip" credentials, status of this execution is:
+	      - result.batch.success = false
+	      - has.authentication.error = true. 
+      -->
+	<macrodef name="ratl.was.stopWASProfile.prompt">
+		<attribute name="STOP.SERVER"/>
+		<attribute name="profile"/>
+		<attribute name="server"/>
+		<attribute name="out.file"/>  <!-- full path -->
+		<sequential>
+			
+			<!-- output for the local file - to ensure scanning of status is clean. -->
+			<autopdproperty name="local.out.file" value="${autopdtmp}/@{profile}.stopServer.txt"/>
+			
+			<!-- loop - will run stopServer again, till valid input or skipped -->		
+			<autopdproperty name="continue.prompt" value="true"/>			
+			<autopdwhile property="continue.prompt" >
+				
+				<echo message="" file="${local.out.file}"/>  <!-- blank out content -->
+				
+				<!-- PROMPT for credentials -->
+				<ratl.was.prompt.request.credentials />
+				
+				<!-- USER Skipped -->
+				<autopd_if isTrue="${is.ratl.was.credential.skipped}">
+					<ratl.was.credentials.set.is.skipped/>
+					<autopdproperty name="continue.prompt" value="false"/>
+				</autopd_if>
+				
+				<!-- USER Provided - try again.  -->
+				<autopd_if isNotTrue="${is.ratl.was.credential.skipped}">
+				
+					<ratl.was.server.run.log outfile="${local.out.file}" 
+						execution.cmd='@{STOP.SERVER} @{server} -profileName @{profile} -username ${ratl.was.uid} -password *******'/>
+					
+					<!-- WINDOWS & L/Unix  -->
+					<autopd_unset_property name="result.batch.exec"/>
+					<exec executable="@{STOP.SERVER}" resultproperty="result.batch.exec"
+							output="${local.out.file}" append="true">					
+							<arg line='@{server} -profileName @{profile} -username ${ratl.was.uid} -password ${ratl.was.passwd}'/>					
+					</exec>
+					
+					<!-- check Status -->
+					<ratl.was.parse.stopServer.status out.file="${local.out.file}" result.batch.exec="${result.batch.exec}"/>
+					<ratl.was.default.handle.stopServer.status 
+						has.already.stopped.error="${has.already.stopped.error}"
+						has.authentication.error="${has.authentication.error}"/>
+					
+					<!-- Check if authentication passed, stop prompt - log info and exit loop -->
+					<autopd_if isNotTrue="${has.authentication.error}">
+						<ratl.was.credentials.set.is.valid value="true"/>
+						<autopdproperty name="continue.prompt" value="false"/>						
+					</autopd_if>
+					<autopd_if isTrue="${has.authentication.error}">
+						<ratl.was.credentials.set.is.valid value="false"/>
+					</autopd_if>
+					
+					<!-- Concat content to the out.file to keep track -->
+					<concat destfile="@{out.file}" append="true">
+				    	<filelist files="${local.out.file}"/>
+				    </concat>					
+					
+				</autopd_if>
+				
+			</autopdwhile>  <!-- while still need to prompt -->
+				
+		</sequential>
+	</macrodef>
+
+	
+	
+	<!-- setup to evoke WAS stop Profile                            --> 
+	<!-- Use this to allow substitution of addition code envokation --> 
+	<!-- see: ratl.was.stopWASProfile -->
+	<!--
+	  It is up to the user of the stopWASProfile.setup to handle server status error
+	  - macros will have access to: 
+	     - ${STOP.SERVER}
+	     - ${exec.out} : full path to error output.
+	  -->
+	<macrodef name="ratl.was.stopWASProfile.setup">
+		<attribute name="was.app.server.location"/>		
+		<attribute name="out.file"/>                   <!-- relative to ${autopdtmp} -->
+		<attribute name="profile"/>                    <!-- profile to stop -->
+		<attribute name="server" default="server1"/> 
+		<element name="WASStopServerExecution" implicit="true"/> 
+		<sequential>
+					
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.stopWASProfile.setup" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Stopping WAS services for profile {2} for server {3}..."
+					replace="${autopdts};;${step.count};;@{profile};;@{server}"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>	
+				
+			<internal.get.was.cmd.path was.cmd="stopServer" was.app.cmd.location="@{was.app.server.location}/bin"/>
+			<autopdproperty name="STOP.SERVER" value="${was.cmd.path}"/>		
+			
+			<!-- Check the scripts available -->			
+			<autopd_if isNotTrue="${has.was.cmd}">
+				<wsnlsecho key="ratl.server.was.script.not.available" 
+							bundle="properties/RATLSHARE/autopd"
+							message="{0} and required target directory not available."
+							replace="${STOP.SERVER}"
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>	
+			</autopd_if>
+			<!-- got stopServer -->
+			<autopd_if isTrue="${has.was.cmd}">					
+				<!-- trim profilename -->
+				<autopdproperty name="exec.out" value="${autopdtmp}/@{out.file}"/>
+				<autopd_unset_property name="result.batch.exec"/>
+						
+				<!-- RUN IT - code can choose how to handle error -->				
+				<WASStopServerExecution/>	
+					
+				<!-- collect the output file -->
+				<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+					<fileset file="${exec.out}"/>
+				</copy>
+		
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+
+	<!--
+	  OUTPUT:
+	  result.batch.success : 0 is successful - other ones... 
+	  has.already.stopped.error:if error logged: ADMU0509I
+	  has.authentication.error: if error logged: ADMU4113E 	  
+	  -->
+	<macrodef name="ratl.was.parse.stopServer.status">
+		<attribute name="result.batch.exec"/>
+		<attribute name="out.file"/>  <!-- full path -->
+		<sequential>
+			<autopd_unset_property name="has.authentication.error"/>
+			<autopd_unset_property name="has.already.stopped.error"/>
+				
+			<autopd_unset_property name="result.batch.success"/>
+			<condition property="result.batch.success">
+				<or>
+					<equals arg1="0" arg2="@{result.batch.exec}"/>  <!-- no problems -->
+				</or>
+			</condition>
+			
+			<autopd_if isNotTrue="${result.batch.success}">
+				
+				<!-- look to see if it was authentication error -->				
+				<regex_extract_value 
+						file="@{out.file}"
+						searchPattern="^(${was.auth.error.required})"
+						subPatternIndex="1"
+						extractedValue="extracted.authentication.error"
+						returnOption="lastMatch"
+						match_across_multiple_lines="false"
+					/>
+				
+				<condition property="has.authentication.error">
+					<isset property="extracted.authentication.error"/>
+				</condition>
+				
+				<!-- look to see if it was already stopped -->
+				<regex_extract_value 
+					file="@{out.file}"
+					searchPattern="^(${was.stop.status.already.stopped})"
+					subPatternIndex="1"
+					extractedValue="extracted.already.stopped.error"
+					returnOption="lastMatch"
+					match_across_multiple_lines="false"
+				/>
+				
+				<condition property="has.already.stopped.error">
+					<isset property="extracted.already.stopped.error"/>
+				</condition>
+
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+			
+	<!-- default handling of stopServer -->
+	<!-- CODE will modify : ${result.batch.success} -->
+	<macrodef name="ratl.was.default.handle.stopServer.status">
+		<attribute name="has.authentication.error"/>
+		<attribute name="has.already.stopped.error"/>
+		<sequential>
+			 
+			<!-- execution successful - no op, except to log it. -->
+			<autopd_if isTrue="${result.batch.success}">
+				<wsnlsecho key="ratl.server.was.stop.status" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Server stopped."
+						id="2090"
+						level="info"
+						messagePrefix="CWPDD"/>	
+				<ratl.was.credentials.set.is.valid value="true"/>
+			</autopd_if>
+			
+			<!-- update result.batch.success - if already stopped  -->
+			<autopd_if isNotTrue="${result.batch.success}">
+				<!-- other checks - valid error -->
+				<autopd_if isTrue="@{has.already.stopped.error}">	
+					<wsnlsecho key="ratl.server.was.stop.status.already" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Server already stopped."
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>
+					<autopdproperty name="result.batch.success" value="true"/>
+				</autopd_if>
+				<autopd_if isTrue="@{has.authentication.error}">
+					<wsnlsecho key="ratl.server.was.stop.status.authen" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Server stop requires authentication."
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>	
+	
+
+	<!-- 
+	  Method to kill a server process base on server.pid
+	  Code will first determine whether kill process can be executed, then will 
+	     - determine whether it can kill server process
+	     
+	  OUTPUT:
+	     has.kill.server.process.error = true | false : If any failure from killing the process.
+	     
+	     
+	  -->
+	<!-- fix stop error -->
+	<macrodef name="ratl.was.kill.server.process">
+		<attribute name="was.app.server.location"/>	
+		<attribute name="server" default="server1"/>
+		<attribute name="profile"/>
+		<attribute name="out.file"/>      <!-- Full path for logging system.kill.process execution -->
+		<sequential>
+			
+			<autopdproperty name="has.kill.server.process.error" value="true"/>
+			<echo file="@{out.file}" message=""/> <!-- zero out the file -->
+			
+			<!-- check if process kill can happen -->
+			<system.can.kill.process />			
+			<autopd_if isNotTrue="${has.required.cmds}">
+				<echo file="@{out.file}" append="true" message="Cannot proceed with kill process: ${required.cmds.error}"/>
+			</autopd_if>			
+			<autopd_if isTrue="${has.required.cmds}">
+				
+				<!-- find profile path then server1.pid--> 
+				<ratl.was.get.profile.path was.app.server.location="@{was.app.server.location}" was.profile="@{profile}"/>
+				<autopd_if isNotTrue="${is.profile.path.available}">
+					<echo file="@{out.file}" append="true" message="Profile path: ${profile.path} for @{profile} not available."/>
+				</autopd_if>
+			
+				<autopd_if isTrue="${is.profile.path.available}">
+					
+					<!-- find server1.pid -->
+					<autopdproperty name="server.pid.file" value="${profile.path}/logs/@{server}/@{server}.pid"/>
+					<autopd_unset_property name="has.server.pid.file"/>
+					<available file="${server.pid.file}" type="file" property="has.server.pid.file"/>
+					<autopd_if isNotTrue="${has.server.pid.file}">
+						<echo file="@{out.file}" append="true" message="server.pid file not found in: ${server.pid.file}"/>
+					</autopd_if>
+					<autopd_if isTrue="${has.server.pid.file}">
+						
+						<!-- read server.pid -->
+						<autopd_unset_property name="server.pid.read"/>
+						<regex_extract_value 
+								file="${server.pid.file}"
+								searchPattern="([0-9]+)"
+								subPatternIndex="1"
+								extractedValue="server.pid.read"
+								returnOption="firstMatch"
+								match_across_multiple_lines="false"
+							/>
+						<autopd_unset_property name="has.server.pid.read"/>
+						<condition property="has.server.pid.read">
+							<isset property="server.pid.read"/>
+						</condition>
+						
+						<!-- if reading is successful, try to kill the proess --> 
+						<autopd_if isNotTrue="${has.server.pid.read}">
+							<echo file="@{out.file}" append="true" message="Error process id cannot be extracted from : ${server.pid.read}"/>
+						</autopd_if>
+						<autopd_if isTrue="${has.server.pid.read}">
+							
+							<echo file="@{out.file}" append="true" message="${line.separator}============= Starting process kill ================${line.separator}"/>
+							
+							<system.kill.process
+								pid="${server.pid.read}" image.win="java.exe" image.unix="java"
+								log.output="true" out.file="@{out.file}"/>
+							
+							<!-- All good -->
+							<autopd_if isNotTrue="${has.process.kill.error}">
+								<autopdproperty name="has.kill.server.process.error" value="false"/>
+							</autopd_if>
+							
+						</autopd_if>
+						
+					</autopd_if>
+					
+				</autopd_if>
+			
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+
+	<!-- START WAS Server - with a list of profiles -->	
+	<!-- EXAMPLE: 
+	   %WAS_HOME%\bin\startserver.bat server1 -profileName cmprofile 
+	   %WAS_HOME%/bin/startserver.sh server1 -profileName cmprofile	   
+	   INPUT: 
+	   common.dir = directory in which common directory is located. This should include eWAS directory
+	   out.file   = file name to be created and collected to top level of the .zip
+	   profile   = profile that needs to be started 
+	   server    = name of the server associated with that profile to be started.   
+	  --> 
+	<macrodef name="ratl.was.startWASProfile">
+		<attribute name="was.app.server.location"/>
+		<attribute name="out.file"/>
+		<attribute name="profile" />
+		<attribute name="server" default="server1"/>
+		<sequential>
+			<ratl.was.startWASProfile.setup
+				was.app.server.location="@{was.app.server.location}"
+				out.file="@{out.file}"
+				server="@{server}"
+				profile="@{profile}">
+				
+				<!-- ECHO execution for logging -->
+				<ratl.was.server.run.log outfile="${exec.out}" execution.cmd='${START.SERVER} @{server} -profileName @{profile}'/>
+				
+				<!-- RUN IT -->
+				<autopd_unset_property name="result.batch.exec"/>				
+				<exec executable="${START.SERVER}" resultproperty="result.batch.exec"
+					   output="${exec.out}" append="true">
+						<arg line='@{server} -profileName @{profile}'/>					
+				</exec>
+			
+				<!-- Check status & update -->
+				<ratl.was.parse.startServer.status result.batch.exec="${result.batch.exec}"	out.file="${exec.out}"/>
+				<ratl.was.default.handle.startServer.status has.already.started.error="${has.already.started.error}" />
+				
+			</ratl.was.startWASProfile.setup>
+		</sequential>
+	</macrodef>
+	
+	<!-- setup to evoke WAS start Profile                           --> 
+	<!-- Use this to allow substitution of addition code envokation -->
+	<!-- see: ratl.was.startWASProfile -->
+	<!-- Additional startup state is checked: was.parse.startServer.status -->	
+	<macrodef name="ratl.was.startWASProfile.setup">
+		<attribute name="was.app.server.location"/>
+		<attribute name="out.file"/>
+		<attribute name="profile" />
+		<attribute name="server" default="server1"/>		 
+		<element name="WASStartServerExecution" implicit="true"/> 
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.was.startWASProfile.setup" 
+						bundle="properties/RATLSHARE/autopd"
+						message="[{0}] Step {1}: Starting WAS services for profile {2} for server {3}..."
+						replace="${autopdts};;${step.count};;@{profile};;@{server}"
+						id="2090"
+						level="info"
+						messagePrefix="CWPDD"/>	
+					
+			<internal.get.was.cmd.path was.cmd="startServer" was.app.cmd.location="@{was.app.server.location}/bin"/>
+			<autopdproperty name="START.SERVER" value="${was.cmd.path}"/>		
+			
+			<!-- Check the scripts available -->			
+			<autopd_if isNotTrue="${has.was.cmd}">
+				<wsnlsecho key="ratl.server.was.script.not.available" 
+						bundle="properties/RATLSHARE/autopd"
+						message="{0} and required target directory not available."
+						replace="${START.SERVER}"
+						id="2091"
+						level="info"
+						messagePrefix="CWPDD"/>
+			</autopd_if>			
+			<!-- got all the requirements -->			
+			<autopd_if isTrue="${has.was.cmd}">
+				
+				<autopdproperty name="exec.out" value="${autopdtmp}/@{out.file}"/>
+				
+				<!-- run it WINDOWS & L/Unix  -->
+				<!-- code need to write output to: 
+				     ${exec.out} &  ${result.batch.exec}
+				     code should also determine how to handle error conditions.
+				  --> 
+				<WASStartServerExecution />						
+				
+				<!-- zip the results -->
+				<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+					<fileset file="${exec.out}"/>
+				</copy>
+				
+			</autopd_if>	<!-- has required file --> 			
+			
+		</sequential>
+	</macrodef>
+	
+	<!--
+	Code to check the WAS start server error codes. 
+	  OUTPUT:
+	  result.batch.success : 0 is successful - other ones... 
+	  has.already.started.error:if error logged: ADMU0509I
+	  -->
+	<macrodef name="ratl.was.parse.startServer.status">
+		<attribute name="result.batch.exec"/>
+		<attribute name="out.file"/>  <!-- full path -->
+		<sequential>
+
+			<autopd_unset_property name="has.already.started.error"/>
+				
+			<autopd_unset_property name="result.batch.success"/>
+			<condition property="result.batch.success">
+				<equals arg1="0" arg2="@{result.batch.exec}"/>  <!-- no problems -->
+			</condition>
+			
+			<autopd_if isNotTrue="${result.batch.success}">
+				
+				<!-- look to see if it was already stopped -->
+				<regex_extract_value 
+					file="@{out.file}"
+					searchPattern="^(${was.start.status.already.started})"
+					subPatternIndex="1"
+					extractedValue="extracted.already.started.error"
+					returnOption="lastMatch"
+					match_across_multiple_lines="false"
+				/>
+				<condition property="has.already.started.error">
+					<isset property="extracted.already.started.error"/>
+				</condition>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+
+    <!-- code handles default startServer status 
+       - this will modify : result.batch.success as needed
+      -->
+	<macrodef name="ratl.was.default.handle.startServer.status">
+		<attribute name="has.already.started.error"/>
+		<sequential>
+			
+			<!-- default: ignore startServer error that are "server already started" --> 
+			<autopd_if isNotTrue="${result.batch.success}">
+				<autopd_if isTrue="@{has.already.started.error}">
+					<wsnlsecho key="ratl.server.was.start.status.already" 
+								bundle="properties/RATLSHARE/autopd"
+								message="Server already started."
+								id="2090"
+								level="info"
+								messagePrefix="CWPDD"/>	
+					<autopdproperty name="result.batch.success" value="true"/>
+				</autopd_if>
+			</autopd_if>
+			
+			<autopd_if isTrue="${result.batch.success}">
+				<wsnlsecho key="ratl.server.was.start.status" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Server started."
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${result.batch.success}">
+				<wsnlsecho key="ratl.server.was.start.status.error" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Error starting server..."
+							id="2091"
+							level="warn"
+							messagePrefix="CWPDD"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+						
+	<macrodef name="ratl.was.server.run.log">
+		<attribute name="execution.cmd"/>
+		<attribute name="outfile"/>
+		<sequential>
+		
+		<wsnlsecho key="ratl.general.executing" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Running command: {0}"
+					replace="@{execution.cmd}"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>
+		<echo file="@{outfile}" append="true" message="Running command: @{execution.cmd}${line.separator}" />
+		<echo file="@{outfile}" append="true" message="============================================${line.separator}"/>		
+		</sequential>
+	</macrodef>
+	
+
+	<!-- IHS - are there other versions of IHS   -->
+	<property name="------------------------------- IHS ------------------------------" value=""/>
+			
+	<!-- for windows services -->
+	<property name="internal.http.service.name" value="IBMHTTPServer"/>
+	<property name="internal.http.service.name.display" value="IBM HTTP Server"/>
+		
+	
+	<!-- Get IHS base on standard install paths :  .nifregistry & Installation Manager -->
+	<!-- 
+	  OUTPUT:
+	    - has.ratl.ihs.install.list
+	          ratl.ihs.install.list = "" or list returned w/ @ separateor.
+	  -->
+	<macrodef name="ratl.ihs.get.all.standard.install.path">
+		<sequential>
+			
+			<wsnlsecho key="ratl.server.ihs.location" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Determining IHS installation location ..."
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/> 
+	
+			<!-- look for it in .nifregistry --> 
+			<internal.get.nifregistry.location/>
+			<autopd_if isTrue="${has.nifregistry.location}">
+				<!-- collect .nifregistry if available -->
+				<copy todir="${isadcTempOut}/${was.prefix}" outputencoding="UTF-8">
+					<fileset file="${nifregistry.location}"/>
+				</copy>
+				
+				<!-- returns: ${ihs.install.list} and ${has.ihs.list.install} -->
+				<internal.read.nifregistry.for.ihs nifregistry.file="${nifregistry.location}" />				
+			</autopd_if>
+			
+			<!-- look for WAS in installation manager, returns ${product.install.path.list} separated by @--> 
+			<getMultiProductInfoFromIM_noprompt product.id.list="${ihs.im.ids}" 
+				collect.im.data="false" display.include.path="false"/>
+			
+			<!-- consolidate the two lists. --> 
+			<autopdproperty name="ratl.ihs.install.list" value=""/>
+				
+			<!-- ISADC WORKWROUND -->
+			<run.if.not.empty input="${ihs.install.list},${product.install.path.list}">
+				<!-- loop through the list - from .nifregistry and from IM -->
+				<autopdloop delimiter="," param="list" paramlist="${ihs.install.list},${product.install.path.list}">
+					<autopd_unset_property name="has.list"/>
+					<condition property="has.list">
+						<and>
+							<isset property="list"/>
+							<not>
+								<equals arg1="" arg2="${list}"/>
+							</not>
+							<not>
+								<contains string="${list}" substring="$${" />
+							</not>
+						</and>
+					</condition>
+					<autopd_if isTrue="${has.list}">
+						<autopdproperty name="ratl.ihs.install.list" value="${ratl.ihs.install.list}@${list}"/>
+					</autopd_if>
+				</autopdloop>
+			</run.if.not.empty>
+			
+			<trim_filename key="ratl.ihs.install.list" filename="${ratl.ihs.install.list}" prefixtrim="@"/>
+		
+			<!-- check -->
+			<autopd_unset_property name="has.ratl.ihs.install.list"/>
+			<condition property="has.ratl.ihs.install.list">
+				<not>
+					<equals arg1="" arg2="${ratl.ihs.install.list}"/>
+				</not>
+			</condition>
+			
+			<!-- debug log-->
+			<autopd_if isTrue="${has.ratl.ihs.install.list}">
+				<rtl.debugecho message="IHS found: ratl.ihs.install.list = ${ratl.ihs.install.list}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${has.ratl.ihs.install.list}">
+				<rtl.debugecho message="IHS not found on this system."/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!--
+	Get a list of All IHS entries - start with .nifregistry, then services, then default 
+	OUTPUT: 
+	 ratl.ihs.install.list : "" or fill with list (1 or more) of ihs location uri , delimited by @
+	 has.ratl.ihs.install.list : true | unset, if
+	  -->
+	<macrodef name="ratl.ihs.get.install.path.list">
+		<sequential>
+			
+		<!-- set up -->
+		<autopd_unset_property name="ratl.ihs.install.list"/>
+		<autopd_unset_property name="has.ratl.ihs.install.list"/>
+		
+		<!-- start with places to find multiple locations.  -->
+		<!-- nifregistry -->
+		<ratl.ihs.get.all.standard.install.path />				
+		<autopd_if isNotTrue="${has.ratl.ihs.install.list}">
+			<autopd_if isTrue="${isWindows}">
+				<ratl.ihs.win.get.install.path.80.70.60/>					
+			</autopd_if>
+		</autopd_if>
+			
+		<!-- single path options -->
+		<autopd_if isNotTrue="${has.ratl.ihs.install.list}">
+			<autopd_if isTrue="${isLinux}">
+				<ratl.ihs.linux.get.install.path/>
+			</autopd_if>
+			<autopd_if isNotTrue="${has.ratl.ihs.install.dir}">
+				<ratl.ihs.get.default.install.path /> <!-- this resets has.ratl.ihs.install.dir -->
+			</autopd_if>
+			
+			<!-- found soemthing -->
+			<autopd_if isTrue="${has.ihs.list.install}">
+				<!-- convert to what the output needs -->
+				<autopdproperty name="ratl.ihs.install.list" value=""/>
+				<autopdproperty name="has.ratl.ihs.install.list" value="${has.ihs.list.install}"/>				
+			</autopd_if>
+
+		</autopd_if>
+			
+		<rtl.debugecho message="ihs.get.install.path.list: ratl.ihs.install.list = ${ratl.ihs.install.list}"/>
+		<rtl.debugecho message="ihs.get.install.path.list: has.ratl.ihs.install.list = ${has.ratl.ihs.install.list}"/>
+		
+		</sequential>
+	</macrodef>
+		
+	
+	<!-- 
+	   Scans the .nifregistry file.  Look for productid = IHS
+	  
+	   INPUT:
+	   nifregistry.file: Path to a valid .nifregistry file.	     
+	      Sample: 
+	      <nifregistry>
+	        <product installrooturi="file:///C:/Program%20Files%20(x86)/IBM/HTTPServer/" lastvisited="2011-11-07 17:16:14-0500" productid="IHS" version="7.0.0.0"/>
+	      	or
+   		    <product installrooturi="file:///home/auto_login/IBM/HTTPServer/" lastvisited="2011-11-07 15:00:53-0500" productid="IHS" version="7.0.0.0"/>
+	      </nifregistry>
+	   OUTPUT: 
+	    ihs.install.list : "" or fill with list of ihs location uri 
+	    has.ihs.list.install : true | unset, if 
+	    Delimiter = @ 
+ 
+	-->
+	<macrodef name="internal.read.nifregistry.for.ihs">
+		<attribute name="nifregistry.file"/> 
+		<sequential>
+          
+			<!-- set up -->
+			<autopd_unset_property name="ihs.install.list.read"/>
+			
+			<!-- read xml elements - IHS installrooturi -->
+			<autopd_read_multiple_xml_elements filename="@{nifregistry.file}" 
+			     path="nifregistry!product(productid=IHS)" 
+			     delimiter="!"
+			     return_delimiter="@">
+				<xml_attribute name="installrooturi" result="ihs.install.list.read" />
+			</autopd_read_multiple_xml_elements>	
+			
+			<autopd_unset_property name="has.ihs.list.install"/>
+			<condition property="has.ihs.list.install">
+				<and>
+					<isset property="ihs.install.list.read"/>
+					<not>
+						<equals arg1="" arg2="${ihs.install.list.read}"/>
+					</not>
+				</and>
+			</condition>
+			
+			<!-- has list - next step -->
+			<autopd_if isTrue="${has.ihs.list.install}">
+				<!-- CLEAN UP & Validate -->
+				<ratl.was.util.uri.clean.validate uri.list="${ihs.install.list.read}"/>
+				<autopdproperty name="ihs.install.list" value="${uri.list.cleaned}"/>
+				
+				<!-- check again -->
+				<autopd_unset_property name="has.ihs.list.install"/>
+				<condition property="has.ihs.list.install">
+					<or>
+						<not>
+							<equals arg1="" arg2="${ihs.install.list}"/>
+						</not>
+						<contains string="${ihs.install.list}" substring="$${"/>
+					</or>
+				</condition>
+				
+								
+			</autopd_if>
+
+			<rtl.debugecho message="readNifregistry: ihs.install.list.read = ${ihs.install.list.read}"/>
+			<rtl.debugecho message="readNifregistry: ihs.install.list = ${ihs.install.list}"/>
+			
+		</sequential>
+	</macrodef>
+	
+	 
+	<!--
+	  Goes through the different possible windows services for IHS...
+	  OUTPUT: 
+	    - has.ratl.ihs.install.list
+	    - ratl.ihs.install.list
+	  -->
+	<macrodef name="ratl.ihs.win.get.install.path.80.70.60">		
+		<sequential>
+			<autopdproperty name="ratl.ihs.install.list" value=""/>			
+			<autopd_unset_property name="has.ratl.ihs.install.list"/>
+			
+			<autopd_if isTrue="${isWindows}">
+				<!-- get 8.0 -->
+				<ratl.ihs.win.get.install.path version="V8.0"/>
+				<autopd_if isTrue="${has.ratl.ihs.install.dir}">
+					<autopdproperty name="ratl.ihs.install.list" value="${ratl.ihs.install.list},${ratl.ihs.install.dir}"/>
+				</autopd_if>				
+				
+				<!-- get 7.0 -->
+				<ratl.ihs.win.get.install.path version="7.0"/>
+				<autopd_if isTrue="${has.ratl.ihs.install.dir}">
+					<autopdproperty name="ratl.ihs.install.list" value="${ratl.ihs.install.list},${ratl.ihs.install.dir}"/>					
+				</autopd_if>				
+				
+				<!-- get 6.0 -->
+				<ratl.ihs.win.get.install.path version="6.0"/>
+				<autopd_if isTrue="${has.ratl.ihs.install.dir}">
+					<autopdproperty name="ratl.ihs.install.list" value="${ratl.ihs.install.list},${ratl.ihs.install.dir}"/>					
+				</autopd_if>
+				
+				<!-- trim the header comma if available -->
+				<trim_filename key="ratl.ihs.install.list" filename="${ratl.ihs.install.list}" prefixtrim=","/>
+				
+				<autopd_unset_property name="has.ratl.ihs.install.list"/>
+				<condition property="has.ratl.ihs.install.list">
+					<and>
+						<isset property="ratl.ihs.install.list"/>
+						<not>
+							<equals arg1="" arg2="${ratl.ihs.install.list}"/>
+						</not>
+						<not>
+							<!-- this is abnormal, as the value should've stayed "" -->
+							<contains string="${ratl.ihs.install.list}" substring="$${"/>
+						</not>
+					</and>
+				</condition>
+	
+				<!-- clean it in case of bad reference .. -->
+				<autopd_if isNotTrue="${has.ratl.ihs.install.list}">
+					<autopd_unset_property name="ratl.ihs.install.list" /> 
+				</autopd_if>
+				
+			</autopd_if>				
+			
+		</sequential>
+	</macrodef>
+	
+    <!-- INPUT: version - version information. 
+	     Version is used to construct the service.name and service.name.display as: 
+	       - IBMHTTPServer@{version}
+	       - IBM HTTP Server @{version}
+	    
+	    Method uses sc qc to get the Binary_bin_path information. 
+	    
+	    Example output: C:\Program Files\IBM\HTTPServer\bin\httpd.exe 
+	    
+	    OUTPUT: set or unset. 
+	       - has.service.bin.path - from win_parseServiceDetails
+	       - service.bin.path     - from win_parseServiceDetails
+	       - ratl.ihs.bin.dir
+	       - ratl.ihs.install.dir
+	       - has.ratl.ihs.install.dir
+	  -->
+	<macrodef name="ratl.ihs.win.get.install.path">
+		<attribute name="version" default="7.0"/>  <!-- version information is NOT validated! -->
+		<sequential>
+			
+			<autopd_unset_property name="has.ratl.ihs.install.dir"/>
+			<autopd_unset_property name="ratl.ihs.bin.dir"/>
+			<autopd_unset_property name="ratl.ihs.install.dir"/>
+			<autopd_if isTrue="${isWindows}">
+				
+				<win_getServiceDetails serviceName="${internal.http.service.name}@{version}" serviceDisplay="${internal.http.service.name.display} @{version}"/>
+				<autopd_if isTrue="${service.available}">
+					<win_parseServiceDetails result.output="${result.output}"/>	
+				</autopd_if>
+				<autopd_if isNotTrue="${service.available}">
+					<!-- reset these properties from win_parseServiceDetails -->
+					<autopd_unset_property name="has.valid.service.bin.path"/>
+					<autopd_unset_property name="service.bin.path"/>
+				</autopd_if>
+		
+				<!-- check the result -->
+				<autopd_if isTrue="${has.valid.service.bin.path}">
+					<dirname file="${service.bin.path}" property="ratl.ihs.bin.dir"/>
+					<dirname file="${ratl.ihs.bin.dir}" property="ratl.ihs.install.dir"/>
+					<available file="${ratl.ihs.install.dir}" type="dir" property="has.ratl.ihs.install.dir"/>
+				</autopd_if>
+				
+				
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- INPUT: 
+	    Method uses grep to look for httpd with admin.conf or httpd.conf
+	    ps -ef | grep httpd
+	    Pattern example: 
+	    500      17068 17066  0 17:26 ?        00:00:00 /home/auto_login/IBM/HTTPServer/bin/httpd -f /home/auto_login/IBM/HTTPServer/conf/admin.conf	    
+	    See: http://publib.boulder.ibm.com/infocenter/wasinfo/v6r0/index.jsp?topic=%2Fcom.ibm.websphere.ihs.doc%2Finfo%2Fihs%2Fihs%2Ftihs_startadmserv.html
+	    OUTPUT: set or unset. 
+	       - ratl.ihs.bin.dir
+	       - ratl.ihs.install.dir
+	       - has.ratl.ihs.install.dir
+	  --> 
+	<macrodef name="ratl.ihs.linux.get.install.path">
+		<sequential>
+			
+			<autopd_unset_property name="ratl.ihs.bin.dir"/>
+			<autopd_unset_property name="ratl.ihs.install.dir"/>
+			<autopd_unset_property name="has.ratl.ihs.install.dir"/>
+			
+			<autopd_if isTrue="${isLinux}">
+				<autopdproperty name="ps.out.tmp" value="${autopdtmp}/ps.out.tmp"/>
+				
+				<exec executable="/bin/sh" append="true" failonerror="false" failifexecutionfails="false" output="${ps.out.tmp}">
+					<arg value="-c" />
+					<arg value="ps -ef | grep httpd"/>
+				</exec>
+				
+				<!-- check file - pick last matched...  -->
+				<autopd_unset_property name="httpd.bin.match.out"/>
+				<regex_extract_value 
+						file="${ps.out.tmp}"
+						searchPattern="^[^/]*(.*)/httpd\s+"
+						subPatternIndex="1"
+						extractedValue="httpd.bin.match.out"
+						returnOption="lastMatch"
+						match_across_multiple_lines="false"
+					/>
+				
+				<!-- check the result -->
+				<autopd_unset_property name="has.match"/>
+				<condition property="has.match">
+					<isset property="httpd.bin.match.out"/>
+				</condition>
+				
+				<!-- if has match -->
+				<autopd_if isTrue="${has.match}">					
+					<autopdproperty name="ratl.ihs.bin.dir" value="${httpd.bin.match.out}"/>
+					<dirname file="${ratl.ihs.bin.dir}" property="ratl.ihs.install.dir"/>
+					
+					<available file="${ratl.ihs.install.dir}" type="dir" property="has.ratl.ihs.install.dir"/> 					
+				</autopd_if>
+				
+				
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	    Checks through a list of known default directories for httpd, to determine the ihs install location.
+	    
+	    OUTPUT:  	
+	     ratl.ihs.install.dir
+	     has.ratl.ihs.install.dir
+	     
+	     Per: http://www-01.ibm.com/software/webservers/httpservers/doc/v2047/manual/ibm/en_US/9ainstal.htm
+	     http://www-01.ibm.com/software/webservers/httpservers/doc/v1319/9ainstal.htm
+	     IHS 7/6: http://publib.boulder.ibm.com/infocenter/wasinfo/v7r0/index.jsp?topic=%2Fcom.ibm.websphere.base.doc%2Finfo%2Faes%2Fae%2Ftins_manualWebIHS60.html
+	     
+	  -->
+	<macrodef name="ratl.ihs.get.default.install.path">
+		<sequential>
+			<autopd_unset_property name="ratl.ihs.install.dir"/>
+			<autopd_unset_property name="has.ratl.ihs.install.dir"/>
+			
+			<autopd_unset_property name="has.valid.match"/>
+		    <autopd_unset_property name="path.match"/>
+			
+			<!-- default -->
+			<autopdproperty name="ihs.bin.paths" value="/opt/IBMHTTPServer/bin|/opt/IBMIHS/bin|/opt/IBM/HTTPServer/bin"/>
+			
+			<!-- by platform -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="ihs.bin.paths" value="C:\Program Files\IBM\HTTPServer\bin|C:\Program Files (x86)\IBM\HTTPServer\bin"/>	         
+			</autopd_if>
+			<autopd_if isTrue="${isAIX}">
+				<autopdproperty name="ihs.bin.paths" value="/usr/HTTPServer/bin|/usr/IBMIHS/bin|/usr/IBM/HTTPServer/bin"/>
+			</autopd_if>
+			<autopd_if isTrue="${isSunOS}">
+				<autopdproperty name="ihs.bin.paths" value="/opt/IBMHTTPD/bin|/opt/IBMIHS/bin|/opt/HTTPServer/bin|/opt/IBM/HTTPServer/bin" />
+			</autopd_if>
+			<autopd_if isTrue="${isHPUX}">
+				<autopdproperty name="ihs.bin.paths" value="/opt/HTTPServer/bin|/opt/IBMIHS/bin|/opt/IBM/HTTPServer/bin" />
+			</autopd_if>
+			<autopd_if isTrue="${isLinux}">
+				<autopdproperty name="ihs.bin.paths" value="/opt/IBMHTTPServer/bin|/opt/IBMIHS/bin|/opt/IBM/HTTPServer/bin" />
+			</autopd_if>
+			
+			<!-- look for httpd -->
+			<autopd_if isTrue="${isWindows}">
+				 <file_available path_key="path.match" 
+				   existing_key="has.valid.match" 
+				   paths="${ihs.bin.paths}" 
+				   pattern="^httpd\.exe$" />
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<file_available path_key="path.match" 
+				   existing_key="has.valid.match" 
+				   paths="${ihs.bin.paths}" 
+				   pattern="^httpd$" />
+			</autopd_if>
+			
+			<autopdproperty name="has.ratl.ihs.install.dir" value="${has.valid.match}"/>
+			<autopd_if isTrue="${has.valid.match}">
+				<!-- navigate two dirs up -->
+				<dirname file="${path.match}" property="ratl.ihs.bin.dir"/>
+				<dirname file="${ratl.ihs.bin.dir}" property="ratl.ihs.install.dir"/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+		
+	<!-- version specific log collection -->
+	<macrodef name="ratl.ihs.collect.logs.config">
+		<attribute name="version.pattern"/>  <!-- must not be empty! can pass in a pattern -->
+		<attribute name="version.display"/>  <!-- for logging -->
+		<sequential>
+			<!-- check input -->
+			<autopd_unset_property name="has.valid.input"/>
+			<condition property="has.valid.input">
+				<not>
+					<and>
+						<equals arg1="" arg2="@{version.pattern}"/>
+						<contains string="@{version.pattern}" substring="$${"/>
+					</and>
+				</not>
+			</condition>
+			<autopd_if isTrue="${has.valid.input}">
+
+				<!-- flag -->
+				<autopdproperty name="has.instance.version.match" value="false"/>
+				
+				<!-- loop -->
+				<ratl.ihs.all.loop>
+					<!-- check version --> 
+					<internal.ihs.get.version ihs.dir="${ihs.install.dir}"/>  <!-- ${ihs.install.dir} from the loop -->
+					<autopd_if isTrue="${has.ihs.version}">
+						<autopd_unset_property name="has.version.match"/>
+						<regex_match pattern="@{version.pattern}" 
+						     propertyName="has.version.match" 
+						     string="${ihs.version}"/>
+						<autopd_if isTrue="${has.version.match}">
+							<!-- matched -->
+							<wsnlsecho key="ratl.server.ihs.collect.config" 
+											bundle="properties/RATLSHARE/autopd"
+											message="Collecting IHS logs and config information for version {0}"
+											replace="${ihs.version}"
+											id="2090"
+											level="info"
+											messagePrefix="CWPDD"/>	
+							<autopdproperty name="has.instance.version.match" value="true"/>
+							
+							<!-- collect it -->
+							<internal.ratl.ihs.collect.logs.config
+								ihs.install.dir="${ihs.install.dir}"
+								/>							
+						</autopd_if>						
+					</autopd_if>
+				</ratl.ihs.all.loop>
+				
+				<autopd_if isTrue="${has.ratl.ihs.install.list}">  <!-- if IHS was found -->
+					<!-- but did not have any version matched. do anything --> 
+					<autopd_if isNotTrue="${has.instance.version.match}">
+						<util.logToFile msg="IHS @{version.display} not found.${line.separator}List of IHS installs found: ${ratl.ihs.install.list}" 
+							prefix="${ihs.prefix}" output="IHS_@{version.display}_NotFound.txt"/>
+					</autopd_if>
+				</autopd_if>
+				
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- version specific move log collection -->
+	<macrodef name="ratl.ihs.move.logs">
+		<attribute name="version.pattern"/>  <!-- must not be empty! can pass in a pattern -->
+		<attribute name="version.display"/>  <!-- for logging -->
+		<attribute name="target.move.dir"/>
+		<sequential>
+			<!-- check input -->
+			<autopd_unset_property name="has.valid.input"/>
+			<condition property="has.valid.input">
+				<not>
+					<and>
+						<equals arg1="" arg2="@{version.pattern}"/>
+						<contains string="@{version.pattern}" substring="$${"/>
+					</and>
+				</not>
+			</condition>
+			<autopd_if isTrue="${has.valid.input}">
+				
+				<!-- flag -->
+				<autopdproperty name="has.instance.version.match" value="false"/>
+				
+				<!-- loop -->
+				<ratl.ihs.all.loop>
+					<!-- check version --> 
+					<internal.ihs.get.version ihs.dir="${ihs.install.dir}"/>  <!-- ${ihs.install.dir} from the loop -->
+					<autopd_if isTrue="${has.ihs.version}">
+						<autopd_unset_property name="has.version.match"/>
+						<regex_match pattern="@{version.pattern}" 
+						     propertyName="has.version.match" 
+						     string="${ihs.version}"/>
+						<autopd_if isTrue="${has.version.match}">
+							<!-- matched -->
+							<wsnlsecho key="ratl.server.ihs.move.log" 
+											bundle="properties/RATLSHARE/autopd"
+											message="Moving IHS logs for version {0}"
+											replace="${ihs.version}"
+											id="2090"
+											level="info"
+											messagePrefix="CWPDD"/>	
+							<autopdproperty name="has.instance.version.match" value="true"/>
+							
+							<!-- move it -->
+							<internal.ratl.ihs.move.logs
+								ihs.install.dir="${ihs.install.dir}"
+								target.move.dir="@{target.move.dir}"
+								/>									
+						</autopd_if>						
+					</autopd_if>
+				</ratl.ihs.all.loop>
+				
+				<autopd_if isTrue="${has.ratl.ihs.install.list}">  <!-- if IHS was found -->
+					<!-- but did not have any version matched. do anything --> 
+					<autopd_if isNotTrue="${has.instance.version.match}">
+						<util.logToFile msg="IHS @{version.display} not found.${line.separator}List of IHS installs found: ${ratl.ihs.install.list}" 
+							output="IHS_@{version.display}_NotFound.txt" prefix="${ihs.prefix}" />
+					</autopd_if>
+				</autopd_if>
+				
+			</autopd_if>
+		
+		</sequential>
+	</macrodef>
+	
+	<!-- check version of ihs given an ihs.dir -->
+	<!--
+	Version.signature contains: IBM HTTP Server <version>
+	OUTPUT:
+	  has.ihs.version - true | unset , if version signature is not available.
+	      ihs.version found.	  
+	 -->
+	<macrodef name="internal.ihs.get.version">
+		<attribute name="ihs.dir"/>
+		<sequential>
+			<autopd_unset_property name="has.ihs.version"/>
+			<autopd_unset_property name="ihs.version"/>
+			
+			<!-- find version.signature file -->
+			<autopd_unset_property name="has.version.signature"/>
+			<available file="@{ihs.dir}/version.signature" type="file" property="has.version.signature"/>
+			<autopd_if isTrue="${has.version.signature}">
+				<regex_extract_value 
+					file="@{ihs.dir}/version.signature"
+					searchPattern="^IBM HTTP Server (.*)$"
+					subPatternIndex="1"
+					extractedValue="ihs.version"
+					returnOption="lastMatch"
+					match_across_multiple_lines="false"
+				/>
+				
+				<!-- check extracted -->
+				<condition property="has.ihs.version">
+					<isset property="ihs.version"/>
+				</condition>
+				
+				<!-- trim white spaces if needed -->
+				<autopd_if isTrue="${has.ihs.version}">
+					<trim_filename filename="${ihs.version}" key="ihs.version" prefixTrim="^\s+" suffixTrim="\s+$"/>
+				</autopd_if>				
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- shell. Find list of IHS install dirs, and loop -->
+	<!-- loop will not enter if no paths found. 
+	 Can reference these : 	   
+	   ${has.ratl.ihs.install.list} 
+	   ${ihs.install.dir} - individual install dir
+	   ${ratl.ihs.install.list} - full list
+	  -->
+	<macrodef name="ratl.ihs.all.loop">
+		<element name="internal.code" implicit="true"/>
+		<sequential>
+			
+			<!-- log directories -->
+			<ratl.ihs.get.install.path.list />
+						
+			<autopd_if isTrue="${has.ratl.ihs.install.list}">
+				<util.logToFile msg="IHS install paths found: ${ratl.ihs.install.list}" 
+					prefix="${ihs.prefix}" output="IHS_Found.txt"/>
+				
+				<!-- ISADC WORKAROUND - nested marco -->
+				<autopd_unset_property name="is.empty"/>
+				<condition property="is.empty">
+					<or>
+						<equals arg1="" arg2="${ratl.ihs.install.list}"/>
+						<contains string="${ratl.ihs.install.list}" substring="$${"/>
+					</or>
+				</condition>
+				<autopd_if isNotTrue="${is.empty}">
+					<!-- loop -->
+					<autopdloop delimiter="@" param="ihs.install.dir" paramlist="${ratl.ihs.install.list}">
+						
+						<!-- DO Stuff -->
+						<internal.code />
+							
+					</autopdloop>
+				</autopd_if>
+			</autopd_if>
+			<autopd_if isNotTrue="${has.ratl.ihs.install.list}">
+				<util.logToFile msg="IHS location on this system cannot be automatically detected by the script." output="IHS_NotFound.txt"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- collects logs, configs from all ihs directories found -->
+	<macrodef name="ratl.ihs.all.collect.logs.config">
+		<sequential>
+			
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.server.ihs.collect.all.ihs.found" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Collecting IHS logs and configurations"
+					replace="${autopdts};;${step.count}"
+					id="2090"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<ratl.ihs.all.loop>
+				<internal.ratl.ihs.collect.logs.config
+					ihs.install.dir="${ihs.install.dir}"
+					/>				
+			</ratl.ihs.all.loop>
+		</sequential>
+	</macrodef>
+	
+	<!-- moves logs, from all ihs directories found -->
+	<macrodef name="ratl.ihs.all.move.logs">
+		<attribute name="target.move.dir"/>
+		<sequential>
+			
+			<wsnlsecho key="ratl.server.ihs.move.log.all" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Moving all IHS logs.."
+							id="2090"
+							level="info"
+							messagePrefix="CWPDD"/>	
+			
+			<ratl.ihs.all.loop>
+				<!-- look for the logs dir -->
+				<internal.ratl.ihs.move.logs
+					ihs.install.dir="${ihs.install.dir}"
+					target.move.dir="@{target.move.dir}"
+					/>				
+			</ratl.ihs.all.loop>
+						
+		</sequential>
+	</macrodef>
+	
+	<!-- actual work of collecting logs - verify the path before collection -->
+	<macrodef name="internal.ratl.ihs.collect.logs.config">
+		<attribute name="ihs.install.dir"/>
+		<sequential>
+			
+			<autopd_unset_property name="has.dir"/>
+			<available file="@{ihs.install.dir}" type="dir" property="has.dir"/>					
+			<autopd_if isTrue="${has.dir}">	
+				
+				<!-- set up prefix -->
+				<util.get.flattened.name file="@{ihs.install.dir}"/>  <!-- output ${flatten_fileName} -->
+				
+				<!-- gather IHS logs & config -->
+				<copy todir="${isadcTempOut}/${ihs.prefix}/${flatten_fileName}" outputencoding="UTF-8">
+					<fileset dir="@{ihs.install.dir}">
+						<include name="logs/**/*.*"/>
+						<include name="logs/**/*"/>					
+						<include name="conf/*.conf"/>
+						<include name="conf/*.conf.default"/>
+						<include name="version.signature"/>
+						<include name="Plugins/logs/*/http_plugin.*"/>
+						<exclude name="Plugins/logs/install/**/*"/>
+						<exclude name="Plugins/logs/update/**/*"/>
+						<exclude name="**/*.dmp"/>
+						<exclude name="**/*.phd"/>
+						<exclude name="logs/**/*Sock*"/>   <!-- unix socket ! adminSocket -->
+						<exclude name="logs/**/*sock*"/>   <!-- unix socket ! cgisocket.*-->
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>
+				</copy>
+				<ratl.log.exclude.list dir.path="@{ihs.install.dir}"/>				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- actual work of moving -->
+	<macrodef name="internal.ratl.ihs.move.logs">
+		<attribute name="ihs.install.dir"/>
+		<attribute name="target.move.dir"/>
+		<sequential>
+			
+			<!-- look for the logs dir -->
+			<autopdproperty name="ihs.logs.dir" value="@{ihs.install.dir}/logs"/>
+			<autopd_unset_property name="has.logs.dir"/>
+			<available file="${ihs.logs.dir}" type="dir" property="has.logs.dir"/>					
+			<autopd_if isTrue="${has.logs.dir}">	
+
+				<util.get.flattened.name file="${ihs.logs.dir}"/>
+				<mkdir dir="@{target.move.dir}/${flatten_fileName}"/>
+				
+				<move todir="@{target.move.dir}/${flatten_fileName}" failonerror="false" >
+					<fileset dir="${ihs.logs.dir}" >
+						<include name="**/*.*"/>
+						<include name="**/*"/>	
+						<exclude name="**/*Sock*"/>   <!-- unix socket ! adminSocket -->
+						<exclude name="**/*sock*"/>   <!-- unix socket ! cgisocket.*-->
+					</fileset>
+				</move>
+				
+			    <echo message="Existing files from '${ihs.logs.dir}' are moved here. ${line.separator}" file="@{target.move.dir}/${flatten_fileName}/LOG_FILE_SOURCE.txt"/>
+				<echo message="These include all files in the directory" append="true" file="@{target.move.dir}/${flatten_fileName}/LOG_FILE_SOURCE.txt"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+					
+
+</project>

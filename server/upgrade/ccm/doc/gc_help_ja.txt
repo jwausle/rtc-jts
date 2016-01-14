@@ -1,0 +1,30 @@
+
+
+インストール済みの GC をアップグレードする
+
+メモ:
+      - このスクリプトは GC をアップグレードします。詳しくは、ヘルプ・トピック『Rational solution for CLM のアップグレード』を参照してください。
+      - このヘルプを表示する場合を除き、このスクリプトは JazzInstallRoot/server ディレクトリーから実行してください。
+
+使用法:
+    gc_upgrade
+         -oldApplicationHome <value> -- 旧インストール済み環境の GC サーバー構成ディレクトリーの絶対パス。 標準的なインストールの場合、このパスは <GC installation>/server/conf です。
+         [-applicationContextRoot jazz] -- GC コンテキスト・ルート。
+         [-oldApplicationVersion <なし>] --アップグレードする GC のバージョン。 デフォルトでは、古い GC アプリケーションに対して repotools -version を実行する操作でこの値が判別されます。
+         [-updateTomcatFiles <yes (default) | no>] -- Tomcat 構成ファイルを更新するかどうか。
+         [-oldTomcatHome <なし>] - 旧 GC インストール済み環境の Tomcat ホーム・ディレクトリーの絶対パス。 デフォルトで、oldTomcatHome パラメーター値は oldApplicationHome パラメーター値から派生します。
+         [-newApplicationHome conf] -- 新規インストール済み環境の GC サーバー構成ディレクトリーのパス。
+         [-newJTSHome <none>] -- 新規インストール済み環境で使用される JTS のサーバー構成ディレクトリーへのパス。デフォルトで、newJTSHome パラメーター値は newApplicationHome パラメーター値から派生します。
+         [-jtsContextRoot jts] -- JTS コンテキスト・ルート。
+         [-newApplicationTomcatHome <なし>] -- 新規インストール済み環境の GC Tomcat ホーム・ディレクトリーのパス。 デフォルトで、newApplicationTomcatHome パラメーター値は newApplicationHome パラメーター値から派生します。
+         [-newJTSTomcatHome <なし>] - 新規インストール済み環境で使用する JTS の JTS Tomcat ホーム・ディレクトリーのパス。 デフォルトで、newJTSTomcatHome パラメーター値は newJTSHome パラメーター値から派生します。
+         [-ignoreJTSVersionCheck] -- アプリケーションのバージョンが newJTSHome にある JTS のバージョンと互換性があることを確認しない。この引数は、JTS がアプリケーション・システムからアクセスできない別のシステムにある分散デプロイメントでのみ使用するようにしてください。
+         [-noPrompt] -- 表を作成または変更する前にプロンプトを出さない。
+         [-noStepPrompt] -- ステップを実行する前にプロンプトを出さない。
+         [-noVerify] -- teamserver.properties ファイルの検査を実行しない。
+         [-noEditor] -- teamserver.properties ファイルに対してエディターを開かない。
+
+
+例:
+    upgrade/gc/gc_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

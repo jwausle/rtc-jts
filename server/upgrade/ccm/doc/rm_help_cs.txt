@@ -1,0 +1,36 @@
+
+
+Upgrade již instalované aplikace RM
+
+Poznámky:
+      - Tento skript provádí upgrade aplikace RM. Další informace viz téma nápovědy "Upgrade produktu Rational Solution for CLM".
+      - S výjimkou zobrazení této nápovědy musí být tento skript spuštěn z adresáře JazzInstallRoot/server.
+
+Použití:
+    rm_upgrade
+         -oldApplicationHome <hodnota> --Úplná cesta ke konfiguračnímu adresáři serveru RM staré instalace. V případě typické instalace je cesta <instalace RM>/server/conf.
+         [-oldJTSHome <hodnota>] --Úplná cesta ke konfiguračnímu adresáři serveru JTS staré instalace. V případě typické instalace je cesta: <instalace JTS>/server/conf.
+         [-applicationContextRoot rdm] --Kontextový kořenový adresář RM.
+         [-db.jdbc.location <není>] -- Cesta k umístění databáze RM 5.0. Tato databáze musí být přesnou kopií databáze JTS z verze 4.0.X.
+         [-db.jdbc.password <není>] -- Heslo databáze JDBC.
+         [-db.db2i.schema.name <není>] -- Název schématu DB2i. Použito pouze pro typ databáze DB2i.
+         [-db.db2.dsn.dbname <není>] -- Název DB2 DSN DB. Použito pouze pro typ databáze DB2z.
+         [-db.schemaPrefix <není>] -- Předpona schématu DB. Použito pouze pro typ databáze DB2z.
+  		 [-oldApplicationVersion <není>] --Upgradovaná verze.  Ve výchozím nastavení se toto určuje spuštěním nástrojů repotool -version vůči staré aplikaci RM.
+         [-updateTomcatFiles <yes (výchozí) | no>] --Aktualizace konfiguračních souborů Tomcat.
+         [-oldApplicationTomcatHome <není>] --Úplná cesta ke kořenovému adresáři RM Tomcat staré instalace. Ve výchozím nastavení je hodnota parametru oldApplicationTomcatHome odvozena od hodnoty parametru oldApplicationHome.
+         [-oldJTSTomcatHome <není>] --Úplná cesta ke kořenovému adresáři JTS Tomcat staré instalace. Ve výchozím nastavení je hodnota parametru oldJTSTomcatHome odvozena od hodnoty parametru oldJTSHome.
+         [-newApplicationHome conf] --Cesta ke konfiguračnímu adresáři serveru RM nové instalace.
+         [-newJTSHome <není>] --Úplná cesta ke konfiguračnímu adresáři serveru JTS pro novou instalaci. Ve výchozím nastavení je hodnota parametru newJTSHome odvozena od hodnoty parametru newApplicationHome.
+         [-newJTSContextRoot jts] --Kontextový kořenový adresář JTS nové instalace.
+	     [-newApplicationTomcatHome <není>] --Cesta k domovskému adresáři RM Tomcat nové instalace. Ve výchozím nastavení je hodnota parametru newApplicationTomcatHome odvozena od hodnoty parametru newApplicationHome.
+         [-newJTSTomcatHome <není>] --Cesta k domovskému adresáři JTS Tomcat nové instalace JTS. Ve výchozím nastavení je hodnota parametru new odvozena od hodnoty parametru JTSTomcatHome.
+         [-ignoreJTSVersionCheck] --Nepokoušejte se ověřit, zda je verze aplikace kompatibilní s verzí JTS umístěnou v newJTSHome. Tento argument by se měl používat pouze v rozdělené implementaci, kde JTS je na samostatném systému, který je nepřípustný z aplikačního systému.
+         [-noPrompt] --Bez výzvy před vytvořením nebo úpravou tabulek.
+         [-noEditor] --Neotevírat editor v souborech teamserver.properties.
+         [-noVerify] --Neprovádět verifikaci souborů teamserver.properties.
+         [-noStepPrompt] --Bez výzvy před provedením kroku.
+
+Příklady:
+   upgrade/rm/rm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer4_0/rm/server/conf 
+

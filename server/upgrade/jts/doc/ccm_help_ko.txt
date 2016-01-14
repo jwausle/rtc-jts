@@ -1,0 +1,30 @@
+
+
+이미 설치된 CCM 업그레이드
+
+참고:
+      - 이 스크립트는 CCM을 업그레이드합니다. 자세한 정보는 "Rational solution for CLM 업그레이드" 도움말 항목을 참조하십시오.
+- 이 도움말을 표시 중인 경우를 제외하고 JazzInstallRoot/server 디렉토리에서 이 스크립트를 실행해야 합니다.
+
+사용법:
+    ccm_upgrade
+         -oldApplicationHome <값> --이전 설치의 CCM 서버 구성 디렉토리에 대한 전체 경로입니다. 일반 설치의 경우, 이 경로는 <CCM 설치 경로>/server/conf입니다.
+         [-applicationContextRoot jazz] --CCM 컨텍스트 루트입니다.
+         [-oldApplicationVersion <없음>] --업그레이드 중인 CCM 버전입니다. 기본적으로 이는 이전 CCM 애플리케이션에 대하여 repotools -version을 실행하여 판별됩니다.
+         [-updateTomcatFiles <yes (기본값) | no>] -- Tomcat 구성 파일을 업데이트할지 여부입니다.
+         [-oldTomcatHome <없음>] --이전 CCM 설치의 Tomcat 홈 디렉토리에 대한 전체 경로입니다. 기본적으로, oldTomcatHome 매개변수값이 oldApplicationHome 매개변수값에서 파생됩니다.
+         [-newApplicationHome conf] --새 설치의 CCM 서버 구성 디렉토리에 대한 경로입니다.
+         [-newJTSHome <없음>] --새 설치에서 사용할 JTS의 서버 구성 디렉토리에 대한 경로입니다. 기본적으로, newJTSHome 매개변수값이 newApplicationHome 매개변수값에서 파생됩니다.
+         [-jtsContextRoot jts] --JTS 컨텍스트 루트입니다.
+         [-newApplicationTomcatHome <없음>] --새 설치의 CCM Tomcat 홈 디렉토리에 대한 경로입니다. 기본적으로, newApplicationTomcatHome 매개변수값이 newApplicationHome 매개변수값에서 파생됩니다.
+         [-newJTSTomcatHome <없음>] --새 설치에서 사용할 JTS의 JTS Tomcat 홈 디렉토리에 대한 경로입니다. 기본적으로, newJTSTomcatHome 매개변수값이 newJTSHome 매개변수값에서 파생됩니다.
+         [-ignoreJTSVersionCheck] --애플리케이션 버전이 newJTSHome에 있는 JTS 버전과 호환 가능한지 확인하려고 시도하지 않습니다. JTS가 애플리케이션 시스템에서 액세스할 수 없는 독립된 시스템에 있는 경우 이 인수를 분배된 배치에서만 사용해야 합니다.
+         [-noPrompt] -- 테이블을 작성 또는 수정하기 전에 프롬프트를 표시하지 않습니다.
+         [-noEditor] -- teamserver.properties 파일에서 편집기를 열지 않습니다.
+         [-noVerify] -- teamserver.properties 파일 검증을 수행하지 않습니다.
+
+         [-noStepPrompt] -- 단계를 실행하기 전에 프롬프트를 표시하지 않습니다.
+
+예:
+    upgrade/ccm/ccm_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

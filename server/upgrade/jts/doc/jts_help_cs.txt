@@ -1,0 +1,27 @@
+
+
+Upgrade již instalovaného serveru JTS
+
+Poznámky:
+      - Tento skript provádí upgrade serveru JTS. Další informace viz téma nápovědy "Upgrade produktu Rational Solution for CLM".
+      - S výjimkou zobrazení této nápovědy musí být tento skript spuštěn z adresáře JazzInstallRoot/server.
+
+Použití:
+    jts_upgrade
+         -oldJTSHome <hodnota> --Úplná cesta ke konfiguračnímu adresáři serveru JTS staré instalace. V případě typické instalace je cesta: <instalace JTS>/server/conf.
+         [-jtsContextRoot jts] --Kontextový kořenový adresář JTS.
+         [-oldJTSVersion <není>] --Verze upgradovaného serveru JTS. Ve výchozím nastavení se toto určuje spuštěním nástrojů repotool -version vůči starému serveru JTS.
+         [-lpaContextRoot admin] --Kontextový kořenový adresář LPA.
+         [-updateTomcatFiles <yes (výchozí) | no>] --Aktualizace konfiguračních souborů Tomcat.
+         [-oldTomcatHome <není>] --Úplná cesta k domovskému adresáři Tomcat staré instalace. Ve výchozím nastavení je hodnota parametru oldTomcatHome odvozena od hodnoty parametru oldJTSHome.
+         [-newJTSHome conf] --Cesta ke konfiguračnímu adresáři serveru JTS nové instalace.
+         [-newTomcatHome <není>] --Cesta k domovskému adresáři Tomcat nové instalace. Ve výchozím nastavení je hodnota parametru newTomcatHome odvozena od hodnoty parametru newJTSHome.
+         [-noPrompt] --Bez výzvy před vytvořením tabulek před importem.
+         [-noEditor] --Neotevírat editor v souboru teamserver.properties.
+         [-ignoreLPA] -- Ignorovat upgrade aplikace LPA
+         [-noVerify] --Neprovádět verifikaci souborů teamserver.properties.
+         [-noStepPrompt] --Bez výzvy před provedením kroku.
+
+Příklady:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

@@ -1,0 +1,27 @@
+
+
+Upgrade an already installed JTS
+
+Notes:
+      - This script upgrades JTS. For more information, see the help topic, "Upgrading the Rational solution for CLM".
+      - Except while displaying this help, this script must be run from the JazzInstallRoot/server directory.
+
+Usage:
+    jts_upgrade
+         -oldJTSHome <value> --Full path to the JTS server configuration directory of the old installation.  For a typical installation, this path is <JTS installation>/server/conf.
+         [-jtsContextRoot jts] --JTS Context root.
+         [-oldJTSVersion <none>] --The version of JTS that is being upgraded.  By default, this is determined by running repotools -version against the old JTS.
+         [-lpaContextRoot admin] --LPA Context root.
+         [-updateTomcatFiles <yes (default) | no>] --Whether to update the tomcat configuration files.
+         [-oldTomcatHome <none>] --Full path to the Tomcat home directory of the old installation. By default, the oldTomcatHome parameter value is derived from the oldJTSHome parameter value.
+         [-newJTSHome conf] --Path to the JTS server configuration directory of the new installation install.
+         [-newTomcatHome <none>] --Path to the Tomcat home directory of the new installation install. By default, the newTomcatHome parameter value is derived from the newJTSHome parameter value.         
+         [-noPrompt] --Do not prompt before creating the tables prior to importing.
+         [-noEditor] --Do not open an editor on the teamserver.properties file.
+         [-ignoreLPA] -- Ignore upgrading the LPA application
+         [-noVerify] --Do not perform teamserver.properties files verification.
+         [-noStepPrompt] --Do not prompt before executing a step.
+
+Examples:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

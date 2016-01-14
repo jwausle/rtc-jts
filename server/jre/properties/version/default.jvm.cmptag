@@ -1,0 +1,24 @@
+<Component>
+	<ComponentName>IBM Java-Virtual Machine</ComponentName>
+	<ComponentVersion>2.4.0</ComponentVersion>
+	<BuildLevel>20141216_227499</BuildLevel>
+	<SWGFMIDX>JIJMAC240</SWGFMIDX>
+	<SubComponents>
+		<SubComponent> 
+			<SubComponentName>IBM Java - Virtual Machine</SubComponentName> 
+			<SubComponentVersion>GA24_Java6_SR16_20141216_1020_B227499</SubComponentVersion> 
+		</SubComponent> 
+		<SubComponent> 
+			<SubComponentName>IBM Java - Garbage Collector</SubComponentName> 
+			<SubComponentVersion>GA24_Java6_SR16_20141216_1020_B227499</SubComponentVersion> 
+		</SubComponent> 
+		<SubComponent> 
+			<SubComponentName>IBM Java - Kernel Class Library</SubComponentName> 
+			<SubComponentVersion>GA24_Java6_SR16_20141216_1020_B227499</SubComponentVersion> 
+		</SubComponent> 
+		<SubComponent> 
+			<SubComponentName>IBM Java - Just In Time Compiler</SubComponentName> 
+			<SubComponentVersion>r9_20140523_64469ifx3</SubComponentVersion> 
+		</SubComponent> 
+	</SubComponents> 
+</Component>

@@ -1,0 +1,37 @@
+
+
+インストール済みの RM をアップグレードする
+
+メモ:
+      - このスクリプトは RM をアップグレードします。 詳しくは、ヘルプ・トピック『Rational solution for CLM のアップグレード』を参照してください。
+      - このヘルプを表示する場合を除き、このスクリプトは JazzInstallRoot/server ディレクトリーから実行してください。
+
+使用法:
+    rm_upgrade
+         -oldApplicationHome <value> -- 旧インストール済み環境の RM サーバー構成ディレクトリーの絶対パス。  標準的なインストールの場合、このパスは <RM installation>/server/conf です。 [-oldJTSHome <value>] -- 旧インストール済み環境の JTS サーバー構成ディレクトリーの絶対パス。 標準的なインストールの場合、このパスは <JTS installation>/server/conf です。
+        
+         [-applicationContextRoot rdm] -- RM コンテキスト・ルート。
+[-db.jdbc.location <なし>] -- RM 5.0 データベース・ロケーションへのパス。このデータベースは、4.0.X の JTS DB の正確なコピーである必要があります。
+[-db.jdbc.password <なし>] -- JDBC データベース・パスワード。
+         [-db.db2i.schema.name <なし>] -- DB2i スキーマ名。DB2i データベース・タイプにのみ使用されます。
+         [-db.db2.dsn.dbname <なし>] -- DB2 DSN DB 名。DB2z データベース・タイプにのみ使用されます。
+         [-db.schemaPrefix <なし>] -- DB スキーマの接頭部。DB2z データベース・タイプにのみ使用されます。
+                  [-oldApplicationVersion <なし>] -- アップグレードするバージョン。  デフォルトでは、古い RM アプリケーションに対して repotools -version を実行する操作でこの値が判別されます。
+         [-updateTomcatFiles <yes (default) | no>] -- Tomcat 構成ファイルを更新するかどうか。
+         [-oldApplicationTomcatHome <なし>] -- 旧インストール済み環境の RM Tomcat ルート・ディレクトリーの絶対パス。  デフォルトで、oldApplicationTomcatHome パラメーター値は oldApplicationHome パラメーター値から派生します。
+         [-oldJTSTomcatHome <なし>] -- 旧インストール済み環境の JTS Tomcat ルート・ディレクトリーの絶対パス。  デフォルトで、oldJTSTomcatHome パラメーター値は oldJTSHome パラメーター値から派生します。
+         [-newApplicationHome conf] -- 新規インストール済み環境の RM サーバー構成ディレクトリーのパス。
+         [-newJTSHome <なし>] -- 新規インストール済み環境で使用する JTS の JTS サーバー構成ディレクトリーの絶対パス。 デフォルトで、newJTSHome パラメーター値は newApplicationHome パラメーター値から派生します。
+         [-newJTSContextRoot jts] -- 新規インストール済み環境の JTS コンテキスト・ルート。
+         [-newApplicationTomcatHome <なし>] -- 新規インストール済み環境の RM Tomcat ホーム・ディレクトリーのパス。 デフォルトで、newApplicationTomcatHome パラメーター値は newApplicationHome パラメーター値から派生します。
+         [-newJTSTomcatHome <なし>] - 新規インストール済み環境で使用する JTS の JTS Tomcat ホーム・ディレクトリーのパス。 デフォルトで、新規 JTSTomcatHome パラメーター値は newJTSHome パラメーター値から派生します。
+         [-ignoreJTSVersionCheck] -- アプリケーションのバージョンが newJTSHome にある JTS のバージョンと互換性があることを確認しない。この引数は、JTS がアプリケーション・システムからアクセスできない別のシステムにある分散デプロイメントでのみ使用するようにしてください。
+         [-noPrompt] -- 表を作成または変更する前にプロンプトを出さない。
+         [-noEditor] -- teamserver.properties ファイルに対してエディターを開かない。
+         [-noVerify] -- teamserver.properties ファイルの検査を実行しない。
+         [-noStepPrompt] -- ステップを実行する前にプロンプトを出さない。
+
+
+例:
+   upgrade/rm/rm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer4_0/rm/server/conf 
+

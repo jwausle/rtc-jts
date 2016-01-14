@@ -1,0 +1,322 @@
+<?xml version="1.0"?>
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2011, 2015. All Rights Reserved.
+   
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ -->
+
+<rdf:RDF
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:dc="http://purl.org/dc/terms/"
+     xmlns:jfs="http://jazz.net/xmlns/foundation/1.0/"
+     xmlns:jfs3="http://jazz.net/xmlns/prod/jazz/jfs/3.0/"
+     xmlns:jd="http://jazz.net/xmlns/prod/jazz/discovery/1.0/"
+     xmlns:jdb="http://jazz.net/xmlns/prod/jazz/dashboard/1.0/"
+     xmlns:jp06="http://jazz.net/xmlns/prod/jazz/process/0.6/"
+     xmlns:jp="http://jazz.net/xmlns/prod/jazz/process/1.0/"
+     xmlns:oslc="http://open-services.net/ns/core#"
+     xmlns:ju="http://jazz.net/ns/ui#"
+     xmlns:jtp="http://jazz.net/xmlns/prod/jazz/jtp/0.6/"
+     xmlns:juentry="http://jazz.net/ns/ui/entry#"
+     xmlns:trs="http://jazz.net/ns/trs#"
+     xmlns:lpa="http://jazz.net/xmlns/foundation/lpa/1.0/"
+     >
+
+  <!-- 
+  		Service Contribution Resource template for applications based on JAF SDK.
+  		Contains required contributions both for applications and for the JTS.
+  		Applications may add additional services, but may only remove services noted as being "JTS only".
+  		Specification is available at https://jazz.net/wiki/bin/view/Main/SCRAndDSRSpec
+   -->
+
+  <!-- The following services must be included in both the JTS and applications -->
+  
+  <!-- Application properties -->
+  <jd:Application>
+    <jd:contextRoot>%server-URL%</jd:contextRoot>
+    <jd:rootServices rdf:resource="%server-URL%/rootservices"/>
+    <oslc:publisher rdf:resource="%server-URL%/application-about"/>
+    <jd:jsaSsoEnabled>%jsa-sso-enabled%</jd:jsaSsoEnabled>
+  </jd:Application>
+
+  <!-- List of friends (applications known to this application) -->
+  <jd:Friends jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/friends" />
+  </jd:Friends>
+  
+  <!-- OAuth services and properties -->
+  <jfs:OAuth jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+   <jfs:oauthRequestTokenUrl rdf:resource="%auth-server-URL%/oauth-request-token" />
+   <jfs:oauthAccessTokenUrl rdf:resource="%auth-server-URL%/oauth-access-token" />
+   <jfs:oauthExpireTokenUrl rdf:resource="%auth-server-URL%/oauth-expire-token" />
+   <jfs:oauthRealmName>%realm-name%</jfs:oauthRealmName>
+   <jfs:oauthDomain>%auth-domains%</jfs:oauthDomain>
+   <jfs:oauthUserAuthorizationUrl rdf:resource="%auth-server-URL%/oauth-authorize" />
+   <jfs:oauthRequestConsumerKeyUrl rdf:resource="%auth-server-URL%/oauth-request-consumer" />
+   <jfs:oauthApprovalModuleUrl rdf:resource="%auth-server-URL%/_ajax-modules/com.ibm.team.repository.AuthorizeOAuth" />
+  </jfs:OAuth>
+  
+  <!-- Service for finding users and getting user info -->
+  <jfs:Users jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%user-server-URL%/users" />
+  </jfs:Users>
+
+  <!-- Service to redirect to the resource that represents the authenticated user -->
+  <jfs:CurrentUser jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%auth-server-URL%/whoami"   />
+  </jfs:CurrentUser>
+  
+  <!-- License Info Expiration details -->
+  <jfs:LicenseInfoExpiration jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/service/com.ibm.team.repository.service.internal.license.ILicenseExpirationRestService" /> 
+  </jfs:LicenseInfoExpiration>
+  
+  <!-- JFS storage service --> 
+  <jfs:Storage jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/storage"   />
+  </jfs:Storage>
+
+  <!-- JFS SPARQL query service -->
+  <jfs:Query jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/query"   />
+  </jfs:Query>
+  
+  <!-- JFS indexing service --> 
+  <jfs:Indexing jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/indexing"   />
+  </jfs:Indexing>
+  
+  <!-- JFS revisions and history of storage resources -->
+  <jfs:History jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/history"   />
+  </jfs:History>
+
+  <!-- JFS full text search -->
+  <jfs:Search jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/search"/>
+  </jfs:Search>
+
+  <!-- JFS baseline service --> 
+  <jfs:Baselines jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/baselines"   />
+  </jfs:Baselines>
+
+  <!-- JFS mailer service --> 
+  <jfs:Mailer jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/mailer"   />
+  </jfs:Mailer>
+  
+ <!-- JFS bulk operations service --> 
+  <jfs:BulkOperations jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/bulk"/>
+  </jfs:BulkOperations>
+
+  <!-- JFS changes service -->
+  <jfs:Changes jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/changes" /> 
+  </jfs:Changes>
+  
+  <!-- Service for getting and updating migration status -->
+  <jfs:MigrationStatus jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/migrationStatus" />
+  </jfs:MigrationStatus>
+  
+  <!-- Dashboards service -->
+  <jdb:Dashboards jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+  	<jd:service rdf:resource="%server-URL%/dashboards" />
+  </jdb:Dashboards>
+  
+  <!-- Dashboard Query service -->
+  <jdb:DashboardQuery jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+  	<jd:service rdf:resource="%server-URL%/dashboard-query" />
+  </jdb:DashboardQuery>
+  
+  <!-- Home menu service (provisional) -->
+  <jdb:HomeMenu jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/home-menu"/>
+  </jdb:HomeMenu>
+      
+  <!-- Home menu service icon (provisional) -->    
+  <jdb:HomeMenuIcon jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/web/jazz.app/graphics/JazzUI/icons/Jazz_16.png"/>
+  </jdb:HomeMenuIcon>
+  
+  <!-- Widget Catalog service icon (provisional) -->    
+  <jdb:WidgetCatalog jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/jfs/WidgetCatalog"/>
+  </jdb:WidgetCatalog>
+  
+  <!-- Project areas service. This service is provisional and may change in the next release. -->
+  <jp06:ProjectAreas jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/process/project-areas" />
+  </jp06:ProjectAreas>
+
+  <!-- Process templates service. This service is provisional and may change in the next release. -->
+  <jp06:ProcessTemplates jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/process/templates" />
+  </jp06:ProcessTemplates>
+
+  <!-- Process security service. This service is provisional and may change in the next release. -->
+  <jp06:ProcessSecurity jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/process-security"/>
+  </jp06:ProcessSecurity>
+  
+  <!-- Process authoring practice service. This service is provisional and may change in the next release. -->
+  <jtp:Practices jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+  	<jd:service rdf:resource="%server-URL%/process-authoring/practices" />
+  </jtp:Practices>
+  
+  <!-- Process authoring description service. This service is provisional and may change in the next release. -->
+  <jtp:ProcessDescriptions jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+  	<jd:service rdf:resource="%server-URL%/process-authoring/descriptions" />
+  </jtp:ProcessDescriptions>
+
+  <!-- Process authoring file service. This service is provisional and may change in the next release. -->
+  <jtp:File jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/process-authoring/file"/>
+  </jtp:File>
+	  
+  <!--Process authoring default practice library location. This service is provisional and may change in the next release. -->
+  <jtp:DefaultPracticeLibraryUrl jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/process-authoring/libraries/shared"/>
+  </jtp:DefaultPracticeLibraryUrl>
+  
+  <!-- Process authoring associations service. This service is provisional and may change in the next release. -->
+  <jtp:Associations jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/process-authoring/associations"/>
+  </jtp:Associations>
+  
+  <!-- Process authoring license service. This service is provisional and may change in the next release. -->
+  <jtp:License jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/process-authoring/license"/>
+  </jtp:License>
+  
+  <!--  Link Index Provider -->
+  <jfs:LinkProvider jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/linkIndex"/>
+  </jfs:LinkProvider>
+  
+  <!-- End of services common to JTS and applications -->
+
+  <!-- The following services are supported only in the JTS, and should be removed for applications -->
+
+  <!-- Dashboard home menu contribution -->
+  <ju:HomeMenu jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/home-menu-dashboard"/>
+    <ju:menuSection rdf:resource="http://jazz.net/ns/ui/menuSection#dashboard"/>
+	<oslc:publisher rdf:resource="%server-URL%/application-about"/>
+    <jd:contextRoot>%server-URL%</jd:contextRoot>
+  </ju:HomeMenu>
+
+  <!-- Jazz Team Server Web UI Entry points -->
+  <juentry:PersonalDashboards>
+   	<jd:service rdf:resource="%server-URL%/dashboards" />
+	<oslc:publisher rdf:resource="%server-URL%/application-about"/>
+  </juentry:PersonalDashboards>
+
+  <juentry:JazzTeamServerHome>
+    <jd:service rdf:resource="%server-URL%/admin" />
+    <oslc:publisher rdf:resource="%server-URL%/application-about"/> 
+  </juentry:JazzTeamServerHome>
+	 
+  <juentry:Users>
+    <jd:service rdf:resource="%server-URL%/admin#action=jazz.viewPage&amp;id=com.ibm.team.repository.users" />
+    <oslc:publisher rdf:resource="%server-URL%/application-about"/>
+  </juentry:Users>
+  
+  <juentry:JTSApplicationAdminLinksService>
+    <jd:service rdf:resource="%server-URL%/service/com.ibm.team.jfs.web.internal.IApplicationAdminLinkService" />
+  </juentry:JTSApplicationAdminLinksService>
+
+  <juentry:LifecycleProjectAdmin>
+	<jd:service rdf:resource="%server-URL%/lpa"/>
+  </juentry:LifecycleProjectAdmin>
+
+  <juentry:CreateLifecycleProject>
+	<jd:service rdf:resource="%server-URL%/lpa/projects/new"/>
+  </juentry:CreateLifecycleProject>
+
+  <!-- Viewlet-related properties -->
+  <jd:ViewletServiceRoot jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%" />
+  </jd:ViewletServiceRoot>
+  
+  <jd:ViewletWebUIRoot jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%" />
+  </jd:ViewletWebUIRoot>
+  
+  <!-- JAuth services -->
+  <jfs:JAuth jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jfs:jauthIssueTokenUrl rdf:resource="%auth-server-URL%/jauth-issue-token" />
+    <jfs:jauthCheckTokenUrl rdf:resource="%auth-server-URL%/jauth-check-token" />
+    <jfs:jauthRevokeTokenUrl rdf:resource="%auth-server-URL%/jauth-revoke-token" />
+    <jfs:jauthCheckAuthUrl rdf:resource="%auth-server-URL%/jauth-check-auth" />
+    <jfs:jauthProxyUrl rdf:resource="%auth-server-URL%/jauth-proxy" />
+    <jfs:jauthSigninUrl rdf:resource="%auth-server-URL%/jauth-signin" />
+	<jfs:jauthSSORealmMembers rdf:resource="%auth-server-URL%/jauth-sso-realm-members" />
+  </jfs:JAuth>
+  
+  <!-- Url Mapping Feed service -->
+  <jfs:UrlMappingFeed jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/urlMappings" />
+  </jfs:UrlMappingFeed>
+  
+  <!--  Server Rename verification URL service -->
+  <jfs:RenameVerificationURLProvider jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+	<jd:service rdf:resource="%server-URL%/service/com.ibm.team.repository.service.rename.rest.IServerRenameVerificationURLService"/>
+  </jfs:RenameVerificationURLProvider>
+ 
+  <!-- System Message service -->
+  <jfs:SystemMessages jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/serverMessages" />
+  </jfs:SystemMessages>
+
+  <!-- User TRS Service -->
+   <trs:TrackedResourceSetProvider>
+    <trs:trackedResourceSet rdf:resource="%server-URL%/trsUsers"/>
+  </trs:TrackedResourceSetProvider>
+
+  <!-- OpenSocial Gadget Provider service -->
+   <jfs:OpenSocial jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jfs:openSocialGadgetProviders rdf:resource="%server-URL%/gadgetProviderList" />
+  </jfs:OpenSocial>
+  
+  <!-- LPA service -->
+  <lpa:taskStatus jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/lifecycle-project/jobs"/>
+  </lpa:taskStatus>
+  <lpa:UserProjects jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/lifecycle-project/user-projects"/>
+  </lpa:UserProjects>
+  <lpa:ProjectCreationUI jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/lpa/projects/new"/>
+  </lpa:ProjectCreationUI>
+  
+  <!-- End of JTS-only services -->
+  
+  <!-- Applications may add any services they provide here -->
+  <!-- Rename URL Provider Service -->
+  <!-- Applications should provide the following service to participate in server rename -->
+  <!--jfs:RenameURLProvider jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/private">
+    <jd:service rdf:resource="%server-URL%/renameURLProvider"/>
+  </jfs:RenameURLProvider-->
+
+  <!-- Logout handler service -->
+  <!-- When OIDC is enabled, applications can provide a service that the authorization server can redirect the client to
+       after logout, in order to perform any cleanup (e.g. releasing licenses) and to optionally redirect the client to
+       a final location. Applications built on JAF SDK get such a service defined for them
+       (com.ibm.team.repository.service.internal.ILogoutRestService) and it is used by default, so does not need
+       to be explicitly defined here. Applications that are not built on JAF must provide such a service and define
+       it here, even if they don't really need one (i.e. there is no post-logout cleanup to do, and no desire to redirect
+       the client - in that case a no-op service must be defined).
+       The service URL is included in the registration data for the application in the authorization server. -->
+  <!--jd:jsaSsoLogoutHandler jd:visibility="http://jazz.net/xmlns/prod/jazz/discovery/1.0/public">
+    <jd:service rdf:resource="%server-URL%/service/com.ibm.team.repository.service.internal.ILogoutRestService" />
+  </jd:jsaSsoLogoutHandler-->
+  
+  <!-- End of application-specific services -->
+    
+</rdf:RDF>

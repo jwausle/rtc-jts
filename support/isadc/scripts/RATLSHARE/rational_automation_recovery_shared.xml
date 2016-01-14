@@ -1,0 +1,364 @@
+<?xml version="1.0" ?>
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!-- works with autopd 20081114 -->
+
+<!-- ============================================================== -->
+<!--  Utilities for automation & recovery                           -->
+<!-- ============================================================== -->	
+<project name="rational_automation_recovery_shared"> 
+    
+	<!-- Set script.basedir and bundle.basedir as described in the AutoPD/ISA Script Compatibility Guidelines document  -->
+	<dirname property="rational.automation.recovery.shared.targets.basedir" file="${ant.file.rational_automation_recovery_shared}" />
+	<dirname property="rational.automation.recovery.shared.script.parentdir" file="${rational.automation.recovery.shared.targets.basedir}" />
+	<dirname property="rational.automation.recovery.shared.bundle.basedir" file="${rational.automation.recovery.shared.script.parentdir}" />
+
+	<!-- import the common file -->
+	<!-- ISADC need -->
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+
+	
+	<!-- ============================================================== -->
+	
+	<!-- set RATIONAL_AUTOMATION to true-->	
+	<property name="RATIONAL_AUTOMATION" value="false"/>
+	<property name="RATIONAL_AUTOMATION_STATUS" value="true"/>  <!-- true = still good,  false = bad result happened -->
+	
+	<!-- USE: use this ant script before program entry to set automation properties -->
+	<!--     - This will check to see if the code should run in automation mode     -->
+	<!--     - The irwst.autoprocess environment var gets set by IRWST code         --> 
+	<target name="checkAutomation">
+		<autopd_unset_property name="isRunnintIRWST"/>
+		<condition property="isRunnintIRWST">
+			<equals arg1="${irwst}" arg2="TRUE"/>
+		</condition>
+		<autopd_if isTrue="${isRunnintIRWST}">
+			<rtl.debugecho message="setting automation enable"/>
+			<set_automation_enable/>
+		</autopd_if>
+	</target>
+	
+	<!-- call this to enable automation package        -->	
+	<!-- no wrapper tasks                              -->
+	<!-- keep in mind - antcall will not persist value -->
+	<macrodef name="set_automation_enable">
+		<sequential>
+			<autopdproperty name="RATIONAL_AUTOMATION" value="true"/>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="set_automation_disable">
+		<sequential>
+			<autopdproperty name="RATIONAL_AUTOMATION" value="false"/>	
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	   Macros to be used to set exception for automation
+	   To be used with :manageAutomation_withRecovery , manageAutomation
+	    continue = true | false  (default: false) 
+	    	- whether to continue or not. May be useful to pass in value that still need to be tested.
+	    problem.type.id = problem type of the exception found.
+	    	- Check messages: ratl.recovery.2091~2099.  
+	    	- 2098 = Unknown error / General Error
+	    	- 2099 = Cleanup Completed.	    	
+		component = component in which failure occurred. 
+		message = Message to be logged if automation cannot continue.
+	-->
+	<macrodef name="setAutomationException">
+		<attribute name="continue" default="false"/>
+		<attribute name="problem.type.id" default="2098"/>         <!-- id to be used with the log - for scanning -->
+		<attribute name="component"/>  <!-- component (file or class that failed) to be logged  -->
+		
+		<sequential>
+			<autopdproperty name="automation.continue" value="@{continue}"/> <!-- true / (unset | false)-->
+			<autopdproperty name="exception.id" value="@{problem.type.id}"/>			
+			<autopdproperty name="exception.component" value="@{component}"/>   <!-- -->			
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="resetAutomationException">		
+		<sequential>
+			<autopdproperty name="automation.continue" value="true"/> 
+			<autopd_unset_property name="exception.id" />			
+			<autopd_unset_property name="exception.component"/> 			
+		</sequential>
+	</macrodef>
+	
+	<!-- manageAutomation_withRecovery:
+		Wrapper function to enable automation & handle recovery.
+		
+		<code> = the actual code to be executed.
+			- within <code> if exception is detected, must use
+				<setAutomationException ... /> 
+		<recovery/> = the recovery code to be executed.		
+		
+		Sample:
+		<manageAutomation_withRecovery>
+			<code>
+				<echo message="Hello world"/>
+				<setAutomationException component="my.component" problem.type.id="2099"/>
+			</code>
+			<recovery>
+				<echo message="Do recovery things here..."/>
+			</recovery>			
+		</manageAutomation_withRecovery>
+	-->
+	<macrodef name="manageAutomation_withRecovery">
+		<attribute name="forcefail" default="false"/>
+		<element name="code"/>
+		<element name="recovery" optional="true"/>
+		<sequential>
+			
+			<resetAutomationException/>
+			
+			<!-- code execution -->
+			<code/>			
+			
+			<!-- if in automation mode...  --> 
+			<autopd_if isTrue="${RATIONAL_AUTOMATION}">
+				 
+				  <!-- check continue status -->
+				  <autopd_if isNotTrue="${automation.continue}">
+				  	<logErrorMessage  problem.id="${exception.id}" 
+				  					  component="${exception.component}"/>
+				  				  					  	
+				  	<!-- fail !-->
+				  	<!-- recovery steps if any -->
+				  	<recovery />	
+				  	<autopd_if isTrue="@{forcefail}">
+					  	<logCompleteAndFail component="${exception.component}"
+					  						problem.id="${exception.id}"/>
+				  	</autopd_if>
+				  				
+				  </autopd_if>
+			</autopd_if>
+		</sequential>		
+	</macrodef>
+
+	<!-- manageAutomation:
+	    Same code as above but without recovery path.
+	    Enabling implicit so that it can be easily wrapped.
+			    
+		<code> = the actual code to be executed
+			- within <code> if exception is detected, must use
+				<setAutomationException ... /> 
+		Sample:
+		<manageAutomation>
+			<echo message="Hello world"/>
+			<setAutomationException component="my.component" problem.type.id="2099"/>			
+		</manageAutomation>
+				
+	-->
+	
+	<!-- SAME code as above - no making implicit so that can be easily reused. -->
+	<macrodef name="manageAutomation">
+		<attribute name="forcefail" default="false"/>
+		<element name="code" implicit="true"/>
+		<sequential>
+				
+			<resetAutomationException/>			
+			<!-- code execution -->
+			<code/>			
+			
+			<!-- if in automation mode...  --> 
+			<autopd_if isTrue="${RATIONAL_AUTOMATION}">
+				 
+				  <!-- check continue status -->
+				  <autopd_if isNotTrue="${automation.continue}">
+				  	<logErrorMessage  problem.id="${exception.id}" 
+				  					  component="${exception.component}"/>
+				  	
+				  	<!-- NO RECOVERY CODE -->
+				  	<autopd_if isTrue="@{forcefail}">
+						<logCompleteAndFail component="${exception.component}"
+									  		problem.id="${exception.id}"/>
+				  	</autopd_if>
+					
+				  </autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+		
+	
+	
+	
+	
+	<!-- managePrompt:
+	    Code to manage prompting.
+	    if AUTOMATION is enabled - then error is tossed. 
+		<prompt> = the actual prompting code to be executed
+			
+		Sample:
+		<managePrompt component="component">				
+			<prompt_user_for_input/>			
+		</manageAutomation>
+				
+	-->		
+	<!-- for supressing prompting --> 	
+	<macrodef name="managePrompt">		
+		<attribute name="component"/>
+		<attribute name="forcefail" default="false"/>
+		<element name="prompt" implicit="true"/>
+		<sequential>
+						
+			<!-- code execution -->
+			<autopd_if isNotTrue="${RATIONAL_AUTOMATION}">
+				<prompt/>
+			</autopd_if>
+			
+			<!-- cannot prompt user... --> 
+			<autopd_if isTrue="${RATIONAL_AUTOMATION}">	
+				
+				<!-- log error -->
+				<logErrorMessage  problem.id="2094" 
+								  component="@{component}"/>
+				
+			  	<!-- force failure -->
+				<autopd_if isTrue="@{forcefail}">
+					<logCompleteAndFail 
+						component="@{component}"
+						problem.id="2094"/>	
+				</autopd_if>
+					
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- managePrompt_continue:
+	    Code to manage prompting, 
+	    if AUTOMATION is enabled - logs: when prompting is needed, but sets default values. 
+		<prompt> = the actual prompting code to be executed
+			
+		Sample:
+		<managePrompt_continue component="component">	
+			<prompt>
+				<prompt_user_for_input/>
+			</prompt>
+			<setDefault>
+				<autopdproperty name="input1" value="Hello"/>
+			</setDefault>					
+		</manageAutomation>		
+		or		
+		<managePrompt_continue component="component">	
+			<prompt>
+				<prompt_user_for_input/>
+			</prompt>
+		</manageAutomation>
+	-->	
+	
+	<!-- for supressing prompting, but allow continuation --> 	
+	<macrodef name="managePrompt_continue">	
+		<attribute name="component"/>			
+		<element name="prompt"/>		
+		<element name="setDefault" optional="true"/>
+		<sequential>
+						
+			<!-- code execution -->
+			<autopd_if isNotTrue="${RATIONAL_AUTOMATION}">
+				<prompt/>
+			</autopd_if>
+			
+			<!-- cannot prompt user... --> 
+			<autopd_if isTrue="${RATIONAL_AUTOMATION}">	
+				
+				<!-- log error -->
+				<logErrorMessage  problem.id="2095" 
+								  component="@{component}"/>
+			  
+				<!-- Prompting default values -->
+				<setDefault/>				
+				  
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- ================================ -->
+	<!--             logs                 -->
+	<!-- ================================ -->	
+	<!-- logs exception and forces failure -->
+	<macrodef name="logCompleteAndFail">		
+		<attribute name="component"/>
+		<attribute name="problem.id" default="2098"/>  <!-- default ! -->
+		<sequential>
+		
+			<!-- log "complete" message -->
+			<logErrorMessage problem.id="@{problem.id}" component="@{component}"/>
+					  
+			<!-- zip up the most recent logs before failing -->
+			<antcall target="zip_autopd_log"/>					
+			<fail message="${problem.message}"/>			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- For notification of unexpected events  -->
+	<!-- sample: 
+	   <logErrorMessage problem.id="2092" component="${ant.file}"/>
+	-->
+	<!-- USE THESE TO PASS VALUES BACK TO IRWST -->
+	<macrodef name="logErrorMessage">
+		<attribute name="problem.id"/>
+		<attribute name="component"/>
+		<sequential>
+			<internal.getProblemMessage problem.id="@{problem.id}"/>
+			<autopdlog message="${problem.message}" 
+		  			id="@{problem.id}" 
+		  			component="@{component}"
+		  			level="error"/>	
+		</sequential>		
+	</macrodef>
+	
+	<!-- init -->
+	<macrodef name="internal.initProblemMessage">
+		<sequential>
+			<property name="errormessage.2091" value="Requirements not met"/>
+			<property name="errormessage.2092" value="Failure in executing cmd or shell script"/>
+			<property name="errormessage.2093" value="Permission or authentication error detected."/>
+			<property name="errormessage.2094" value="Cannot continue due to requirement of user input."/>
+			<property name="errormessage.2095" value="Automation mode: prompt suppressed.  Setting default values if provided."/>
+			<property name="errormessage.2096" value=""/>
+			<property name="errormessage.2097" value=""/>
+			<property name="errormessage.2098" value="Unknown error."/>
+			<autopdproperty name="errormessage.2099" value="Clean up complete: PMR file = ${pmrfilename}"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- returns problem.message -->
+	<macrodef name="internal.getProblemMessage"> 
+		<attribute name="problem.id"/>		
+		<sequential>
+			<!-- reset the message -->
+			<autopd_unset_property name="problem.message"/>
+			
+			<!-- leverage the storage mechanism -->
+			<internal.initProblemMessage/>
+			
+			<!-- get the string -->
+			<autopdproperty name="problem.message" value="${errormessage.@{problem.id}}"/>
+			
+			<!-- check -->
+			<autopd_unset_property name="isValidMessage"/>
+			<condition property="isValidMessage">								
+				<isset property="problem.message"/>				
+			</condition>
+			<autopd_if isNotTrue="${isValidMessage}">
+				<autopdproperty name="problem.message" value="${errormessage.2098}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+	
+</project>

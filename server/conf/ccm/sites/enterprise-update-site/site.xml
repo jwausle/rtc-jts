@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?><site>
+<description>
+			       Enterprise Server Update Site
+		    </description>
+<feature id="com.ibm.team.enterprise.server.feature" url="features/com.ibm.team.enterprise.server.feature_3.5.1200.v20150513_1704.jar" version="3.5.1200.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.etools.iseries.toolbox" url="features/com.ibm.etools.iseries.toolbox_8.5.1.v20121025_2130.jar" version="8.5.1.v20121025_2130">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.common.feature" url="features/com.ibm.teamz.common.feature_1.0.900.v20150513_1704.jar" version="1.0.900.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.common.feature" url="features/com.ibm.team.enterprise.common.feature_3.1.1000.v20150513_1704.jar" version="3.1.1000.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.services.common.feature" url="features/com.ibm.teamz.services.common.feature_3.0.200.v20150429_1802.jar" version="3.0.200.v20150429_1802">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.jfs.commons.feature" url="features/com.ibm.teamz.jfs.commons.feature_3.0.500.v20120924_1445.jar" version="3.0.500.v20120924_1445">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.langdef.feature.common" url="features/com.ibm.teamz.langdef.feature.common_1.1.800.v20150513_1704.jar" version="1.1.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.langdef.feature.server" url="features/com.ibm.teamz.langdef.feature.server_3.1.300.v20140322_0239.jar" version="3.1.300.v20140322_0239">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.dsdef.feature.common" url="features/com.ibm.teamz.dsdef.feature.common_1.1.800.v20150513_1704.jar" version="1.1.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.dsdef.feature.server" url="features/com.ibm.teamz.dsdef.feature.server_3.1.300.v20140322_0239.jar" version="3.1.300.v20140322_0239">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.build.feature.client" url="features/com.ibm.teamz.build.feature.client_0.7.700.v20150513_1704.jar" version="0.7.700.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.build.feature.server" url="features/com.ibm.teamz.build.feature.server_3.1.1000.v20150402_0521.jar" version="3.1.1000.v20150402_0521">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.rdf.query.feature.common" url="features/com.ibm.teamz.rdf.query.feature.common_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.rdf.query.feature.service" url="features/com.ibm.teamz.rdf.query.feature.service_3.0.100.v20120430_0235.jar" version="3.0.100.v20120430_0235">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.buildmap.feature.common" url="features/com.ibm.teamz.buildmap.feature.common_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.buildmap.feature.server" url="features/com.ibm.teamz.buildmap.feature.server_3.0.800.v20150418_0145.jar" version="3.0.800.v20150418_0145">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.metadata.scanner.common.feature" url="features/com.ibm.teamz.metadata.scanner.common.feature_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.metadata.scanner.service.feature" url="features/com.ibm.teamz.metadata.scanner.service.feature_3.0.1100.v20150130_1838.jar" version="3.0.1100.v20150130_1838">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.dependencyset.feature.common" url="features/com.ibm.teamz.dependencyset.feature.common_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.dependencyset.feature.server" url="features/com.ibm.teamz.dependencyset.feature.server_3.1.600.v20150303_0214.jar" version="3.1.600.v20150303_0214">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.mapping.feature" url="features/com.ibm.teamz.mapping.feature_1.0.800.v20150513_1704.jar" version="1.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.metadata.query.common.feature" url="features/com.ibm.team.enterprise.metadata.query.common.feature_3.0.1000.v20150513_1704.jar" version="3.0.1000.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.metadata.query.service.feature" url="features/com.ibm.team.enterprise.metadata.query.service.feature_3.0.300.v20140620_0123.jar" version="3.0.300.v20140620_0123">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.buildablesubset.feature.common" url="features/com.ibm.teamz.buildablesubset.feature.common_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.buildablesubset.feature.server" url="features/com.ibm.teamz.buildablesubset.feature.server_3.0.300.v20120430_0235.jar" version="3.0.300.v20120430_0235">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.filesystem.common.rtc.feature" url="features/com.ibm.teamp.filesystem.common.rtc.feature_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.logging.rtc.feature" url="features/com.ibm.teamp.logging.rtc.feature_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.scm.common.rtc.feature" url="features/com.ibm.teamp.scm.common.rtc.feature_3.0.900.v20150513_1704.jar" version="3.0.900.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.scm.server.rtc.feature" url="features/com.ibm.teamp.scm.server.rtc.feature_3.0.100.v20120517_0527.jar" version="3.0.100.v20120517_0527">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.ibmi.buildagent.service.rtc.feature" url="features/com.ibm.teamp.ibmi.buildagent.service.rtc.feature_3.1.300.v20150407_0222.jar" version="3.1.300.v20150407_0222">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.supa.server.common.feature" url="features/com.ibm.teamz.supa.server.common.feature_3.0.1100.v20150513_1704.jar" version="3.0.1100.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.supa.server.feature" url="features/com.ibm.teamz.supa.server.feature_3.0.700.v20150402_0521.jar" version="3.0.700.v20150402_0521">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.dependency.util.feature" url="features/com.ibm.team.enterprise.dependency.util.feature_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.jfs.commons.feature" url="features/com.ibm.team.enterprise.jfs.commons.feature_3.1.1100.v20150402_2104.jar" version="3.1.1100.v20150402_2104">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.langdef.common.feature" url="features/com.ibm.team.enterprise.langdef.common.feature_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.langdef.service.feature" url="features/com.ibm.team.enterprise.langdef.service.feature_3.0.200.v20130927_0313.jar" version="3.0.200.v20130927_0313">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.metadata.collection.common.feature" url="features/com.ibm.team.enterprise.metadata.collection.common.feature_3.0.1100.v20150513_1704.jar" version="3.0.1100.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.metadata.collection.service.feature" url="features/com.ibm.team.enterprise.metadata.collection.service.feature_3.1.1000.v20150427_0131.jar" version="3.1.1000.v20150427_0131">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.metadata.scanner.common.feature" url="features/com.ibm.team.enterprise.metadata.scanner.common.feature_3.0.1000.v20150513_1704.jar" version="3.0.1000.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.metadata.scanner.service.feature" url="features/com.ibm.team.enterprise.metadata.scanner.service.feature_3.0.200.v20140321_0233.jar" version="3.0.200.v20140321_0233">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.rdf.query.common.feature" url="features/com.ibm.team.enterprise.rdf.query.common.feature_3.1.700.v20150513_1704.jar" version="3.1.700.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.rdf.query.service.feature" url="features/com.ibm.team.enterprise.rdf.query.service.feature_3.1.600.v20141202_1900.jar" version="3.1.600.v20141202_1900">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.resourcedef.common.feature" url="features/com.ibm.team.enterprise.resourcedef.common.feature_3.0.702.v20150513_1704.jar" version="3.0.702.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.resourcedef.service.feature" url="features/com.ibm.team.enterprise.resourcedef.service.feature_3.0.2.v20120430_0235.jar" version="3.0.2.v20120430_0235">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.services.common.feature" url="features/com.ibm.team.enterprise.services.common.feature_3.0.900.v20150427_0131.jar" version="3.0.900.v20150427_0131">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.process.feature.common" url="features/com.ibm.team.enterprise.process.feature.common_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.process.feature.server" url="features/com.ibm.team.enterprise.process.feature.server_3.0.700.v20150427_0131.jar" version="3.0.700.v20150427_0131">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.process.definitions.server.rtc.feature" url="features/com.ibm.team.enterprise.process.definitions.server.rtc.feature_3.0.400.v20150429_1802.jar" version="3.0.400.v20150429_1802">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.deployment.common.feature" url="features/com.ibm.team.enterprise.deployment.common.feature_3.1.700.v20150513_1704.jar" version="3.1.700.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.deployment.service.feature" url="features/com.ibm.team.enterprise.deployment.service.feature_3.1.1000.v20150418_0145.jar" version="3.1.1000.v20150418_0145">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.packaging.common.feature" url="features/com.ibm.team.enterprise.packaging.common.feature_3.1.1100.v20150513_1704.jar" version="3.1.1100.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.packaging.service.feature" url="features/com.ibm.team.enterprise.packaging.service.feature_3.1.1000.v20150427_0131.jar" version="3.1.1000.v20150427_0131">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.zos.mapping.feature" url="features/com.ibm.team.enterprise.zos.mapping.feature_1.0.800.v20150513_1704.jar" version="1.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.aix.metadata.scanner.service.feature" url="features/com.ibm.teamp.aix.metadata.scanner.service.feature_3.0.100.v20120430_0235.jar" version="3.0.100.v20120430_0235">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.classify.feature" url="features/com.ibm.teamp.classify.feature_3.1.400.v20140328_0119.jar" version="3.1.400.v20140328_0119">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.ibmi.metadata.scanner.service.feature" url="features/com.ibm.teamp.ibmi.metadata.scanner.service.feature_3.0.400.v20140404_0145.jar" version="3.0.400.v20140404_0145">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.metadata.server.util.feature" url="features/com.ibm.teamp.metadata.server.util.feature_3.0.200.v20130614_0105.jar" version="3.0.200.v20130614_0105">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.metadata.util.feature" url="features/com.ibm.teamp.metadata.util.feature_3.0.800.v20150513_1704.jar" version="3.0.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.automation.buildagent.service.feature" url="features/com.ibm.team.enterprise.automation.buildagent.service.feature_3.1.500.v20150407_0222.jar" version="3.1.500.v20150407_0222">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.automation.common.feature" url="features/com.ibm.team.enterprise.automation.common.feature_3.1.900.v20150513_1704.jar" version="3.1.900.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.promotion.feature.server" url="features/com.ibm.team.enterprise.promotion.feature.server_3.1.1200.v20150501_0624.jar" version="3.1.1200.v20150501_0624">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.promotion.feature.common" url="features/com.ibm.team.enterprise.promotion.feature.common_3.1.900.v20150513_1704.jar" version="3.1.900.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.cleanup.feature.common" url="features/com.ibm.team.enterprise.cleanup.feature.common_3.1.0.v20120430_0235.jar" version="3.1.0.v20120430_0235">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.cleanup.feature.server" url="features/com.ibm.team.enterprise.cleanup.feature.server_3.1.500.v20150418_0145.jar" version="3.1.500.v20150418_0145">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.cleanup.feature.common" url="features/com.ibm.teamz.cleanup.feature.common_3.1.0.v20120430_0235.jar" version="3.1.0.v20120430_0235">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamz.cleanup.feature.server" url="features/com.ibm.teamz.cleanup.feature.server_3.1.0.v20120430_0235.jar" version="3.1.0.v20120430_0235">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.debug.team.common.feature" url="features/com.ibm.debug.team.common.feature_1.0.200.v20120131_2004.jar" version="1.0.200.v20120131_2004">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.debug.team.service.feature" url="features/com.ibm.debug.team.service.feature_1.0.200.v20120131_2004.jar" version="1.0.200.v20120131_2004">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.debug.pdt.team.common.feature" url="features/com.ibm.debug.pdt.team.common.feature_1.1.0.v20120404_2003.jar" version="1.1.0.v20120404_2003">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.debug.pdt.team.service.feature" url="features/com.ibm.debug.pdt.team.service.feature_1.1.0.v20120131_2004.jar" version="1.1.0.v20120131_2004">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.buildmap.server.feature" url="features/com.ibm.team.enterprise.buildmap.server.feature_3.1.1000.v20150427_0131.jar" version="3.1.1000.v20150427_0131">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.build.buildmap.server.feature" url="features/com.ibm.team.enterprise.build.buildmap.server.feature_1.0.0.v20150427_0131.jar" version="1.0.0.v20150427_0131">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.build.buildmap.compatibility.feature" url="features/com.ibm.team.enterprise.build.buildmap.compatibility.feature_1.0.0.v20150513_1704.jar" version="1.0.0.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.build.buildmap.common.feature" url="features/com.ibm.team.enterprise.build.buildmap.common.feature_1.0.0.v20150402_0521.jar" version="1.0.0.v20150402_0521">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.buildmap.common.feature" url="features/com.ibm.team.enterprise.buildmap.common.feature_3.1.600.v20150513_1704.jar" version="3.1.600.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.systemdefinition.feature.common" url="features/com.ibm.team.enterprise.systemdefinition.feature.common_3.5.1000.v20150513_1704.jar" version="3.5.1000.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.systemdefinition.feature.server" url="features/com.ibm.team.enterprise.systemdefinition.feature.server_3.6.600.v20150401_0211.jar" version="3.6.600.v20150401_0211">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.ibmi.systemdefinition.feature.common" url="features/com.ibm.team.enterprise.ibmi.systemdefinition.feature.common_3.5.800.v20150513_1704.jar" version="3.5.800.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.build.feature.common" url="features/com.ibm.team.enterprise.build.feature.common_3.0.1000.v20150513_1704.jar" version="3.0.1000.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.build.feature.server" url="features/com.ibm.team.enterprise.build.feature.server_3.0.1200.v20150506_0304.jar" version="3.0.1200.v20150506_0304">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.dependencyset.feature.common" url="features/com.ibm.teamp.dependencyset.feature.common_3.0.700.v20150513_1704.jar" version="3.0.700.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.dependencyset.feature.server" url="features/com.ibm.teamp.dependencyset.feature.server_3.0.700.v20150303_1903.jar" version="3.0.700.v20150303_1903">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.buildablesubset.feature.common" url="features/com.ibm.team.enterprise.buildablesubset.feature.common_3.1.900.v20150513_1704.jar" version="3.1.900.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.buildablesubset.feature.server" url="features/com.ibm.team.enterprise.buildablesubset.feature.server_3.1.800.v20150427_0131.jar" version="3.1.800.v20150427_0131">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.dependencyset.feature.common" url="features/com.ibm.team.enterprise.dependencyset.feature.common_1.0.1000.v20150513_1704.jar" version="1.0.1000.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.dependencyset.feature.server" url="features/com.ibm.team.enterprise.dependencyset.feature.server_1.0.1000.v20150429_0317.jar" version="1.0.1000.v20150429_0317">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.zos.systemdefinition.feature.common" url="features/com.ibm.team.enterprise.zos.systemdefinition.feature.common_1.0.900.v20150513_1704.jar" version="1.0.900.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.build.common.rtc.feature" url="features/com.ibm.teamp.build.common.rtc.feature_3.0.1000.v20150513_1704.jar" version="3.0.1000.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.teamp.build.feature.server" url="features/com.ibm.teamp.build.feature.server_3.0.800.v20150303_0214.jar" version="3.0.800.v20150303_0214">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.zos.systemdefinition.migration.feature.common" url="features/com.ibm.team.enterprise.zos.systemdefinition.migration.feature.common_1.0.900.v20150324_1930.jar" version="1.0.900.v20150324_1930">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.zos.systemdefinition.migration.feature.service" url="features/com.ibm.team.enterprise.zos.systemdefinition.migration.feature.service_1.0.900.v20150128_1914.jar" version="1.0.900.v20150128_1914">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.sample.feature.server" url="features/com.ibm.team.enterprise.sample.feature.server_4.0.300.v20131017_2200.jar" version="4.0.300.v20131017_2200">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.simulationregistry.feature" url="features/com.ibm.team.enterprise.simulationregistry.feature_1.0.200.v20150303_1903.jar" version="1.0.200.v20150303_1903">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.feed.server.feature" url="features/com.ibm.team.enterprise.feed.server.feature_1.0.100.v20141125_1956.jar" version="1.0.100.v20141125_1956">
+<category name="Enterprise"/>
+</feature>
+<feature id="com.ibm.team.enterprise.feed.common.feature" url="features/com.ibm.team.enterprise.feed.common.feature_1.0.100.v20150513_1704.jar" version="1.0.100.v20150513_1704">
+<category name="Enterprise"/>
+</feature>
+<category-def label="Enterprise RTC Server Extension Component" name="Enterprise">
+<description>This category contains the various plugins of the Enterprise RTC Server Component</description>
+</category-def>
+</site>

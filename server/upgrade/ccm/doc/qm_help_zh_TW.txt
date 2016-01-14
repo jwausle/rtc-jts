@@ -1,0 +1,30 @@
+
+
+升級已安裝的 QM
+
+附註：
+      - 這個 Script 會升級 QM。如需相關資訊，請參閱「升級 Rational CLM 解決方案」說明主題。
+      - 除非您正在顯示這項說明，否則必須從 JazzInstallRoot/server 目錄來執行這個 Script。
+
+用法：
+    qm_upgrade
+         -oldApplicationHome <value> -- 舊安裝架構中 QM 起始目錄的完整路徑。若為一般安裝，這個路徑是 <QM installation>/server/conf。
+         [-applicationContextRoot jazz] -- QM 環境定義根目錄。
+         [-oldApplicationVersion <無>] -- 要升級的版本。依預設，這是透過對舊 QM 應用程式執行 repotools -version 來判斷。
+         [-updateTomcatFiles <yes (default) | no>] -- 是否更新 Tomcat 配置檔。
+         [-oldTomcatHome <無>] -- 舊安裝架構中 Tomcat 根目錄的完整路徑。依預設，oldTomcatHome 參數值衍生自 oldApplicationHome 參數值。
+         [-newApplicationHome conf] -- 新安裝架構中 QM 伺服器配置目錄的路徑。
+         [-newJTSHome <無>] -- 新安裝架構將使用之 JTS 中 JTS 伺服器配置目錄的路徑。依預設，newJTSHome 參數值衍生自 newApplicationHome 參數值。
+
+         [-jtsContextRoot jts] -- JTS 環境定義根目錄。
+         [-newApplicationTomcatHome <無>] -- 新安裝架構中 QM Tomcat 起始目錄的路徑。依預設，newApplicationTomcatHome 參數值衍生自 newApplicationHome 參數值。
+         [-newJTSTomcatHome <無>] -- 新安裝架構將使用之 JTS 中 JTS Tomcat 起始目錄的路徑。依預設，newJTSTomcatHome 參數值衍生自 newJTSHome 參數值。
+         [-ignoreJTSVersionCheck] -- 不要嘗試驗證應用程式版本是否與位於 newJTSHome 的 JTS 版本相容。只有在分散式部署中的 JTS 位於無法從應用程式系統存取的個別系統時，才應使用這個引數。
+         [-noPrompt] -- 在建立或修改表格之前不先提示。
+         [-noEditor] -- 不使用編輯器開啟 teamserver.properties 檔。
+         [-noVerify] -- 不執行 teamserver.properties 檔驗證。
+         [-noStepPrompt] -- 在執行步驟之前不先提示。
+
+範例：
+    upgrade/qm/qm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer3.0.x/jazz/server/conf -importFromFile /tmp/qmData.tar
+

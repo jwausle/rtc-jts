@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?><site>
+<description>
+				Rational Team Concert nls2 Update Site
+			</description>
+<feature id="com.ibm.team.rtc.update.site.content.rtc.feature.nls2" url="features/com.ibm.team.rtc.update.site.content.rtc.feature.nls2_3.0.1.v20150519_1650.jar" version="3.0.1.v20150519_1650"/>
+</site>

@@ -1,0 +1,27 @@
+
+
+Mise à niveau d'un serveur JTS déjà installé
+
+Remarques :
+      - Ce script met à niveau JTS. Pour plus d'informations, voir la rubrique d'aide relative à la mise à niveau de la solution Rational pour CLM.
+      - Sauf lorsque vous affichez cette aide, ce script doit être exécuté depuis le répertoire RacineInstallJazz/server.
+
+Syntaxe :
+    jts_upgrade
+         -oldJTSHome <valeur> --Chemin d'accès complet au répertoire de configuration du serveur JTS de l'ancienne installation.  Dans le cas d'une installation standard, il s'agit de <installation JTS>/server/conf.
+         [-jtsContextRoot jts] --Racine de contexte JTS.
+         [-oldJTSVersion <aucune>] --Version de JTS mise à niveau.  Par défaut, vous pouvez la déterminer en exécutant repotools -version pour l'ancien serveur JTS.
+         [-lpaContextRoot admin] --Racine de contexte LPA.
+         [-updateTomcatFiles <yes (par défaut) | no>] --Indique si les fichiers de configuration tomcat doivent être mis à jour.
+         [-oldTomcatHome <aucun>] --Chemin d'accès complet au répertoire principal Tomcat de l'ancienne installation. Par défaut, la valeur du paramètre oldTomcatHome est dérivée de la valeur du paramètre oldJTSHome.
+         [-newJTSHome conf] --Chemin d'accès au répertoire de configuration du serveur JTS de la nouvelle installation.
+         [-newTomcatHome <aucun>] --Chemin d'accès au répertoire principal Tomcat de la nouvelle installation. Par défaut, la valeur du paramètre newTomcatHome est dérivée de la valeur du paramètre newJTSHome.
+         [-noPrompt] --Ne pas demander avant de créer les tables préalablement à l'importation.
+         [-noEditor] --Ne pas ouvrir le fichier teamserver.properties dans un éditeur.
+         [-ignoreLPA] -- Ignorer la mise à niveau de l'application LPA
+         [-noVerify] --Ne pas vérifier les fichiers teamserver.properties.
+         [-noStepPrompt] --Ne pas demander confirmation avant l'exécution d'une étape.
+
+Exemples :
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

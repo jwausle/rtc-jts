@@ -1,0 +1,27 @@
+
+
+Egy már telepített JTS frissítése
+
+Megjegyzések:
+      - Ez a parancsfájl frissíti a JTS kiszolgálót. További információkért tekintse meg a "Rational solution for CLM frissítése" című súgótémakört.
+      - Ez a parancsfájl csak a JazzInstallRoot/server könyvtárból futtatható, kivéve amikor ezt a súgót jeleníti meg.
+
+Használat:
+    jts_upgrade
+         -oldJTSHome <érték> --A JTS kiszolgáló konfigurációs könyvtárának teljes elérési útja a régi telepítésben.  Szokásos telepítés esetén ez az elérési út a <JTS telepítés>/server/conf.
+         [-jtsContextRoot jts] --JTS kontextusgyökér.
+         [-oldJTSVersion <nincs>] --A frissítendő JTS változat.  Alapértelmezés szerint ez a régi JTS kiszolgálón a repotools -version parancs futtatásával határozható meg.
+         [-lpaContextRoot admin] --LPA kontextusgyökér.
+         [-updateTomcatFiles <igen (alapértelmezett) | nem>] --Frissítse-e a tomcat konfigurációs fájlokat?
+         [-oldTomcatHome <nincs>] --A Tomcat saját könyvtárának teljes elérési útja a régi telepítésben. Alapértelmezés szerint az oldTomcatHome paraméter értéke az oldJTSHome paraméter értékéből származik.
+         [-newJTSHome conf] --A JTS kiszolgáló konfigurációs könyvtárának elérési útja az új telepítésben.
+         [-newTomcatHome <nincs>] --A Tomcat saját könyvtárának elérési útja az új telepítésben. Alapértelmezés szerint a newTomcatHome paraméter értéke a newJTSHome paraméter értékéből származik.
+         [-noPrompt] --Ne legyen rákérdezés a táblák importálás előtti létrehozása előtt.
+         [-noEditor] --Ne nyisson meg szerkesztőt a teamserver.properties fájlhoz.
+         [-ignoreLPA] -- Az LPA alkalmazás frissítésének figyelmen kívül hagyása
+         [-noVerify] --Ne hajtsa végre a teamserver.properties fájlok ellenőrzését.
+         [-noStepPrompt] --Ne legyen kérdés egy lépés végrehajtása előtt.
+
+Példák:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

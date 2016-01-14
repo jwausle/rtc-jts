@@ -1,0 +1,22 @@
+Manifest-Version: 1.0
+Bundle-ClassPath: lib/apache-mime4j-0.6.jar
+Bundle-Vendor: The Apache Software Foundation
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-Name: Apache Mime4J
+Bundle-SymbolicName: org.apache.james.mime4j
+Require-Bundle: org.apache.commons.io,org.apache.commons.logging
+Export-Package: org.apache.james.mime4j,org.apache.james.mime4j.codec,
+ org.apache.james.mime4j.descriptor,org.apache.james.mime4j.field,org.
+ apache.james.mime4j.field.address,org.apache.james.mime4j.field.addre
+ ss.parser,org.apache.james.mime4j.field.contentdisposition.parser,org
+ .apache.james.mime4j.field.contenttype.parser,org.apache.james.mime4j
+ .field.datetime,org.apache.james.mime4j.field.datetime.parser,org.apa
+ che.james.mime4j.field.language.parser,org.apache.james.mime4j.field.
+ mimeversion.parser,org.apache.james.mime4j.field.structured.parser,or
+ g.apache.james.mime4j.io,org.apache.james.mime4j.message,org.apache.j
+ ames.mime4j.parser,org.apache.james.mime4j.storage,org.apache.james.m
+ ime4j.util
+Bundle-Version: 0.6.0.v20120423
+Bundle-ManifestVersion: 2
+
+

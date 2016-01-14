@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><site>
+<description>
+			Jazz Foundation Server
+		</description>
+<feature id="com.ibm.team.jazz.foundation.server.jfs.feature" url="features/com.ibm.team.jazz.foundation.server.jfs.feature_3.1.1000.v20150519_1511.jar" version="3.1.1000.v20150519_1511">
+<category name="foundationServer"/>
+</feature>
+<feature id="com.hp.hpl.jena.rdf.feature" url="features/com.hp.hpl.jena.rdf.feature_1.1.2000.v20141015_0017.jar" version="1.1.2000.v20141015_0017"/>
+<feature id="com.ibm.icu.feature" url="features/com.ibm.icu.feature_1.0.1100.v20120901_0511.jar" version="1.0.1100.v20120901_0511"/>
+<feature id="com.ibm.team.apache.log4j.jfs.feature" url="features/com.ibm.team.apache.log4j.jfs.feature_1.0.1100.v20120901_0511.jar" version="1.0.1100.v20120901_0511"/>
+<feature id="com.ibm.team.apache.lucene2.jfs.feature" url="features/com.ibm.team.apache.lucene2.jfs.feature_1.0.800.v20140604_2155.jar" version="1.0.800.v20140604_2155"/>
+<feature id="com.ibm.team.app.server.jfs.feature" url="features/com.ibm.team.app.server.jfs.feature_1.1.1000.v20150126_0050.jar" version="1.1.1000.v20150126_0050"/>
+<feature id="com.ibm.team.dashboard.common.jfs.feature" url="features/com.ibm.team.dashboard.common.jfs.feature_6.0.0.v20141216_1954.jar" version="6.0.0.v20141216_1954"/>
+<feature id="com.ibm.team.dashboard.server.jfs.feature" url="features/com.ibm.team.dashboard.server.jfs.feature_6.0.0.v20150428_1734.jar" version="6.0.0.v20150428_1734"/>
+<feature id="com.ibm.team.foundation.common.jfs.feature" url="features/com.ibm.team.foundation.common.jfs.feature_1.1.1000.v20150429_1644.jar" version="1.1.1000.v20150429_1644"/>
+<feature id="com.ibm.team.foundation.server.jfs.feature" url="features/com.ibm.team.foundation.server.jfs.feature_1.1.1000.v20150402_0342.jar" version="1.1.1000.v20150402_0342"/>
+<feature id="com.ibm.team.gateway.server.jfs.feature" url="features/com.ibm.team.gateway.server.jfs.feature_1.0.4000.v20141126_0052.jar" version="1.0.4000.v20141126_0052"/>
+<feature id="com.ibm.team.jazz.server.feature" url="features/com.ibm.team.jazz.server.feature_0.10.1000.v20150519_1511.jar" version="0.10.1000.v20150519_1511"/>
+<feature id="com.ibm.team.jfs.app.feature" url="features/com.ibm.team.jfs.app.feature_1.3.1000.v20150503_2343.jar" version="1.3.1000.v20150503_2343"/>
+<feature id="com.ibm.team.jfs.server.jfs.feature" url="features/com.ibm.team.jfs.server.jfs.feature_1.1.1000.v20150417_0025.jar" version="1.1.1000.v20150417_0025"/>
+<feature id="com.ibm.team.process.authoring.jfs.feature" url="features/com.ibm.team.process.authoring.jfs.feature_3.1.1000.v20150422_0857.jar" version="3.1.1000.v20150422_0857"/>
+<feature id="com.ibm.team.process.authoring.server.feature" url="features/com.ibm.team.process.authoring.server.feature_1.1.1000.v20150422_0857.jar" version="1.1.1000.v20150422_0857"/>
+<feature id="com.ibm.team.process.common.jfs.feature" url="features/com.ibm.team.process.common.jfs.feature_1.2.1000.v20150317_1630.jar" version="1.2.1000.v20150317_1630"/>
+<feature id="com.ibm.team.process.server.jfs.feature" url="features/com.ibm.team.process.server.jfs.feature_1.2.1000.v20150511_1615.jar" version="1.2.1000.v20150511_1615"/>
+<feature id="com.ibm.team.reports.common.jfs.feature" url="features/com.ibm.team.reports.common.jfs.feature_1.1.1000.v20150326_0016.jar" version="1.1.1000.v20150326_0016"/>
+<feature id="com.ibm.team.reports.server.extracontent.jfs.feature" url="features/com.ibm.team.reports.server.extracontent.jfs.feature_1.0.1400.v20130423_0026.jar" version="1.0.1400.v20130423_0026"/>
+<feature id="com.ibm.team.reports.server.jfs.feature" url="features/com.ibm.team.reports.server.jfs.feature_1.1.1000.v20150519_1511.jar" version="1.1.1000.v20150519_1511"/>
+<feature id="com.ibm.team.repository.common.jfs.feature" url="features/com.ibm.team.repository.common.jfs.feature_1.1.1000.v20150414_0041.jar" version="1.1.1000.v20150414_0041"/>
+<feature id="com.ibm.team.repository.server.jfs.feature" url="features/com.ibm.team.repository.server.jfs.feature_1.1.1000.v20150507_0104.jar" version="1.1.1000.v20150507_0104"/>
+<feature id="com.ibm.team.userregistry.ldaplocalgroup.feature" url="features/com.ibm.team.userregistry.ldaplocalgroup.feature_1.0.4000.v20141126_0052.jar" version="1.0.4000.v20141126_0052"/>
+<feature id="com.ibm.team.repository.server.shared.jfs.feature" url="features/com.ibm.team.repository.server.shared.jfs.feature_1.1.1000.v20150507_0104.jar" version="1.1.1000.v20150507_0104"/>
+<feature id="com.ibm.team.repository.web.jfs.feature" url="features/com.ibm.team.repository.web.jfs.feature_1.1.1000.v20150507_0104.jar" version="1.1.1000.v20150507_0104"/>
+<feature id="com.ibm.team.repository.service.jdbc41.feature" url="features/com.ibm.team.repository.service.jdbc41.feature_1.0.3000.v20150507_0104.jar" version="1.0.3000.v20150507_0104"/>
+<feature id="com.ibm.team.repository.services.jfs.feature" url="features/com.ibm.team.repository.services.jfs.feature_1.1.1000.v20141126_0052.jar" version="1.1.1000.v20141126_0052"/>
+<feature id="com.ibm.team.repotools.command.jfs.feature" url="features/com.ibm.team.repotools.command.jfs.feature_1.1.1000.v20150514_1652.jar" version="1.1.1000.v20150514_1652"/>
+<feature id="com.ibm.team.server.emf.jfs.feature" url="features/com.ibm.team.server.emf.jfs.feature_1.0.1200.v20130129_0138.jar" version="1.0.1200.v20130129_0138"/>
+<feature id="com.ibm.team.server.jfs.feature" url="features/com.ibm.team.server.jfs.feature_1.3.1000.v20150519_0258.jar" version="1.3.1000.v20150519_0258"/>
+<feature id="com.sun.syndication.feature" url="features/com.sun.syndication.feature_1.0.2000.v20130922_1730.jar" version="1.0.2000.v20130922_1730"/>
+<feature id="javax.xml.stream.feature" url="features/javax.xml.stream.feature_1.0.1100.v20120901_0511.jar" version="1.0.1100.v20120901_0511"/>
+<feature id="net.jazz.ajax.app.jfs.feature" url="features/net.jazz.ajax.app.jfs.feature_6.0.0.v20150422_0026.jar" version="6.0.0.v20150422_0026"/>
+<feature id="net.jazz.ajax.jfs.feature" url="features/net.jazz.ajax.jfs.feature_6.0.0.v20150428_0333.jar" version="6.0.0.v20150428_0333"/>
+<feature id="net.oauth.jfs.feature" url="features/net.oauth.jfs.feature_1.0.3000.v20131217_0302.jar" version="1.0.3000.v20131217_0302"/>
+<feature id="org.apache.commons.httpclient.jfs.feature" url="features/org.apache.commons.httpclient.jfs.feature_1.0.1100.v20120901_0511.jar" version="1.0.1100.v20120901_0511"/>
+<feature id="org.apache.derby.core.feature" url="features/org.apache.derby.core.feature_10.10.100.v20140529_1953.jar" version="10.10.100.v20140529_1953"/>
+<feature id="org.apache.http.jfs.feature" url="features/org.apache.http.jfs.feature_1.0.2000.v20150218_1646.jar" version="1.0.2000.v20150218_1646"/>
+<feature id="com.ibm.team.server.monitoring.feature" url="features/com.ibm.team.server.monitoring.feature_1.1.1000.v20150519_1511.jar" version="1.1.1000.v20150519_1511"/>
+<feature id="com.ibm.team.lpa.feature" url="features/com.ibm.team.lpa.feature_4.2.1000.v20150514_1652.jar" version="4.2.1000.v20150514_1652"/>
+<feature id="net.jazz.ajax.base.jfs.feature" url="features/net.jazz.ajax.base.jfs.feature_6.0.0.v20150422_0026.jar" version="6.0.0.v20150422_0026"/>
+<feature id="com.ibm.team.jazz.foundation.server.product.feature" url="features/com.ibm.team.jazz.foundation.server.product.feature_3.1.1000.v20150519_1511.jar" version="3.1.1000.v20150519_1511">
+<category name="foundationProduct"/>
+</feature>
+<category-def label="Jazz Foundation Server Component" name="foundationServer"/>
+<category-def label="Jazz Foundation Server Product" name="foundationProduct"/>
+</site>

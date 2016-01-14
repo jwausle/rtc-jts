@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2008, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<project name="rationalcustomtaskdef_setup">
+	
+	<!-- need to set the classpath to include the latest plugin -->
+	<dirname property="rationalcustomtask.setup.targets.basedir" file="${ant.file.rationalcustomtaskdef_setup}" />
+	<dirname property="rationalcustomtask.setup.targets.parentdir" 	file="${rationalcustomtask.setup.targets.basedir}" />
+	<dirname property="rationalcustomtask.setup.bundle.basedir" 	file="${rationalcustomtask.setup.targets.parentdir}" />
+
+	<taskdef file="${rationalcustomtask.setup.bundle.basedir}/properties/RATL_CUSTOM/rationalcustomtaskdef.properties" />
+	
+	<!-- USAGE: Include the statements below, use macros directly. 
+	            Make sure package is also done properly: feature.xml , META-INF. 
+	<autopdimport file="${autopdimportdir}/scripts/RATL_CUSTOM/rational.custom.taskdef.xml" 
+	                 osgiBundle="com.ibm.esupport.client.product.rational.custom.shared"/>
+	-->
+	
+	<!-- ==================================== -->
+	<!--              CONDITIONS              -->
+	<!-- ==================================== -->
+	<!-- 
+	   user_access: to be used within condition. 
+	      - file : filename or directory name
+	      - accessType : r,w, or rw 
+	          - r : checks whether a file is read-able
+	          - w : checks whether a file is write-able
+	          - rw : check whether a file is read and write-able.
+	   USAGE: 
+	   <condition property="my_property">
+   		    <user_access file="C:\temp\myfile.zip" accessType="rw"/>
+	   </condition>
+	 -->
+	<typedef
+	    name="user_access"
+	    classname="com.ibm.esupport.client.product.rational.custom.condition.UserResourceAccessCondition"
+	    classpath="classes"/>
+		
+	<!-- 
+	   is_absolute_path: to be used within condition.
+	   Checks whether file path provided is absolute or not
+	      - file : filename or directory name 
+	      
+	   USAGE: 
+	   <condition property="my_property">
+   		    <is_absolute_path file="C:\Program Files\myfile.zip"/>
+	   </condition>
+	 -->
+	<typedef
+	    name="is_absolute_path"
+	    classname="com.ibm.esupport.client.product.rational.custom.condition.IsAbsolutePathCondition"
+	    classpath="classes"/>
+
+	<!-- ===================================== -->
+	<!--  File selector                        -->
+	<!-- ===================================== -->
+	<!-- set up file selectors -->	
+	<!-- 
+	   ratl.readable:  use within fileset as a selector
+	   Selects a file if file.isReadable() is returned. Useful to avoid non-readable files
+	   => Must manage the exclude list explicitely.  
+	       This has to do with selector does not know when "start" happens or when "end" happens. 
+	       The code will update property specified with a list of file names that has been excluded.  
+	   
+	   USAGE example:  	   
+	    <ratl.reset.exclude.list/>
+	    <fileset id="my.readable.files" dir="C:\temp" includes="*.zip">
+           <selector refid="ratl.readable.log.exclude.list"/>
+        </fileset>
+        <echo file="my.readable.excluded.list"> ${internal.ratl.read.exclude.list}</echo>
+        <autopd_unset_property name="internal.ratl.read.exclude.list"/>
+        
+	    Must explicitely decide what to do with ${internal.ratl.read.exclude.list} when file zip completes.
+               
+      Alternative usage: 
+      Specifying custom selector & custom output property.  
+        <fileset id="my.readable.files" dir="C:\temp" includes="*.zip">
+           <custom classname="com.ibm.esupport.client.product.rational.custom.selector.FileReadableSelector" classpath="classes">
+       			<param name="excludefileoutput" value="my.output"/>
+            </custom>
+        </fileset>
+
+    There is probably a easier way to specify the parameters into a selector... 
+	  -->	
+	<!-- basic usage with files read. This one will log output in internal.ratl.read.exclude.list , and needs to be managed. -->
+	<selector id="ratl.readable.log.exclude.list">
+       <custom classname="com.ibm.esupport.client.product.rational.custom.selector.FileReadableSelector"
+           classpath="classes">
+       			<param name="excludefileoutput" value="internal.ratl.read.exclude.list"/>
+       </custom>
+    </selector>
+	
+	<!-- basic usage with files read.  This does not keep track of an excludes list -->
+	<selector id="ratl.readable.no.log">
+		<custom classname="com.ibm.esupport.client.product.rational.custom.selector.FileReadableSelector"
+           classpath="classes">
+       </custom>
+	</selector>
+	
+	
+	<!-- entry method for resetting the readable exclude list -->
+	<!-- Use this to unset the internal property -->
+	<macrodef name="ratl.reset.exclude.list">
+		<sequential>
+			<autopd_unset_property name="internal.ratl.read.exclude.list"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- convinent method for managing the readable excluded list -->
+	<!-- This method writes the content of ${internal.ratl.read.exclude.list} to the default output file
+		- & clears the variable: internal.ratl.read.exclude.list
+	  -->
+	<property name="default.file.exclude.output" value="FILES_EXCLUDED_FROM_COLLECTION.txt"/>
+	<macrodef name="ratl.log.exclude.list">
+		<attribute name="dir.path"/>
+		<attribute name="heading" default=""/>
+		<sequential>
+			<!-- log and write only if there is content  -->
+			<autopd_unset_property name="has.empty.exclude.list"/>
+			<condition property="has.empty.exclude.list">
+				<or>
+					<not>
+						<isset property="internal.ratl.read.exclude.list"/>
+					</not>
+					<equals arg1="" arg2="${internal.ratl.read.exclude.list}"/>
+				</or>
+			</condition>
+			
+			<autopd_if isNotTrue="${has.empty.exclude.list}">
+				<!-- correct dir.path -->
+				<autopd_unset_property name="correct.dir.path"/>
+				<ratl.resource_to_full_path filepath="@{dir.path}" outputproperty="correct.dir.path"/>
+				
+				<!-- echo the output to a file - including a heading-->
+				<echo append="true" file="${autopdtmp}/${default.file.exclude.output}" message="${line.separator}============================${line.separator}Dir: ${correct.dir.path}@{heading}${line.separator}============================${line.separator}${internal.ratl.read.exclude.list}${line.separator}" />
+				
+				<!-- unset the property -->
+				<autopd_unset_property name="internal.ratl.read.exclude.list"/>
+				
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- use this after the main collection runs -->
+	<!-- NOTE: This was originally in ratl.log.exclude.list, 
+	     Unfortunately, ANT does not update a file in a .zip/.jar/.war file if the timestamp between the files are too close to each other 
+	     This is done to ensure the latest updates are collected.  
+	     
+	     --> 
+	<target name="ratl.collect.exclude.list">
+		<autopd_unset_property name="has.local.outputfile"/>
+		<available file="${autopdtmp}/${default.file.exclude.output}" property="has.local.outputfile"/>
+		
+		<autopd_if isTrue="${has.local.outputfile}">
+			<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset file="${autopdtmp}/${default.file.exclude.output}" />
+			</copy>
+			<!-- remove the file to ensure next time exclude list is logged, it would start with a new file -->
+			<delete file="${autopdtmp}/${default.file.exclude.output}"/>
+		</autopd_if>
+	
+	</target>
+	
+	<!-- ===================================== -->
+	<!--  Utilites                             -->
+	<!-- ===================================== -->
+	
+	<!-- set up file selector -->
+	<!-- USAGE: 
+	  -->
+	<macrodef name="ratl.head">
+		<attribute name="input"/>
+		<attribute name="numlines"/>
+		<attribute name="outputproperty" default=""/>   <!-- OPTIONAL: output to a property. Used if both outputproperty and output is defined -->
+		<attribute name="output" default=""/>           <!-- OPTIONAL: output to a file.  Used only if outputproperty is not defined. -->
+		<attribute name="append" default="true"/>       <!-- OPTIONAL: Used only when 'output' is defined -->
+		<attribute name="errorproperty" default=""/>    <!-- OPTIONAL: Default error output to property definded in Util class: DEFAULT_ERRORPROPERTY = "rational.custom.task.default.error"; -->
+		<sequential>
+			
+			<head input="@{input}"
+				  outputproperty="@{outputproperty}"
+				  output="@{output}"
+	              numlines="@{numlines}"
+				  append="@{append}"
+				  errorproperty="@{errorproperty}"/>
+			
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="ratl.tail">
+		<attribute name="input"/>
+		<attribute name="numlines"/>
+		<attribute name="outputproperty" default=""/>  <!-- OPTIONAL: output to a property. Used if both outputproperty and output is defined -->
+		<attribute name="output" default=""/>          <!-- OPTIONAL: output to a file.  Used only if outputproperty is not defined. -->
+		<attribute name="append" default="true"/>      <!-- OPTIONAL: Used only when 'output' is defined -->
+		<attribute name="errorproperty" default=""/>   <!-- OPTIONAL: Default error output to property definded in Util class: DEFAULT_ERRORPROPERTY = "rational.custom.task.default.error"; -->
+		<sequential>
+			<tail input="@{input}"
+				outputproperty="@{outputproperty}"
+				output="@{output}"
+	            numlines="@{numlines}"
+				append="@{append}"
+		        errorproperty="@{errorproperty}"/>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="ratl.fil_url_to_local_path">
+		<attribute name="fileurl"/>
+		<attribute name="outputproperty"/>
+		<attribute name="errorproperty" default=""/>    <!-- OPTIONAL: Default error output to property definded in Util class: DEFAULT_ERRORPROPERTY = "rational.custom.task.default.error"; -->
+		<sequential>
+			<file_url_to_local_path 
+				fileurl="@{fileurl}" 
+				outputproperty="@{outputproperty}"
+			    errorproperty="@{errorproperty}"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- get an absolute path from the given resource fileName -->
+	<macrodef name="ratl.resource_to_full_path">
+		<attribute name="filePath"/>
+		<attribute name="outputproperty"/>
+		<attribute name="errorproperty" default=""/>   <!-- OPTIONAL: Default error output to property definded in Util class: DEFAULT_ERRORPROPERTY = "rational.custom.task.default.error"; -->
+		<sequential>
+			<resource_to_canonical_path
+				filePath="@{filePath}"
+				outputproperty="@{outputproperty}"
+				errorproperty="@{errorproperty}"
+			/>
+		</sequential>
+	</macrodef>
+	
+	<!-- set up file selector -->
+	<!-- USAGE: 
+	  -->
+	<macrodef name="ratl.http.get">
+		<attribute name="url"/>                    <!-- Full url -->
+		<attribute name="output"/>                 <!-- Full path to output file -->		
+		<attribute name="failonerror" default="false"/>   <!-- OPTIONAL: false to ignore error -->
+		<attribute name="errorproperty" default=""/>      <!-- OPTIONAL: error message -->
+		<sequential>
+			<http_get 
+				url="@{url}"         
+				output="@{output}"     
+			    errorproperty="@{errorproperty}"
+				failonerror="@{failonerror}"
+			/>
+	   </sequential>
+	</macrodef>
+</project>

@@ -1,0 +1,103 @@
+<?xml version="1.0" ?>
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!-- Code to modify/update log / trace settings -->
+
+<project name="rational_upload_shared"> 
+	
+	<!-- Load "custom" tasks -->
+	<taskdef file="${autopdrootdir}/properties/autopdtaskdef.properties" loaderref="ISA" />
+    
+	<!-- Set script.basedir and bundle.basedir as described in the AutoPD/ISA Script Compatibility Guidelines document  -->
+	<dirname property="rational.upload.shared.targets.basedir" file="${ant.file.rational_upload_shared}" />
+	<dirname property="rational.upload.shared.script.parentdir" file="${rational.upload.shared.targets.basedir}" />
+	<dirname property="rational.upload.shared.bundle.basedir" file="${rational.upload.shared.script.parentdir}" />
+
+	<!-- import the common file --> 
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>	
+	
+	<!-- ISADC needs -->
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+	
+	<!-- ============================================================== -->
+	<!--  Utility to allow user to upload files only thru ISA           --> 
+	<!-- ============================================================== -->	
+	 <target name="Main_rationalUploadTask"
+			depends="load_sharedelements_tasks,		
+					set_problem_type_with_nls_bundle,
+					setup_autopd_v2,
+					validate_os,
+	 				rational.file.upload.prompt,		
+  					zip_autopd_log,
+					ftp_message_shared,
+					ftp_collected_information_shared"/> 
+	
+	<!-- main entry point -->
+	<target name="rational.file.upload.prompt">
+		
+		<!-- set for Rational uploads - FTP only-->
+		<autopdproperty name="ftp.directory.list" value="rational"/>
+		<autopdproperty name="ftp.directory.list.details" value="Rational"/>
+		
+		<!-- GUI -->
+		<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+			<fieldtask name="prompt"  label="ratl.upload.file.prompt"  type="prompt" />
+			<fieldtask type="label" name="label1" label="ratl.upload.file.info.prompt1"/>
+			<fieldtask type="label" name="label2" label="ratl.upload.file.info.prompt2"/>
+			<fieldtask type="label" name="label3" label="ratl.upload.file.info.prompt3"/>
+			<fieldtask type="label" name="label4" label="ratl.upload.file.info.prompt4"/>
+			<fieldtask type="label" name="label5" label="ratl.upload.file.info.prompt5"/>
+			<fieldtask type="label" name="label6" label="ratl.upload.file.info.ok"/>
+		</inputdialogtask_v2>
+		
+		<!-- input files - if add new files - please update file.list property below. -->
+		<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+			<fieldtask name="prompt"  label="ratl.upload.file.prompt"  type="prompt" />
+			<fieldtask type="filebrowser" name="file.1" browserTargetType="file" label="ratl.upload.file" defaultvalue=""/>
+			<fieldtask type="filebrowser" name="file.2" browserTargetType="file" label="ratl.upload.file" defaultvalue=""/>
+			<fieldtask type="filebrowser" name="file.3" browserTargetType="file" label="ratl.upload.file" defaultvalue=""/>
+			<fieldtask type="filebrowser" name="file.4" browserTargetType="file" label="ratl.upload.file" defaultvalue=""/>
+			<fieldtask type="filebrowser" name="file.5" browserTargetType="file" label="ratl.upload.file" defaultvalue=""/>
+			<fieldtask name="line6a" type="label" label="${line.separator}"/>
+		    <fieldtask type="label" name="label6" label="ratl.upload.file.info.ok"/>
+		</inputdialogtask_v2>
+		
+		<!-- loop:  collect the zip files -->
+		<autopdproperty name="has.a.file" value="false"/>
+		<autopdproperty name="file.list" value="${file.1}@${file.2}@${file.3}@${file.4}@${file.5}"/>
+		<autopdloop delimiter="@" param="current.file" paramlist="${file.list}">
+			<!-- zip if valid file found -->
+			<autopd_unset_property name="has.valid.file"/>
+			<available file="${current.file}" type="file" property="has.valid.file"/>			
+			<autopd_if isTrue="${has.valid.file}">
+				<autopdproperty name="has.a.file" value="true"/>
+				<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+					<fileset file="${current.file}"/>
+				</copy>
+			</autopd_if>
+		</autopdloop>
+		
+		<!-- check - and notify - but noop-->
+		<autopd_if isNotTrue="${has.a.file}">
+			<wsnlsecho key="ratl.upload.nonsubmitted" 
+				bundle="properties/RATLSHARE/autopd"
+				message="No files were submitted."
+				id="2091"
+				level="info"
+				messagePrefix="CWPDD"/>
+		</autopd_if>
+		
+				
+	</target>
+	
+</project>

@@ -1,0 +1,1746 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!--  Shared targets -->
+<!-- compatible with AutoPD 1.3.0 -->
+<!-- must use this after validate_os -->
+
+<project name="rational_im_shared"> 
+
+
+	<dirname property="rational.im.shared.targets.basedir" file="${ant.file.rational_im_shared}" />
+	<dirname property="rational.im.shared.targets.parentdir" file="${rational.im.shared.targets.basedir}" />
+	<dirname property="rational.im.shared.targets.bundle.basedir" file="${rational.im.shared.targets.parentdir}" />
+	
+	<!-- import the common file --> 
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_eclipse_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_automation_recovery_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATL_CUSTOM/rational.custom.taskdef.xml" osgiBundle="com.ibm.esupport.client.product.rational.custom.shared"/>
+	
+	<!-- ISADC needs -->
+	<import>
+		<javaresource name="scripts/sharedtargets.xml"/>
+	</import>
+	
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+
+	<!-- ################################## -->	
+	<!--  AutoPD Main's                     -->
+	<!-- ################################## -->
+	
+	<!--  use these as top level items that are used
+		across different plugins to reduce options change -->
+
+	<!-- collects Installation Manager Data -->
+	<!-- SAMPLE USAGE: 
+		<target name="autopdMain" depends="Main_collectIMData"/>
+	-->
+
+	<!-- slowly deprecate this -->
+	<!-- AUTOMATE DONE -->
+	<target name="Main_collectIMData"
+		depends="load_sharedelements_tasks,		
+				set_problem_type_with_nls_bundle,
+				setup_autopd,
+				validate_os,
+				checkAutomation,
+				check_64_bit_JVM,
+				collectIMData_entry,
+				cisa_scan,				
+				zip_autopd_log,				
+				ftp_message_shared,
+				ftp_collected_information_shared">
+		<!-- Dependencies used above...
+					   load_sharedelements_tasks,			// load shared elements - ying add.
+					   set_problem_type_with_nls_bundle,    //set and log the problem type
+					   setup_autopd,						// initialize autopd (from sharedtargets.xml)
+					   validate_os,							// validates we are running on a supported os (from sharedtargets.xml)
+					   collectIMData_entry,							//call the collectIMData_entry target below
+					   zip_autopd_log,                      // add autopd logs to the zip file  (from sharedtargets.xml)
+					   ftp_message_shared, 					// asks the user if they want to ftp the zip file in (from sharedtargets.xml)
+					   ftp_collected_information_shared,	// Not used: performs the ftp if desired (from sharedtargets.xml)
+			-->		
+	</target>
+	
+	<!-- next new version -->
+	<!-- AUTOMATE DONE -->
+	<target name="Main_collectIMData_v2"
+		depends="load_sharedelements_tasks,		
+				set_problem_type_with_nls_bundle,
+				setup_autopd_v2,
+				validate_os,
+				checkAutomation,
+				check_64_bit_JVM,
+				collectIMData_entry,
+				ratl.collect.exclude.list, 
+				cisa_scan,
+				zip_autopd_log,
+				set_rational_upload,
+				ftp_message_shared,
+				ftp_collected_information_shared">	
+	</target>	
+	
+	<!-- Description:  Collects product data                             -->
+	<!-- product.id must be set via property before entering this target -->
+	<!-- 	- must match those provided by installation manager -->
+	<!-- SAMPLE USAGE: 
+		<target name="init_prod"> 
+			<property name="product.id" value=" _fill_me_in "/> 
+			// optionally specify a product version to match.
+			// Value example:  7.0 will match installation of 7.0, 7.0.1, 7.0.2 etc
+			// Value example:  7.0.2 will match installation of 7.0.2, 7.0.2.1 etc
+			// Value example:  7.0.2 will NOT match installation of 7.0.3
+			// Value example:  7.0.0 will NOT match installation of 7.0  
+			<property name="product.version" value="_fill_me_in"/> 
+		</target>
+		<target name="autopdMain" depends="init_prod, Main_collectProudctData"/>
+	-->
+	<target name="Main_collectProductData"
+		depends="load_sharedelements_tasks,		
+				set_problem_type_with_nls_bundle,
+				setup_autopd,
+				validate_os,
+				checkAutomation,
+				check_64_bit_JVM,
+				collectProductData_entry,
+				cisa_scan,
+				zip_autopd_log,
+				ftp_message_shared,
+				ftp_collected_information_shared">
+		<!-- Dependencies used above...
+					   load_sharedelements_tasks,			// load shared elements - ying add.
+					   set_problem_type_with_nls_bundle,    //set and log the problem type
+					   setup_autopd,						// initialize autopd (from sharedtargets.xml)
+					   validate_os,							// validates we are running on a supported os (from sharedtargets.xml)
+					   collectProductData_entry,			//call the collectProductData_entry target below
+					   zip_autopd_log,                      // add autopd logs to the zip file  (from sharedtargets.xml)
+					   ftp_message_shared, 					// asks the user if they want to ftp the zip file in (from sharedtargets.xml)
+					   ftp_collected_information_shared,	// Not used: performs the ftp if desired (from sharedtargets.xml)
+			-->		
+	</target>
+	
+	<!-- next new version -->
+	<target name="Main_collectProductData_v2"
+		depends="load_sharedelements_tasks,		
+				set_problem_type_with_nls_bundle,
+				setup_autopd_v2,
+				validate_os,
+				checkAutomation,
+				check_64_bit_JVM,
+				collectProductData_entry,
+				ratl.collect.exclude.list,
+				cisa_scan,
+				zip_autopd_log,
+				set_rational_upload,
+				ftp_message_shared,
+				ftp_collected_information_shared">		
+	</target>
+	
+	<!-- ################################## -->	
+	<!--  Data collector entry              -->
+	<!-- ################################## -->	
+	<!-- 
+		Collects General Rational Product information with a description of what this script collects.
+		Usage: 
+			See Description for : Main_collectProductData for more details. 
+			Before executing this task : 
+				Ensure product.id is set. 
+				Optionally set product.version		
+	-->
+	<!-- AUTOMATE DONE : on collectIMData & collectProductDataFromIM-->
+	<target name="collectProductData_entry" >
+		<fail unless="product.id"/>
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		
+		<!-- GUI -->		
+		<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+			<fieldtask name="prompt" 
+						     label="product.gencollect.start.prompt" 
+						     type="prompt" />
+			<fieldtask type="label" name="label1" label="product.gencollect.start.desc1"/>
+			<fieldtask type="label" name="label2" label="product.gencollect.start.desc2"/>
+			<fieldtask type="label" name="label3" label="product.gencollect.start.desc3"/>
+			<fieldtask type="label" name="labels" label="${line.separator}"/> <!-- spacer -->
+			<fieldtask type="label" name="label4" label="product.gencollect.start.desc4"/>
+		</inputdialogtask_v2>
+		
+				
+		<collectIMData/>
+		
+		<collectProductDataFromIM
+			product.offering.id="${product.id}"
+			product.version="${product.version}"
+			/>		
+	</target>
+	
+	<!-- 
+		Collects general installation manager information with a description of what the script collects
+		Usage: <collectIMData_entry/> 
+	-->
+	<!-- AUTOMATE DONE -->
+	<target name="collectIMData_entry" >
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			
+			<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+				<fieldtask name="prompt" 
+							     label="im.gencollect.start.prompt" 
+							     type="prompt" />
+				<fieldtask type="label" name="label1" label="im.gencollect.start.desc1"/>
+				<fieldtask type="label" name="label2" label="im.gencollect.start.desc2"/>
+				<fieldtask type="label" name="labels" label="${line.separator}"/> <!-- spacer -->
+				<fieldtask type="label" name="label3" label="im.gencollect.start.desc3"/>
+			</inputdialogtask_v2>
+
+			<collectIMData/>
+	</target>
+
+	<!-- ################################## -->	
+	<!--  General IM reusable chunks        -->
+	<!-- ################################## -->
+	
+	<!-- Collects installation manager data -->
+	<!-- This includes:
+		  Install Data
+		  App Data information
+	  -->
+	<macrodef name="collectIMData">
+ 		<sequential>
+	    	<getIMInstallDir/>
+ 			<collectIMData.internal.macro im.appdata="${im.appdata.path}" im.install="${im.install.path}"/>			
+    	</sequential>
+	</macrodef>
+	
+	<!-- Collects installation manager - product installed information only -->
+	<!-- This collects:
+		  install*.* ONLY. 
+	  -->
+	<macrodef name="collectIMProductInstallInfo">
+ 		<sequential>
+	    	<getIMInstallDir/>
+			<getInstalledXMLFile im.appdata.path="${im.appdata.path}"/>
+ 			
+ 			<autopd_if isTrue="${im.install.xml.existing}">
+ 				<!-- pick up installed.xml , installed.xsd, installed.xsl -->
+				<autopd_unset_property name="im.install.xml.dir"/>
+				<dirname file="${im.install.xml}" property="im.install.xml.dir"/>
+				
+				<copy todir="${isadcTempOut}/IM/InstallationManager" outputencoding="UTF-8">
+					<fileset dir="${im.install.xml.dir}">
+						<include name="install*.*"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>
+				</copy>
+			</autopd_if>
+ 			<ratl.log.exclude.list dir.path="${im.install.xml.dir}"/>
+ 			
+    	</sequential>
+	</macrodef>
+
+	<!-- Collects installation manager data -->
+	<!-- This includes:
+		  Install Data
+		  App Data information
+	  -->
+	<macrodef name="collectIMProductInfo">
+ 		<sequential>
+	    	<getIMInstallDir/>
+			<antcall target="collectIMData.product">
+				<param name="im.install.path" value="${im.install.path}"/>			
+				<param name="im.appdata.path" value="${im.appdata.path}"/>
+	    	</antcall>
+    	</sequential>
+	</macrodef>
+	
+	
+	
+	<!-- collectProductDataFromIM 
+	    Collects general eclipse data (all workspaces):
+	    	- by determining product install path from IM (base on product.offering.id)
+	    	- IF, proudct not found, this by default prompts the user for additional information.
+	    INPUT: product.offering.id	
+	    	   product.version - optional.  This can be used to specify the version of product to match.
+		OUTPUT:
+			- collects product data if product.isFound
+			- Skips if product is not found. 	
+	-->
+	<!-- AUTOMATE DONE : for getProductPathsFromIM-->
+    <macrodef name="collectProductDataFromIM">
+    	<attribute name="product.offering.id" default="NOT_SET"/>
+    	<attribute name="product.version" default="NOT_SET"/>
+    	<sequential>
+    		
+    		<stepcount />
+    		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+    		<wsnlsecho key="im.shared.info.2021" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="[{0}] Step {1}: Collecting Product Data for Product id = {2}"
+    				replace="${autopdts};;${step.count};;@{product.offering.id}"
+    				id="2021"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+    		
+	    	<getIMInstallDir/>  <!-- Failure point -->
+    		
+    		<!-- this prompts... -->
+	    	<getProductPathsFromIM 
+	    		im.appdata.path="${im.appdata.path}"
+	    		product.offering.id="@{product.offering.id}"
+	    		product.version="@{product.version}"/>
+    		
+
+    		<!-- item: 1408 -->
+    		<autopd_unset_property name="hasCacheLocation"/>
+    		<available file="${product.cacheLocation.path}" property="hasCacheLocation"/>
+    		
+    		<!-- found product ? -->
+	    	<autopd_if isTrue="${product.isFound}">
+	    		<!-- check to see if there is a persisted product selected value -->
+	    		<autopd_unset_property name="has.product.name.selected"/>
+				<condition property="has.product.name.selected">
+					<isset property="product.name.selected"/>
+	    		</condition>
+	    		
+	    		<!-- set prefix -->
+	    		<autopd_if isTrue="${has.product.name.selected}">
+	    			<autopdproperty name="prefix.name" value="${product.name.selected}"/>
+	    		</autopd_if>
+	    		<autopd_if isNotTrue="${has.product.name.selected}">
+	    			<autopdproperty name="prefix.name" value="@{product.offering.id}"/>
+	    		</autopd_if>
+	    		
+	    		<!-- collect -->
+	    		<collectEclipseGeneralData 
+			    		eclipse.path="${product.match.eclipse.path}"
+		    			prefix="${prefix.name}"/>
+    			<!-- item: 1408 -->
+    			<collect_dir_listing
+						targetDir="${product.cacheLocation.path}/plugins"
+						outputFile="${autopdtmp}/SHARED_PLUGIN_DIR_LIST.txt"
+						zipPrefix="${prefix.name}/EclipseSHARED/plugins" />
+	    			    		
+	    		
+	    	</autopd_if>
+    		<autopd_if isNotTrue="${product.isFound}">
+    			<echo message=" "/>
+    			<wsnlsecho key="im.shared.warn.2033" 
+    							bundle="properties/RATLSHARE/autopd"
+    							message="No product found for product id = {0}"
+    							replace="@{product.offering.id}"
+    							id="2033"
+    							level="warn"
+    							messagePrefix="CWPDD"/>
+    		</autopd_if>
+    			
+    	</sequential>
+	</macrodef>
+	
+	<!-- Code to collect installation manager information --> 
+	<!-- targets calling this should call getIMInstallDir -->
+	<!-- AUTOMATION: DONE : NOOP-->
+	<target name="collectIMData.product">
+		<fail unless="im.appdata.path"/>
+		<fail unless="im.install.path"/>
+		
+		<stepcount />
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<echo message=" "/>
+		<wsnlsecho key="im.shared.info.2038" 
+				bundle="properties/RATLSHARE/autopd"
+				message="[{0}] Step {1}: Collecting IBM Installation Manager installed product information."
+				replace="${autopdts};;${step.count}"
+				id="2038"
+				level="info"
+				messagePrefix="CWPDD"/>
+		
+		<antcall target="zipDirectory">
+			<param name="zipDir" value="${im.appdata.path}"/>
+			<param name="targetPrefix" value="IM/InstallManager"/>
+			<param name="includes" value="*.*"/>
+		</antcall>
+		
+	</target>
+	
+	<!-- Code to collect installation manager information --> 
+	<!-- targets calling this should call getIMInstallDir -->
+	<!-- AUTOMATION: DONE : NOOP-->
+	<!-- wrapper to the macro for backward compatibilty (in case reference by external tools) -->
+	<target name="collectIMData.internal">
+		<fail unless="im.appdata.path"/>
+		<fail unless="im.install.path"/>
+		
+		<collectIMData.internal.macro im.appdata="${im.appdata.path}" im.install="${im.install.path}"/>
+		
+	</target>
+	
+	<!-- convert from target to macro to fix step count -->
+	<macrodef name="collectIMData.internal.macro">
+		<attribute name="im.appdata"/>
+		<attribute name="im.install"/>
+		<sequential>
+			
+		<!-- pass on the value, no check -->
+		<autopdproperty name="local.im.appdata.path" value="@{im.appdata}"/>
+		<autopdproperty name="local.im.install.path" value="@{im.install}"/>		
+		
+		<stepcount />
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<echo message=" "/>
+		<wsnlsecho key="im.shared.info.2022" 
+						bundle="properties/RATLSHARE/autopd"
+						message="[{0}] Step {1}: Collecting IBM Installation Manager Data"
+						replace="${autopdts};;${step.count}"
+						id="2022"
+						level="info"
+						messagePrefix="CWPDD"/>
+		
+		<!-- grab everything can result in too much data -->
+		<antcall target="zipDirectory">
+			<param name="zipDir" value="${local.im.appdata.path}"/>
+			<param name="targetPrefix" value="IM/InstallManager"/>
+		</antcall>
+
+		<antcall target="zipDirectory">
+			<param name="zipDir" value="${local.im.install.path}/eclipse/configuration/org.eclipse.osgi"/>
+			<param name="targetPrefix" value="IM/osgi"/>
+		</antcall>
+		
+		<!-- Windows specific collection -->
+		<autopd_if isTrue="${isWindows}">
+			<property environment="env"/>
+			<!-- on windows 64 bit/on 32 bit JVM - os.name does not resolve properly -->			
+			<antcall target="zipDirectory">
+				<param name="zipDir" value="${env.TEMP}"/>
+				<param name="targetPrefix" value="IM/ciclogs"/>
+				<param name="includes" value="ciclogs*/*.xml"/>
+			</antcall>
+		</autopd_if>
+		
+		<!-- Linux / Unix specific collection -->
+		<autopd_if isNotTrue="${isWindows}">
+			<antcall target="zipDirectory">
+				<param name="zipDir" value="${user.home}/.ibm/InstallationManager"/>
+				<param name="targetPrefix" value="IM/USER_HOME/_ibm_InstallationManager"/>
+			</antcall>
+		</autopd_if>
+		</sequential>	
+	</macrodef>
+	
+	<!-- ================================================================  -->
+	<!--                            Shared                                 -->
+	<!-- ================================================================  -->
+	<!-- getIMInstallDir: 													--> 
+	<!-- Output: IM Install Directory in:  ${im.install.path}     			-->
+	<!-- 		 IM Application Directory: ${im.appdata.path}     			-->
+	<!--    - if no installation manager, or invalid path, value is not set -->	
+	<!--    - hasValidIMConfiguration:  if ${im.install.path}/eclipse/configuration/config.ini -->
+	<!--    - hasValidIMInstallDir :  if ${im.install.path} is not empty and exists. -->
+	
+	<!-- AUTOMATE DONE - failure checkpoint : no need? -->	
+	<macrodef name="getIMInstallDir">
+		<sequential>				
+		<manageAutomation forcefail="false">
+			<getIMInstallDir.internal/>	
+						
+			<setAutomationException
+				continue="${hasValidIMInstallDir}"
+				component="${rational.im.shared.targets.basedir}" 
+				problem.type.id="2091"/>
+		</manageAutomation>			
+		</sequential>
+	</macrodef>
+	
+	<!-- AUTOMATE DONE - failure checkpoint at: getIMInstallDir -->
+	<macrodef name="getIMInstallDir.internal" >
+		<sequential>
+			
+		<autopd_if isNotTrue="${hasExecutedIMInfo}">
+			
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="im.shared.info.2023" 
+							bundle="properties/RATLSHARE/autopd"
+							message="[{0}] Step {1}: Looking for IBM Installation Manager location"
+							replace="${autopdts};;${step.count}"
+							id="2023"
+							level="info"
+							messagePrefix="CWPDD"/>
+			
+			<!--   Windows --> 
+			<autopd_if isTrue="${isWindows}">
+				<rtl.windows_registry_access propertyName="im.install.path"  
+					registryKey="SOFTWARE\IBM\Installation Manager\location"
+					altRegisteryKey="SOFTWARE\Wow6432Node\IBM\Installation Manager\location"/>			
+			</autopd_if> <!-- Windows -->
+			
+		    <!--  Linux/Unix -->
+			<autopd_if isNotTrue="${isWindows}">
+				<autopd_unset_property name="im.existing"/>
+				<file_available path_key="im.registry.dat"
+					existing_key="im.existing" paths="/etc/.ibm/registry/"
+					pattern="^InstallationManager.dat$" />
+
+				<!-- no IM present -->
+				<autopd_if isNotTrue="${im.existing}">
+					<wsnlsecho key="im.shared.warn.2034" 
+							bundle="properties/RATLSHARE/autopd"
+							message="IBM Installation Manager not found on this machine - path key {0}"
+							replace="${im.registry.dat}"
+							id="2034"
+							level="warn"
+							messagePrefix="CWPDD"/>
+
+				</autopd_if>
+
+				<!-- Found Install path -->
+				<autopd_if isTrue="${im.existing}">
+					<!-- key = result storage, name = key within the property file to read -->
+					<property_reader name="location"
+						filename="${im.registry.dat}" key="im.install.path" />					
+				</autopd_if>
+			</autopd_if>  <!-- ifLinux -->
+			
+			
+			<!-- NOTE: in both windows and linux, ${im.install.path} may be blank or not set -->
+			<autopd_unset_property name="hasValidIMInstallDir"/>
+			<autopd_unset_property name="hasValidIMConfiguration"/>
+			
+			<condition property="hasValidIMInstallDir">
+				<and>
+					<not>
+						<equals arg1="" arg2="${im.install.path}"/>
+					</not>
+					<available file="${im.install.path}" type="dir"/>
+				</and>
+			</condition>
+			
+			<!--  Check for config.ini -->
+			<autopd_if isNotTrue="${hasValidIMInstallDir}">
+				<util.logToFile msg="Installation Manager not found on system" output="Installation_Manager_NOT_FOUND.txt"/>  
+			</autopd_if>
+			<autopd_if isTrue="${hasValidIMInstallDir}">
+				<autopd_unset_property name="hasValidIMConfiguration"/>
+				<file_available path_key="im.config.ini"
+						existing_key="hasValidIMConfiguration"
+						paths="${im.install.path}/eclipse/configuration/"
+						pattern="^config.ini$" />
+				
+				<!--  No config.ini -->
+				<autopd_if isNotTrue="${hasValidIMConfiguration}">
+					<wsnlsecho key="im.shared.warn.2035" 
+								bundle="properties/RATLSHARE/autopd"
+								message="IBM Installation Manager configuration file not found. (File not found: {0} )"
+								replace="${im.install.path}"
+								id="2035"
+								level="warn"
+								messagePrefix="CWPDD"/>
+					
+				</autopd_if>
+				
+				<!-- HAS config.ini -->
+				<autopd_if isTrue="${hasValidIMConfiguration}">
+					<property_reader name="cic.appDataLocation"
+						filename="${im.config.ini}" key="im.appdata.path" />
+						
+					
+					<!--  This is validated IM location. -->
+					<persistproperty property="im.install.path"/>
+					<persistproperty property="im.appdata.path"/>
+	
+					<wsnlsecho key="im.shared.info.2024" 
+							bundle="properties/RATLSHARE/autopd"
+							message="IBM Installation Manager install directory: {0}"
+							replace="${im.install.path}"
+							id="2024"
+							level="info"
+							messagePrefix="CWPDD"/>
+	
+					<wsnlsecho key="im.shared.info.2025" 
+							bundle="properties/RATLSHARE/autopd"
+							message="IBM Installation Manager appdata directory: {0}"
+							replace="${im.appdata.path}"
+							id="2025"
+							level="info"
+							messagePrefix="CWPDD"/>				
+	
+				</autopd_if>
+				
+				<!-- persist the fact that this method has ran -->
+				<autopdproperty name="hasExecutedIMInfo" value="true"/>
+				<persistproperty property="hasExecutedIMInfo"/>	
+			</autopd_if>
+		</autopd_if>
+			
+		</sequential>	
+	</macrodef>
+	
+				
+	<!--
+	   Convinent methods: Get product paths from Eclipse base on product.id
+	      - Does not prompt for general product listing (uses getProudctPathsFromIM_noprompt)
+	      - Will let user know if product is not found. 
+	   INPUT:
+	      product.id :  id of the product, as specified in IM
+	      
+	      For missing product report: 
+	      	product.name: name of the product
+	      	outfile: name of the outfile (for missing product reporting)
+	      	log.error:  true - prompt & log it if product not found from IM.
+	      
+	   OUTPUT:
+	    Same output as getProductPathsFromIM_noprompt
+	    product.isFound  : true / unset - product of id is found in installed.xml
+=	-->	
+	<macrodef name="getProductInfoFromIM">
+		<attribute name="product.id"/>
+		<attribute name="product.name"/>   <!-- for error reporting - please include version -->
+		<attribute name="outfile"/>        <!-- for error reporting -->
+		<attribute name="log.error" default="true"/>  <!-- for error reporting -->
+		<sequential>
+			<getIMInstallDir/>
+			<getProductPathsFromIM_noprompt 
+	    		im.appdata.path="${im.appdata.path}"
+	    		product.offering.id="@{product.id}"/>
+			
+			<rtl.debugecho message="product.match.path = ${product.match.path}"/>
+			<rtl.debugecho message="product.match.eclipse.path = ${product.match.eclipse.path}"/>
+						
+			<!-- if product is not found - let the user know & store it -->
+			<autopd_if isNotTrue="${product.isFound}">
+				<!-- log it -->
+				<autopd_if isTrue="@{log.error}">
+					<prompt_product_not_available product.name="@{product.name}" outfile="@{outfile}"/>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>	
+	
+	<!--
+	Convinent methods: Get product paths from Eclipse base on product.id.
+	Output Similar to above.  
+	      - Does not prompt for general product listing (uses getProudctPathsFromIM_noprompt)
+	      - Does not prompt or log if product not found.  
+    -->
+	<macrodef name="getProductInfoFromIM_noprompt">
+		<attribute name="product.id"/>
+		<sequential>
+			<getIMInstallDir/>
+			<getProductPathsFromIM_noprompt 
+	    		im.appdata.path="${im.appdata.path}"
+	    		product.offering.id="@{product.id}"/>
+			
+			<rtl.debugecho message="product.match.path = ${product.match.path}"/>
+			<rtl.debugecho message="product.match.eclipse.path = ${product.match.eclipse.path}"/>
+		</sequential>
+	</macrodef>	
+	
+	
+	<!-- getProductPathsFromIM_noprompt : get product install path from install manager 
+			- does not prompt if product is not found. -->
+	<!-- INPUT/OUTPUT : see getProductPathsFromIM -->	
+	<!-- AUTOMATION: DONE : NO OP -->
+	<macrodef name="getProductPathsFromIM_noprompt">
+		<attribute name="product.offering.id" default="NOT_SET"/>
+		<attribute name="im.appdata.path" default="NOT_SET"/>
+		<attribute name="product.version" default="NOT_SET"/>  <!-- (20090706) default to NOT_SET. Don't change it -->
+		<sequential>
+			
+			<getProductPathsFromIM 
+				product.offering.id="@{product.offering.id}" 
+				im.appdata.path="@{im.appdata.path}" 
+				product.version="@{product.version}"
+				hasPrompt="false"/>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- same implementationas below -->
+	<!-- INPUT:  ${im.appdata.path}  :  installation manager application data  -->
+	<!--         ${product.offering.id} : this must match the id - within the install manager. 
+						Example: <package kind='offering' name='IBM Rational Functional Tester' 
+						id='com.ibm.rational.functional.tester' product.version='7.0.0.20061119_1517'-->	
+	
+	<!-- OUTPUT: 
+	 ${product.isFound} = true | false - if product has been found 
+	 ${product.match.path} : Path in which the product is installed.
+	 ${product.match.eclipse.path} : Path of the eclipse install.
+	 ${product.match.version} : Actual displayed product version. 
+	 
+	 ${product.cacheLocation.path} : (20090706) Path of the SHARED location - this is calculated once.
+	 
+	 -->
+	<!-- AUTOMATION_COMPLETE -->
+	<macrodef name="getProductPathsFromIM">
+		<attribute name="product.offering.id" default="NOT_SET"/>
+		<attribute name="im.appdata.path" default="NOT_SET"/>
+		<attribute name="hasPrompt" default="true"/>
+		<attribute name="product.version" default="NOT_SET"/>  <!-- (20090706) default to NOT_SET. Don't change it -->
+		<sequential>
+			
+		<stepcount />
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<echo message=" "/>
+		<wsnlsecho key="im.shared.info.2026" 
+				bundle="properties/RATLSHARE/autopd"
+				message="[{0}] Step {1}: Checking Product paths for product id = {2}"
+				replace="${autopdts};;${step.count};;@{product.offering.id}"
+				id="2026"
+				level="info"
+				messagePrefix="CWPDD"/>	
+			
+		<getInstalledXMLFile im.appdata.path="@{im.appdata.path}" />
+		
+		<!-- defaults -->
+		<autopdproperty name="product.isFound" value="false"/>
+		<autopd_unset_property name="product.match.path"/>
+		<autopd_unset_property name="product.match.eclipse.path"/>
+		<autopd_unset_property name="product.match.version"/>			
+					
+		<!-- install.xml is not found -->
+		<autopd_if isNotTrue="${im.install.xml.existing}">
+			<autopd_if isTrue="@{hasPrompt}">
+				<promptForUserEclipseSelection/>
+			</autopd_if>
+		</autopd_if>
+		<!-- install.xml is found -->
+		<autopd_if isTrue="${im.install.xml.existing}">	
+			
+			<!-- get the cache location : 20090706-->
+			<!-- NOTE there is only one cache location - this is to share with all packages -->
+			<!-- in <installInfo><property name="cacheLocation" value="___"/></instllInfo> 
+				=> value output = ${product.cacheLocation.path}
+			 -->
+			<autopd_read_xml_attributes filename="${im.install.xml}"
+				path="installInfo|property(name=cacheLocation)"
+				delimiter="|">		
+				<xml_attribute name="value" result="product.cacheLocation.path"/>
+			</autopd_read_xml_attributes>
+			
+			<!-- get the product specific location -->
+			<!-- in <installInfo><location kind="product" id="___"/></instllInfo> 
+				=> value output = ${im.product.id.list}
+			 -->
+			<autopd_read_multiple_xml_elements filename="${im.install.xml}" 
+				path="installInfo!location(kind=product)" 
+				delimiter="!"
+				return_delimiter="@"> 
+					<xml_attribute name="id" result="im.product.id.list" />
+			 </autopd_read_multiple_xml_elements>
+			
+			<wsnlsecho key="im.shared.info.2028" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Retrieved list of packages: {0}"
+						replace="${im.product.id.list}"
+						id="2028"
+						level="info"
+						messagePrefix="CWPDD"/>
+			
+			<!-- determine whether version matching is needed -->
+			<!-- Not needed if:
+				product.version is blank or
+				product.version is NOT_SET or
+				product.version starts with ${
+				-->
+			<autopd_unset_property name="internal.need.version.match"/>
+			<condition property="internal.need.version.match">
+				<not>
+					<or>
+						<equals arg1="" arg2="@{product.version}"/>					
+						<equals arg1="NOT_SET" arg2="@{product.version}"/>
+						<contains string="@{product.version}" substring="$${"/>
+					</or>
+				</not>
+			</condition>
+
+			<!-- LOOP to find matching product id within install.xml -->
+			<autopdproperty name="product.match.path.list" value=""/>
+			<autopdproperty name="product.match.eclipse.path.list" value=""/>
+			<autopdproperty name="product.match.version.list" value=""/>
+			<autopdproperty name="product.isFound" value="false"/>	
+			<autopdproperty name="product.hasMultiple" value="false"/>
+			
+			<!-- ISADC WORKAROUND -->
+			<run.if.not.empty input="${im.product.id.list}">
+
+				<autopdloop param="im.product.id" paramList="${im.product.id.list}" delimiter="@">				
+	
+					<echo message=" "/>
+					<wsnlsecho key="im.shared.info.2029" 
+								bundle="properties/RATLSHARE/autopd"
+								message="Looking for product id={0} in Package {1}..."
+								replace="@{product.offering.id};;${im.product.id}"
+								id="2029"
+								level="info"
+								messagePrefix="CWPDD"/>		
+					
+					<!-- Use version tag to determine whether a package match is available -->
+					<autopd_unset_property name="product.read.version" />
+					<autopd_read_xml_attributes filename="${im.install.xml}"
+						path="installInfo|location(id=${im.product.id})|package(kind=offering#id=@{product.offering.id})|property(name=cic.info.version)"
+						delimiter="|">						
+						<xml_attribute name="value" result="product.read.version"/>
+					</autopd_read_xml_attributes>
+					
+					<!-- check for version MATCH - again use existance of version to indicate product available. -->					
+					<autopd_unset_property name="hasPkgIdMatch" />
+					<autopd_if isTrue="${internal.need.version.match}"> <!-- 20090706 new version match code -->
+						<!-- check for substring -->
+						<autopd_unset_property name="hasPkgIdMatch"/>
+						<condition property="hasPkgIdMatch">							
+							<contains string="${product.read.version}" substring="@{product.version}"/>							
+						</condition>
+					</autopd_if>
+					<autopd_if isNotTrue="${internal.need.version.match}">  <!-- 20090706 original code -->
+						<condition property="hasPkgIdMatch">
+							<and>
+								<isset property="product.read.version"/>
+								<not>
+									<equals arg1="" arg2="${product.read.version}"/>
+								</not>
+							</and>
+						</condition>
+					</autopd_if>
+										
+					<!-- found an matched id -->
+					<autopd_if isTrue="${hasPkgIdMatch}">
+						<!-- product path -->
+						<autopdproperty name="im.pkg.product.path" value=""/>
+						<autopdproperty name="im.pkg.product.eclipse.path" value=""/>
+						<autopd_read_xml_attributes filename="${im.install.xml}" 
+							path="installInfo|location(id=${im.product.id})"
+							delimiter="|">
+							<xml_attribute name="path" result="im.product.path"/>		  	    	
+						</autopd_read_xml_attributes>
+						
+						<!-- Eclipse path -->
+						<autopd_read_xml_attributes filename="${im.install.xml}" 
+							path="installInfo|location(id=${im.product.id})|property(name=eclipseLocation)"
+							delimiter="|">
+							<xml_attribute name="value" result="im.product.eclipse.path"/>
+						</autopd_read_xml_attributes>
+						
+						<!-- echo -->
+						<wsnlsecho key="im.shared.info.2030" 
+								bundle="properties/RATLSHARE/autopd"
+								message="Found product id={0} in package {1}. Found Eclipse path for product at {2}"
+								replace="@{product.offering.id};;${im.product.id};;${im.product.eclipse.path}"
+								id="2030"
+								level="info"
+								messagePrefix="CWPDD"/>
+						
+						<!-- This needs to be before product.isFound... -->
+						<autopd_if isTrue="${product.isFound}">
+							<!-- if previously a product.isFound, then the second one around must have found one more -->
+							<autopdproperty name="product.hasMultiple" value="true"/>
+						</autopd_if>
+						
+						<autopdproperty name="product.isFound" value="true"/> <!-- loop does not end .. we want all -->
+						<autopdproperty name="product.match.path.list" value="${product.match.path.list}@${im.product.path}"/>						
+						<autopdproperty name="product.match.eclipse.path.list" value="${product.match.eclipse.path.list}@${im.product.eclipse.path}"/>
+						<autopdproperty name="product.match.version.list" value="${product.match.version.list}@${product.read.version}"/>
+					</autopd_if>
+						
+				</autopdloop> <!-- each location -->
+			</run.if.not.empty>
+			
+			<!-- trim the list -->
+			<trim_filename key="product.match.path.list" filename="${product.match.path.list}" prefixTrim="@" />
+			<trim_filename key="product.match.eclipse.path.list" filename="${product.match.eclipse.path.list}" prefixTrim="@" />
+			<trim_filename key="product.match.version.list" filename="${product.match.version.list}" prefixTrim="@" />
+			
+			<!-- Calculating the actual results -->
+			<!-- one found -->
+			<autopd_if isTrue="${product.isFound}">
+				<autopd_if isNotTrue="${product.hasMultiple}">
+					<autopdproperty name="product.match.path" value="${product.match.path.list}"/>
+					<autopdproperty name="product.match.eclipse.path" value="${product.match.eclipse.path.list}"/>
+					<autopdproperty name="product.match.version" value="${product.match.version.list}"/>
+				</autopd_if>				
+			</autopd_if>
+			
+			
+			<!-- check prompting... -->
+			<autopd_if isNotTrue="@{hasPrompt}">
+				<!-- if not to prompt but has multiple products... trim all off except for the first one. -->
+				<autopd_if isTrue="${product.hasMultiple}">
+					<trim_filename key="product.match.path" filename="${product.match.path.list}" suffixTrim="@.*"/>
+					<trim_filename key="product.match.eclipse.path" filename="${product.match.eclipse.path.list}" suffixTrim="@.*"/>
+					<trim_filename key="product.match.version" filename="${product.match.version.list}" suffixTrim="@.*"/>
+				</autopd_if>
+			</autopd_if>
+			
+			<!-- if to prompt -->
+			<autopd_if isTrue="@{hasPrompt}">				
+				<!-- handle multiple products -->
+				<autopd_if isTrue="${product.hasMultiple}">
+					<!-- prompt the user for a list of multiple matched -->
+					<promptForUserMultiProductVersionSelection
+						   matched.paths = "${product.match.path.list}"
+					       matched.eclipse.paths="${product.match.eclipse.path.list}"
+						   matched.versions="${product.match.version.list}"/>					
+							
+				</autopd_if>
+				<autopd_if isNotTrue="${product.hasMultiple}">  <!-- prevent fall thru.. -->
+					<!-- Else... Product was NOT FOUND 
+					  - ask the user to select from a list - if prompting -->
+					<autopd_if isNotTrue="${product.isFound}">
+						<promptForUserProductSelection
+							im.installed.xml="${im.install.xml}"
+							im.product.id.list="${im.product.id.list}"
+						/>
+					</autopd_if>
+				</autopd_if>
+				
+			</autopd_if>
+			
+		</autopd_if>
+		
+			
+		</sequential>
+	</macrodef>	
+	
+	<!-- get product information from installation Manager. No prompt
+	  INPUT: product.id.list = list of product.id separated by the @ delimiter. 
+	    NOTE: product.id and product.id(.*) id will be picked up when found.
+	    This is to allow multiple products with different install id (vary by version) to be scanned.
+	    
+	  	collect.im.data = collect IM data.  This avoids re-calculation.
+	  	display.include.path = addes path to the product.display.list
+	  
+	  All output are separated by the @ delimiter. 
+	  OUTPUT:
+	      im.install.xml.existing = true | false (see getInstalledXMLFile) 
+	      has.product.id.available = true | false 
+	      product.id.available.list = list of products that are available.
+	         - product.display.list = name and version of the proudcts that are available.
+	         - product.install.path.list = install path of the products that are available.  
+	 -->	
+	<macrodef name="getMultiProductInfoFromIM_noprompt">
+		<attribute name="product.id.list"/>
+		<attribute name="collect.im.data" default="false"/>
+		<attribute name="display.include.path" default="false"/>
+		<attribute name="display.include.product.name" default="true"/>  <!-- useful if you have only one product... -->
+		<sequential>
+			
+			<!-- set up -->
+			<autopdproperty name="product.id.available.list" value=""/>
+			<autopdproperty name="product.display.list" value=""/>
+			<autopdproperty name="product.install.path.list" value=""/>
+			<autopdproperty name="has.product.id.available" value="false"/>
+			
+			<!-- get installation manager information - adds a choice to collect or not. -->
+			<getIMInstallDir/>
+			<autopd_if isTrue="@{collect.im.data}">
+				<collectIMData.internal.macro im.appdata="${im.appdata.path}" im.install="${im.install.path}"/>				
+			</autopd_if>
+			
+			<!-- get install.xml -->
+			<getInstalledXMLFile im.appdata.path="${im.appdata.path}"/>			
+			<autopd_if isTrue="${im.install.xml.existing}">
+				<!-- Install.xml is here:  ${im.install.xml} -->
+				<!-- steps:
+				   1. read all the product id (packages)
+				   2. loop thru product id to find offering id that matches an id in the list. (ie name/version available) 
+				   3. Record it and its path. 
+				 -->				
+				<autopd_read_multiple_xml_elements filename="${im.install.xml}" 
+					path="installInfo!location(kind=product)" 
+					delimiter="!"
+					return_delimiter="@"> 
+						<xml_attribute name="id" result="im.product.id.list" />
+				 </autopd_read_multiple_xml_elements>
+
+				<!-- ISADC Workaround -->
+				<run.if.not.empty input="${im.product.id.list}">
+
+					<!-- loop - product id - this is package id - hopefully not too many packages-->
+					<autopdloop delimiter="@" param="im.product.id" paramlist="${im.product.id.list}">
+						
+						<!-- read eclipse path - to be reused -->
+						<autopd_unset_property name="product.eclipse.path"/>
+						<autopd_read_xml_attributes filename="${im.install.xml}" 
+							path="installInfo|location(id=${im.product.id})|property(name=eclipseLocation)"
+							delimiter="|">
+							<xml_attribute name="value" result="product.eclipse.path"/>
+						</autopd_read_xml_attributes>
+	
+						<!-- get - product ids within packages -->
+						<autopd_read_multiple_xml_elements filename="${im.install.xml}" 
+							path="installInfo!location(kind=product#id=${im.product.id})!package(kind=offering)" 
+							delimiter="!"
+							return_delimiter="@"> 
+								<xml_attribute name="id" result="im.packaged.product.id.list" />
+						 </autopd_read_multiple_xml_elements>					 
+						
+						<!-- ISADC - not sure if macro nesting in macro is a good idea -->
+						<autopd_unset_property name="is.empty"/>
+						<condition property="is.empty">
+							<or>
+								<not>
+									<isset property="im.packaged.product.id.list"/>
+								</not>
+								<equals arg1="" arg2="${im.packaged.product.id.list}"/>
+								<contains string="${im.packaged.product.id.list}" substring="$${"/>
+							</or>
+						</condition>
+
+						<!-- LOOP - thru products within packages and compare with requested ids -->
+						<autopd_if isNotTrue="${is.empty}">
+						<autopdloop delimiter="@" param="packaged.offering.id" paramlist="${im.packaged.product.id.list}">
+							<!-- for each of these ids - check matching for input list-->
+							
+							<!-- ISADC WORKAROUND -->
+							<autopd_unset_property name="is.productid.empty"/>
+							<condition property="is.productid.empty">
+								<or>								
+									<equals arg1="" arg2="@{product.id.list}"/>
+									<contains string="@{product.id.list}" substring="$${"/>
+								</or>
+							</condition>
+
+							<autopd_if isNotTrue="${is.productid.empty}">
+							<!-- LOOP thru the list of requested product ids -->
+							<autopdloop delimiter="@" param="offering.id" paramlist="@{product.id.list}">
+
+								<!-- ISADC WORKAROUND -->
+								<autopd_unset_property name="is.not.valid"/>
+				    			<condition property="is.not.valid">
+				    				<or>
+				    					<not>
+				    						<isset property="offering.id"/> 
+				    					</not>
+				    					<equals arg1="" arg2="${offering.id}"/>
+					    				<contains string="${offering.id}" substring="$${"/>
+					    				<contains string="${offering.id}" substring="@@{"/>
+				    				</or>			    				
+				    			</condition>
+								
+				    			<autopd_if isNotTrue="${is.not.valid}">	
+									<!-- match? -->
+									<autopd_unset_property name="is.product.id.match"/>
+									<regex_match pattern="^${offering.id}.*" 
+									     propertyName="is.product.id.match" 
+									     string="${packaged.offering.id}" />
+								
+									<!-- match found- read info -->
+									<autopd_if isTrue="${is.product.id.match}">
+										<!-- read name of the offering -->
+										<autopd_unset_property name="offering.name"/>
+										<autopd_read_xml_attributes filename="${im.install.xml}"
+											path="installInfo|location(id=${im.product.id})|package(kind=offering#id=${packaged.offering.id})|property(name=cic.info.name)"
+											delimiter="|">						
+											<xml_attribute name="value" result="offering.name"/>
+										</autopd_read_xml_attributes>
+										
+										<!-- read version -->
+										<autopd_unset_property name="offering.version"/>
+										<autopd_read_xml_attributes filename="${im.install.xml}"
+											path="installInfo|location(id=${im.product.id})|package(kind=offering#id=${packaged.offering.id})|property(name=cic.info.version)"
+											delimiter="|">						
+											<xml_attribute name="value" result="offering.version"/>
+										</autopd_read_xml_attributes>
+										
+										<!-- put the info together -->
+										<autopdproperty name="has.product.id.available" value="true"/>
+										<autopdproperty name="product.id.available.list" value="${product.id.available.list}@${packaged.offering.id}"/>
+										<autopdproperty name="product.install.path.list" value="${product.install.path.list}@${product.eclipse.path}"/>
+										
+										<!-- display -->
+										<autopdproperty name="display.name" value=""/>
+										
+										<!-- Product name? -->
+										<autopd_if isTrue="@{display.include.product.name}">
+											<autopdproperty name="display.name" value="${offering.name} "/>
+										</autopd_if>								
+										
+										<autopd_if isTrue="@{display.include.path}">
+											<autopdproperty name="display.name" value="${display.name}V${offering.version} - ${product.eclipse.path}"/>
+										</autopd_if>
+										<autopd_if isNotTrue="@{display.include.path}">
+											<autopdproperty name="display.name" value="${display.name}V${offering.version}"/>
+										</autopd_if>
+										<autopdproperty name="product.display.list" value="${product.display.list}@${display.name}"/>
+									</autopd_if>
+								</autopd_if>
+							</autopdloop>  <!-- matching package.offering.id with input offering id -->
+							</autopd_if>
+						</autopdloop>  <!-- looping thru each offering.id in a package -->
+						</autopd_if>
+					</autopdloop>   <!-- looping thru each packages -->
+				</run.if.not.empty>
+				
+				<!-- clean up - trim out the prefix -->
+				<trim_filename key="product.id.available.list" filename="${product.id.available.list}" prefixTrim="@" />
+				<trim_filename key="product.display.list" filename="${product.display.list}" prefixTrim="@" />
+				<trim_filename key="product.install.path.list" filename="${product.install.path.list}" prefixTrim="@" />
+				
+				<!--
+				<rtl.debugecho message="product.id.available.list = ${product.id.available.list}"/>
+				<rtl.debugecho message="product.display.list = ${product.display.list}"/>
+				<rtl.debugecho message="product.install.path.list = ${product.install.path.list}"/>
+				-->
+								
+			</autopd_if>  <!-- ${im.install.xml.existing} -->
+			
+		</sequential>
+	</macrodef>		
+	
+	
+	<!-- Code to get installed.xml file -->
+	<!-- INPUT :  im.appdata.path 
+	     OUTPUT:  im.install.xml.existing  - true / not true.  installed.xml - found or not found.
+	              im.install.xml - path of the actual file (installed.xml). 	
+	-->
+	<!-- AUTOMATION COMPLETE -->
+	<macrodef name="getInstalledXMLFile">
+		<attribute name="im.appdata.path"/>
+		<sequential>
+			<!-- check for installed.xml -->
+			<autopd_unset_property name="im.install.xml.existing"/>
+			<file_available path_key="im.install.xml"
+					existing_key="im.install.xml.existing"
+					paths="@{im.appdata.path}"
+					pattern="^installed.xml$" />
+
+			<!-- install.xml is not found -->
+			<autopd_if isNotTrue="${im.install.xml.existing}">
+				<wsnlsecho key="im.shared.warn.2036" 
+						bundle="properties/RATLSHARE/autopd"
+						message="IBM Installation Manager : installed.xml not found in {0}"
+						replace="@{im.appdata.path}"
+						id="2036"
+						level="warn"
+						messagePrefix="CWPDD"/>
+				<!-- AUTOMATION: log error -->
+				<logErrorMessage component="${ant.file}" problem.id="2091"/>
+				
+			</autopd_if>
+			
+			<!-- install.xml is found -->
+			<autopd_if isTrue="${im.install.xml.existing}">	
+				<wsnlsecho key="im.shared.info.2027" 
+							bundle="properties/RATLSHARE/autopd"
+							message="IBM Installation Manager: installed.xml found at {0}"
+							replace="${im.install.xml}"
+							id="2027"
+							level="info"
+							messagePrefix="CWPDD"/>	
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+		
+	<!-- ============================================= -->
+	<!--                   INTERNAL                    -->
+	<!-- ============================================= -->
+	<!-- 
+	Input:
+	   NOTE: no multiple product id match. 
+	   List of matched eclipse paths and the matched version (ie - product id match)
+	   Output: 
+	    product.isFound - true | false. 
+	    product.match.path - product matched path 
+		product.match.version - product version information
+		product.match.eclipse.path - name of the product selected.	
+		
+		If automation mode - the first entry is used for the automation 
+	-->
+	
+	<!-- AUTOMATION COMPLETE -->
+	<macrodef name="promptForUserMultiProductVersionSelection">
+		<attribute name="matched.paths"/>
+		<attribute name="matched.eclipse.paths"/>
+		<attribute name="matched.versions"/>		
+		<sequential>
+
+			<managePrompt_continue
+				component="${rational.im.shared.targets.basedir}" >
+				<prompt>
+					<promptForUserMultiProductVersionSelection.internal 
+						matched.paths="@{matched.paths}"
+						matched.eclipse.paths="@{matched.eclipse.paths}"
+						matched.versions="@{matched.versions}"/>
+				</prompt>
+				
+				<setDefault>
+					<autopdproperty name="product.isFound" value="true"/> 
+					<trim_filename key="product.match.path" filename="@{matched.paths}" suffixTrim="@.*"/>
+					<trim_filename key="product.match.eclipse.path" filename="@{matched.eclipse.paths}" suffixTrim="@.*"/>
+					<trim_filename key="product.match.version" filename="@{matched.versions}" suffixTrim="@.*"/>
+				</setDefault>
+			</managePrompt_continue>		
+			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- note : delimiter = @ -->
+	<macrodef name="promptForUserMultiProductVersionSelection.internal">
+		<attribute name="matched.paths"/>
+		<attribute name="matched.eclipse.paths"/>
+		<attribute name="matched.versions"/>
+		<sequential>
+			
+			<!-- ISADC - check entry - this really shouldn't be empty at all -->
+			<autopd_unset_property name="is.valid.input"/>
+			<condition property="is.valid.input">
+				<not>
+					<or>
+						<equals arg1="" arg2="@{matched.paths}"/>
+						<contains string="@{matched.paths}" substring="$${"/>
+						<contains string="@{matched.paths}" substring="@@{"/>
+						<equals arg1="" arg2="@{matched.eclipse.paths}"/>
+						<contains string="@{matched.eclipse.paths}" substring="$${"/>
+						<contains string="@{matched.eclipse.paths}" substring="@@{"/>
+						<equals arg1="" arg2="@{matched.versions}"/>
+						<contains string="@{matched.versions}" substring="$${"/>
+						<contains string="@{matched.versions}" substring="@@{"/>
+					</or>
+				</not>
+			</condition>
+	
+				<!-- if no input found, don't bother with displaying at all -->
+				<autopd_if isNotTrue="${is.valid.input}">
+					<echo message="Invalid entry for : promptForUserMultiProductVersionSelection.internal"/>
+				</autopd_if>
+				<autopd_if isTrue="${is.valid.input}">
+	
+			
+				<!-- construct description :  version - path -->
+				<!-- loop thru the versions first -->
+				<autopdproperty name="str" value="a"/>
+				<autopdloop param="version.item" paramlist="@{matched.versions}" delimiter="@">
+					<autopdproperty name="${str}" value="${version.item}"/>
+					<autopdproperty name="str" value="${str}a"/>  <!-- append str with another 'a' -->
+				</autopdloop>	
+				
+				<!-- loop thru the eclipse -paths first -->
+				<autopdproperty name="str" value="b"/>
+				<autopdloop param="eclipse.path.item" paramlist="@{matched.eclipse.paths}" delimiter="@">
+					<autopdproperty name="${str}" value="${eclipse.path.item}"/>
+					<autopdproperty name="str" value="${str}b"/>  <!-- append str with another 'a' -->
+				</autopdloop>
+				
+				<!-- loop thru the paths (three lists...) -->
+				<autopdproperty name="str" value="a"/>   <!-- version items -->
+				<autopdproperty name="str2" value="b"/>  <!-- eclipse path items -->
+				<autopdproperty name="desc.list" value=""/>
+				<autopdproperty name="info.list" value=""/>
+				<autopdloop param="path.item" paramlist="@{matched.paths}" delimiter="@">				
+					<getKeyValue key="${str}"/>
+					<!-- each info.list entry = @version|path!eclipsepath -->
+					<autopdproperty name="info.list" value="${info.list}@${key.value}|${path.item}"/>
+					<autopdproperty name="desc.list" value="${desc.list}@V${key.value} - ${path.item}"/>
+					<getKeyValue key="${str2}"/>  <!-- this is eclipse path -->
+					<autopdproperty name="info.list" value="${info.list}!${key.value}"/>
+	
+					<!-- next -->			
+					<autopdproperty name="str" value="${str}a"/>
+					<autopdproperty name="str2" value="${str2}b"/>
+				</autopdloop>
+				<trim_filename key="desc.list" filename="${desc.list}" prefixTrim="@"/>
+				<trim_filename key="info.list" filename="${info.list}" prefixTrim="@"/>
+				
+				<!-- SHOW UI -->
+				<autopd_unset_property name="selectedPulldown"/>
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd"
+					doSkip="true"
+					actionProperty="selectedPulldown">
+					<fieldtask type="prompt"
+						       name="prompt" 
+							   label="im.shared.multi.product.prompt" 
+					/>
+					<fieldtask type="label" name="label1" label="im.shared.multi.product.label1"/> 
+					<fieldtask type="selectlist" 
+						 name="product.version.eclipse.path.selected" 
+					     label="im.shared.multi.product.label2" 
+					     list="${info.list}" 
+					     listDetails="${desc.list}"			
+					     delimiter="@" 
+					     />
+				</inputdialogtask_v2>			
+				
+				<!-- check value -->
+				<autopd_unset_property name="selectedPulldown.ok" />
+				<autopd_unset_property name="selectedPulldown.skipped" />
+				<condition property="selectedPulldown.ok">
+					<equals arg1="ok" arg2="${selectedPulldown}" casesensitive="false"/>
+				</condition>
+				<condition property="selectedPulldown.skipped">
+					<equals arg1="skip" arg2="${selectedPulldown}" casesensitive="false" />
+				</condition>
+				
+				<!-- skipped -->
+				<autopd_if isTrue="${selectedPulldown.skipped}">
+					<!-- set flag to ignore ! -->
+					<autopdproperty name="product.isFound" value="false"/>
+					<wsnlsecho key="im.shared.info.2031" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Product information data collection has been skipped."
+							id="2031"
+							level="info"
+							messagePrefix="CWPDD"/>
+				</autopd_if> <!-- skipped -->
+				
+				<!-- user selected ok -->
+				<autopd_if isTrue="${selectedPulldown.ok}">
+					<!-- parse selection - version|path!eclipsepath -->
+					<!-- trim the result values - separate value from paths -->
+					<trim_filename key="product.match.version" filename="${product.version.eclipse.path.selected}" suffixTrim="\|.*"/>
+					<trim_filename key="product.paths.selected" filename="${product.version.eclipse.path.selected}" prefixTrim="[^\|]*\|"/>
+					
+					<!-- separate path from eclipse path -->
+					<trim_filename key="product.match.path" filename="${product.paths.selected}" suffixTrim="\!.*"/>
+					<trim_filename key="product.match.eclipse.path" filename="${product.paths.selected}" prefixTrim="[^\!]*\!"/>
+					
+					<!-- echo -->							
+					<autopdproperty name="product.isFound" value="true"/> 
+					
+				</autopd_if>
+				<!-- prompt -->
+				<!-- set selection -->			
+			</autopd_if>
+	
+		</sequential>
+	</macrodef>
+	<!--
+	Prompt when there are no selection list available. 
+	INPUT: none
+	OUTPUT: 
+
+	    is.user.selection : true
+	    product.isFound  : true | false
+		product.match.eclipse.path
+		product.match.path = same as selected target
+		product.match.version: "" 
+		product.name.selected  : User_Selected_Eclipse_Dir
+		-->
+<!-- TODO - add a loop -->
+	<macrodef name="promptForUserEclipseSelection">
+		<sequential>
+			<!-- wrapp automation bit -->	
+			<managePrompt_continue
+				component="${rational.im.shared.targets.basedir}" >
+				<prompt>
+					<promptForUserEclipseSelection.internal/>
+				</prompt>
+				<setDefault>
+					<autopdproperty name="product.isFound" value="false"/> 				
+					<autopdproperty name="product.match.path" value=""/>						
+					<autopdproperty name="product.match.eclipse.path" value=""/>
+					<autopdproperty name="product.match.version" value=""/>
+				</setDefault>
+			</managePrompt_continue>
+		</sequential>
+	</macrodef>
+	<macrodef name="promptForUserEclipseSelection.internal">
+		<sequential>
+			<!-- set some properties -->
+			<autopdproperty name="is.user.selection" value="true"/>
+			<autopdproperty name="product.isFound" value="false"/>
+			<autopdproperty name="product.match.eclipse.path" value=""/>
+			<autopdproperty name="product.match.path" value=""/>
+			<autopdproperty name="product.name.selected" value=""/>
+			<autopdproperty name="product.match.version" value=""/>
+			
+			<!-- =====================  PROMPT  =========================== -->
+			<autopdproperty name="is.countinue" value="true"/>
+			<autopdproperty name="error.msg" value=""/>  <!-- this gets modified by validate.checkDirContainsDir -->
+			<autopdwhile property="is.countinue">
+				<inputdialogtask_v2
+					bundle="properties/RATLSHARE/autopd"
+					doSkip="true"
+					actionProperty="selectedPulldown">
+					<fieldtask name="prompt" 
+								label="im.gencollect.selectproduct.prompt" 
+								type="prompt"  />
+					<fieldtask name="label2" type="label" label="im.gencollect.selectproduct.specify"/>				
+					<fieldtask name="target.product.browse" label="im.gencollect.selectproduct.install.prompt"
+							       type="filebrowser" browserTargetType="dir" />
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+				</inputdialogtask_v2>
+				
+				<!-- check value -->
+				<autopd_unset_property name="selectedPulldown.ok" />
+				<autopd_unset_property name="selectedPulldown.skipped" />
+				<condition property="selectedPulldown.ok">
+					<equals arg1="ok" arg2="${selectedPulldown}" casesensitive="false"/>
+				</condition>
+				<condition property="selectedPulldown.skipped">
+					<equals arg1="skip" arg2="${selectedPulldown}" casesensitive="false" />
+				</condition>
+				
+				<!-- skipped -->
+				<autopd_if isTrue="${selectedPulldown.skipped}">
+					<autopdproperty name="is.countinue" value="false"/>
+					<wsnlsecho key="im.shared.info.2031" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Product information data collection has been skipped."
+							id="2031"
+							level="info"
+							messagePrefix="CWPDD"/>
+				</autopd_if> <!-- skipped -->
+				
+				<!-- ================= User Selects OK  =================  -->
+				<autopd_if isTrue="${selectedPulldown.ok}">
+					
+					<!-- ================= VALDATE  =================  -->
+					<!-- validate product field (text) input -->
+					<validate.checkDirContainsDir parent.dir="${target.product.browse}" should.contain.dir="configuration"/>
+					
+					<!-- VALID content in the Browse... -->
+					<autopd_if isTrue="${is.valid.parent.dir}">
+						<autopdproperty name="is.countinue" value="false"/>
+						<autopdproperty name="product.isFound" value="true"/>
+						<autopdproperty name="product.match.eclipse.path" value="${target.product.browse}"/>
+						<autopdproperty name="product.match.path" value="${target.product.browse}"/>
+						<autopdproperty name="product.name.selected" value="User_Selected_Eclipse_Dir"/>
+						<autopdproperty name="product.match.version" value=""/>
+					</autopd_if>
+				</autopd_if>
+			
+			</autopdwhile>  <!-- wait till its a valid answer -->
+		</sequential>
+	</macrodef>
+	
+	
+	<!--
+	input: product.id - original product.id
+		   namesList  - @name1@name2  ...  used for selection List
+		   namesPathList - ;name1@name2(product path|eclipse path);name(product|path)  ... use for storing product & eclipse paths for name. 
+	Output: 
+	    product.isFound = true | false
+		product.match.version - product version information
+		product.name.selected - name of the product selected. 
+		product.match.eclipse.path - Product Eclipse path (can be selected by user)
+		product.match.path - Product path.
+		  
+	-->
+	<!-- AUTOMATION COMPLETE -->
+	<macrodef name="promptForUserProductSelection">
+		<attribute name="im.installed.xml"/>
+		<attribute name="im.product.id.list"/>		
+		<sequential>
+			<!-- wrapp automation bit -->	
+			<managePrompt_continue
+				component="${rational.im.shared.targets.basedir}" >
+				<prompt>
+					<promptForUserProductSelection.internal 
+						im.installed.xml="@{im.installed.xml}"
+						im.product.id.list="@{im.product.id.list}"	/>
+				</prompt>
+				<setDefault>
+					<autopdproperty name="product.isFound" value="false"/> 				
+					<autopdproperty name="product.match.path" value=""/>						
+					<autopdproperty name="product.match.eclipse.path" value=""/>
+					<autopdproperty name="product.match.version" value=""/>
+				</setDefault>
+			</managePrompt_continue>		
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- wrapped -->
+	<macrodef name="promptForUserProductSelection.internal">	
+		<attribute name="im.installed.xml"/>
+		<attribute name="im.product.id.list"/>		
+		<sequential>
+			
+			<autopdproperty name="product.isFound" value="false"/> 				
+			<autopdproperty name="product.match.path" value=""/>						
+			<autopdproperty name="product.match.eclipse.path" value=""/>
+			<autopdproperty name="product.match.version" value=""/>
+			
+			<!-- Calculate a list of product and its versions -->
+			<internal.get.product.selection.list im.installed.xml="@{im.installed.xml}"/>
+			<autopd_unset_property name="namesList.empty"/>
+			<condition property="namesList.empty">
+				<equals arg1="" arg2="${selection.list.value}"/>
+			</condition>
+			
+			<!-- Nothing found?  -->
+			<autopd_if isTrue="${namesList.empty}">
+				<!-- use internal b/c its already automated -->
+				<promptForUserEclipseSelection.internal/>
+			</autopd_if>
+			
+			<!--Found. Prompt multiple entries  -->
+			<autopd_if isNotTrue="${namesList.empty}">
+				<internal.promptForUserProductSelectionMultiple 
+					list.desc="${selection.list.details}"
+					list.value="${selection.list.value}"/>
+				<!-- if product is found, but due to selection list (not user selection), additional calculation needed. -->
+				<autopd_if isTrue="${product.isFound}">
+					<autopd_if isNotTrue="${is.user.selection}">
+						<!-- find the paths -->
+						<internal.find.product.paths.from.name.version 
+							im.installed.xml="@{im.installed.xml}"
+							im.product.id.list="@{im.product.id.list}"
+							product.name="${product.name.selected}"
+							product.version="${product.match.version}"  />
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>			
+							   
+		</sequential>
+	</macrodef>
+	
+	<!-- AUTOMATION COMPLETE : Wrapped -->
+	<!-- INPUT: 
+	    im.installed.xml :  location of the installed.xml file. 
+	    OUTPUT: 
+	    selection.list.details
+	    selection.list.value
+	    -->
+	<macrodef name="internal.get.product.selection.list">
+		<attribute name="im.installed.xml"/>
+		<sequential>
+			<!-- =================  READING INSTALL for ALL PRODUCTS & build list =================  -->			
+			<autopd_read_multiple_xml_elements filename="@{im.installed.xml}" 
+				path="installInfo!location(kind=product)!package(kind=offering)!property(name=cic.info.version)"
+				delimiter="!"
+				return_delimiter="@">
+				<xml_attribute name="value" result="product.versions.all"/>
+			</autopd_read_multiple_xml_elements>
+					
+			<autopd_read_multiple_xml_elements filename="@{im.installed.xml}" 
+				path="installInfo!location(kind=product)!package(kind=offering)"
+				delimiter="!"
+				return_delimiter="@">
+				<xml_attribute name="name" result="product.name.all"/>
+			</autopd_read_multiple_xml_elements>
+			
+			<!-- loop thru to create list - name - version@name2 -version ...  -->
+			<autopdproperty name="selection.list.details" value=""/>
+			<autopdproperty name="selection.list.value" value=""/>
+			
+			<!-- ISADC WORKAROUND -->
+			<run.if.not.empty input="${product.name.all}">
+				<autopdloop param="product.name" paramlist="${product.name.all}" delimiter="@">
+					<!-- calculate the version --> 
+					<!-- extract version information -->	
+					<autopd_unset_property name="version"/>
+					<trim_filename key="version" filename="${product.versions.all}" suffixTrim="@.*"/>
+					<autopdproperty name="selection.list.details" value="${selection.list.details}@${product.name} - V${version}"/>
+					<autopdproperty name="selection.list.value" value="${selection.list.value}@${product.name}|${version}"/>  <!-- @product|version@product|version ... -->
+					
+					<!-- shorten the version list -->
+					<trim_filename key="product.versions.all" filename="${product.versions.all}" prefixTrim="${version}@"/>
+				</autopdloop>
+			</run.if.not.empty>
+			
+			<!-- trimming the initial @ -->
+			<trim_filename key="selection.list.details" filename="${selection.list.details}" prefixTrim="@" />
+			<trim_filename key="selection.list.value" filename="${selection.list.value}" prefixTrim="@" />
+		</sequential>
+	</macrodef>
+	
+	<!-- actual prompt and validation -->
+	<!--
+	INPUT: list for user to choose from
+	OUTPUT:
+	   product.isFound   : true | false
+	   is.user.selection : true | false	   
+			- if true - 
+				product.match.eclipse.path
+				product.match.path = same as selected target
+				product.match.version: "" 
+				product.name.selected  : User_Selected_Eclipse_Dir
+				
+			- if false (and product.isFound) : 
+			    product.name.selected : from names list
+			    product.match.version : from description list
+			    product.match.eclipse.path =""
+			    product.match.path = "" 	
+			    This will require additional calculation of path
+	-->
+	<macrodef name="internal.promptForUserProductSelectionMultiple">
+		<attribute name="list.value"/>
+		<attribute name="list.desc"/>
+		<sequential>
+			
+			<!-- set some properties -->
+			<autopdproperty name="is.user.selection" value="false"/>
+			<autopdproperty name="product.isFound" value="false"/>
+			<autopdproperty name="product.match.eclipse.path" value=""/>
+			<autopdproperty name="product.match.path" value=""/>
+			<autopdproperty name="product.name.selected" value=""/>
+			<autopdproperty name="product.match.version" value=""/>			
+			
+			<!-- =====================  PROMPT  =========================== -->
+			<autopdproperty name="is.continue" value="true"/>
+			<autopdproperty name="error.msg" value=""/>
+			<autopdwhile property="is.continue">
+				<inputdialogtask_v2
+					bundle="properties/RATLSHARE/autopd"
+					doSkip="true"
+					actionProperty="selectedPulldown">
+					<fieldtask name="prompt" 
+								label="im.gencollect.selectproduct.prompt" 
+								type="prompt"  />					
+					<fieldtask name="product.name.version.selected" 
+					     label="im.gencollect.selectproduct.list"
+						 listDetails="@{list.desc}@OTHERS(SpecifiedBelow)"
+					     list="@{list.value}@${other.choice}" 
+					     delimiter="@" 
+					     type="selectlist" />
+					<fieldtask name="label2" type="label" label="im.gencollect.selectproduct.specify.2"/>				
+					<fieldtask name="target.product.browse" label="im.gencollect.selectproduct.install.prompt"
+							       type="filebrowser" browserTargetType="dir" />
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+				</inputdialogtask_v2>
+				
+				<!-- check value -->
+				<autopd_unset_property name="selectedPulldown.ok" />
+				<autopd_unset_property name="selectedPulldown.skipped" />
+				<condition property="selectedPulldown.ok">
+					<equals arg1="ok" arg2="${selectedPulldown}" casesensitive="false"/>
+				</condition>
+				<condition property="selectedPulldown.skipped">
+					<equals arg1="skip" arg2="${selectedPulldown}" casesensitive="false" />
+				</condition>
+			
+				<!-- skipped -->
+				<autopd_if isTrue="${selectedPulldown.skipped}">
+					<autopdproperty name="is.continue" value="false"/>   <!-- END LOOP -->
+					<wsnlsecho key="im.shared.info.2031" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Product information data collection has been skipped."
+							id="2031"
+							level="info"
+							messagePrefix="CWPDD"/>
+				</autopd_if> <!-- skipped -->
+				
+				<!-- ================= User Selects OK  =================  -->
+				<autopd_if isTrue="${selectedPulldown.ok}">
+					
+					<!-- ================= VALDATE  =================  -->
+					<!-- validate product field (text) input -->
+					<validate.checkDirContainsDir parent.dir="${target.product.browse}" should.contain.dir="configuration"/>					
+	
+					<!-- VALID content in the Browse... -->
+					<autopd_if isTrue="${is.valid.parent.dir}">
+						<autopdproperty name="is.continue" value="false"/>   <!-- END LOOP -->
+						<autopdproperty name="product.isFound" value="true"/>
+						<autopdproperty name="is.user.selection" value="true"/>
+						<autopdproperty name="product.match.eclipse.path" value="${target.product.browse}"/>
+						<autopdproperty name="product.match.path" value="${target.product.browse}"/>
+						<autopdproperty name="product.name.selected" value="User_Selected_Eclipse_Dir"/>
+						<autopdproperty name="product.match.version" value=""/>
+					</autopd_if>
+									
+					<!-- VALIDATE the selection field - if no value specified for Browse --> 
+					<autopd_if isTrue="${is.empty}">
+						<autopd_unset_property name="is.others"/>
+						<condition property="is.others">
+							<equals arg1="${other.choice}" arg2="${product.name.version.selected}"/>
+						</condition>
+						
+						<!-- if pull down selection was OTHERS and content is empty.. -->
+						<!-- alread set by validation 
+						<autopd_if isTrue="${is.others}">
+							<autopdproperty name="error.msg" value="** Path cannot be empty **"/>
+						</autopd_if>
+						-->
+					
+						<!-- this is from selection list -->
+						<autopd_if isNotTrue="${is.others}">
+							
+							<autopdproperty name="is.continue" value="false"/>   <!-- END LOOP -->
+							
+							<!-- there is a valid selection -->
+							<autopdproperty name="product.isFound" value="true"/>
+							<autopdproperty name="is.user.selection" value="false"/>
+							
+							<!-- trim the result values -->
+							<trim_filename key="product.name.selected" filename="${product.name.version.selected}" suffixTrim="\|.*"/>
+							<trim_filename key="product.match.version" filename="${product.name.version.selected}" prefixTrim="[^\|]*\|"/>
+						</autopd_if>
+						
+					</autopd_if>  <!-- text input is empty (user used selection list) -->
+				</autopd_if>  <!-- user select pull down -->
+			
+			</autopdwhile>  <!-- LOOP till a good answer is given -->
+				
+		</sequential>
+	</macrodef>
+	
+	<!-- OUTPUT: 
+	     product.isFound: true | false  (should be true - as product.version & product.name was pulled from installed.xml
+	     product.match.path
+	     product.match.eclipse.path	  
+	    -->
+	<macrodef name="internal.find.product.paths.from.name.version">
+		<attribute name="im.installed.xml"/>
+		<attribute name="im.product.id.list"/>
+		<attribute name="product.version"/>
+		<attribute name="product.name"/>
+		<sequential>
+			
+			<!-- look for the location.id - loop till found -->
+			<autopdproperty name="product.isFound" value="false"/>
+			
+			<!-- ISADC WORKAROUND -->
+			<run.if.not.empty input="@{im.product.id.list}">
+				<autopdloop param="location.id" paramlist="@{im.product.id.list}" delimiter="@">
+					
+					<autopd_if isNotTrue="${product.isFound}">
+						<autopd_read_xml_attributes filename="@{im.installed.xml}" 
+							path="installInfo|location(kind=product#id=${location.id})|package(kind=offering#name=@{product.name})|property(name=cic.info.version)"
+							delimiter="|">
+							<xml_attribute name="value" result="product.match.version.read"/>
+						</autopd_read_xml_attributes>
+	
+						<!-- check for package MATCH -->
+						<autopd_unset_property name="hasPkgIdMatch" />
+						<condition property="hasPkgIdMatch">
+							<equals arg1="@{product.version}" arg2="${product.match.version.read}"/>
+						</condition>
+							
+						<!-- ==== FOUND ===== --> 
+						<autopd_if isTrue="${hasPkgIdMatch}">
+							<!-- product path -->
+							<autopd_read_xml_attributes filename="@{im.installed.xml}" 
+								path="installInfo|location(id=${location.id})"
+								delimiter="|">
+								<xml_attribute name="path" result="im.product.path"/>		  	    	
+							</autopd_read_xml_attributes>
+							
+							<!-- Eclipse path -->
+							<autopd_read_xml_attributes filename="${im.install.xml}" 
+								path="installInfo|location(id=${location.id})|property(name=eclipseLocation)"
+								delimiter="|">
+								<xml_attribute name="value" result="im.product.eclipse.path"/>
+							</autopd_read_xml_attributes>
+	
+							<!-- echo -->							
+							<autopdproperty name="product.isFound" value="true"/><!-- end loop - sort of -->						
+							<autopdproperty name="product.match.path" value="${im.product.path}"/>						
+							<autopdproperty name="product.match.eclipse.path" value="${im.product.eclipse.path}"/>
+								
+						</autopd_if>  <!-- matched package ID - found product -->
+					</autopd_if> <!-- do stuff if product is not yet found -->
+				</autopdloop> <!-- loop thru the location.id -->
+			</run.if.not.empty>
+
+		</sequential>
+	</macrodef>
+	
+	
+</project>
+	

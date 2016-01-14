@@ -1,0 +1,29 @@
+
+
+Mise à niveau d'une application GC déjà installée
+
+Remarques :
+      - Ce script met à niveau GC. Pour plus d'informations, voir la rubrique d'aide relative à la mise à niveau de la solution Rational pour CLM.
+      - Sauf lorsque vous affichez cette aide, ce script doit être exécuté depuis le répertoire RacineInstallJazz/server.
+
+Syntaxe :
+    gc_upgrade
+         -oldApplicationHome <valeur> --Chemin d'accès complet au répertoire de configuration du serveur GC de l'ancienne installation.  Dans le cas d'une installation standard, il s'agit de <installation GC>/server/conf.
+         [-applicationContextRoot jazz] --Racine de contexte GC.
+         [-oldApplicationVersion <aucune>] --Version de GC mise à niveau.  Par défaut, elle est déterminée en exécutant la commande repotools -version sur l'ancienne application GC.
+         [-updateTomcatFiles <yes (par défaut) | no>] --Indique si les fichiers de configuration tomcat doivent être mis à jour.
+         [-oldTomcatHome <aucun>] --Chemin d'accès complet au répertoire principal Tomcat de l'ancienne installation GC. Par défaut, la valeur du paramètre oldTomcatHome est dérivée de la valeur du paramètre oldApplicationHome.
+         [-newApplicationHome conf] --Chemin d'accès au répertoire de configuration du serveur GC de la nouvelle installation.
+         [-newJTSHome <aucun>] --Chemin d'accès au répertoire de configuration du serveur JTS que la nouvelle installation va utiliser. Par défaut, la valeur de ce paramètre est dérivée de celle du paramètre newApplicationHome.
+         [-jtsContextRoot jts] --Racine de contexte du serveur JTS.
+         [-newApplicationTomcatHome <aucun>] --Chemin d'accès au répertoire principal Tomcat de GC de la nouvelle installation. Par défaut, la valeur du paramètre newApplicationTomcatHome est dérivée de la valeur du paramètre newApplicationHome.
+         [-newJTSTomcatHome <aucun>] --Chemin d'accès au répertoire principal Tomcat du serveur JTS que la nouvelle installation va utiliser. Par défaut, la valeur du paramètre newJTSTomcatHome est dérivée de la valeur du paramètre newJTSHome.
+         [-ignoreJTSVersionCheck] --Ne pas tenter de vérifier que la version de l'application est compatible avec la version du serveur JTS situé à l'emplacement newJTSHome.  Cet argument ne doit être utilisé que dans un déploiement réparti où le serveur JTS se trouve sur un système distinct qui n'est pas accessible à partir du système de l'application.
+         [-noPrompt] --Ne pas demander confirmation avant la création ou la modification des tables.
+         [-noStepPrompt] --Ne pas demander confirmation avant l'exécution d'une étape.
+         [-noVerify] --Ne pas vérifier les fichiers teamserver.properties.
+         [-noEditor] --Ne pas ouvrir les fichiers teamserver.properties dans un éditeur.
+
+Exemples :
+    upgrade/gc/gc_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<locale-list>
+  <nlsinfo country="US" lang="en" />
+  <nlsinfo lang="en" />
+  <nlsinfo lang="cs" />
+  <nlsinfo lang="de" />
+  <nlsinfo lang="es" />
+  <nlsinfo lang="fr" />
+  <nlsinfo lang="hu" />
+  <nlsinfo lang="it" />
+  <nlsinfo lang="ja" />
+  <nlsinfo lang="ko" />
+  <nlsinfo lang="pl" />
+  <nlsinfo country="BR" lang="pt" />
+  <nlsinfo lang="ru" />
+  <nlsinfo country="HK" lang="zh" />
+  <nlsinfo country="TW" lang="zh" />
+  <nlsinfo lang="zh" />
+</locale-list>

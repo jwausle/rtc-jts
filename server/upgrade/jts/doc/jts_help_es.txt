@@ -1,0 +1,27 @@
+
+
+Actualizar un JTS instalado
+
+Notas:
+      - Este script actualiza JTS. Para obtener más información, consulte el tema de ayuda, "Actualización de la solución de Rational para CLM".
+      - Excepto cuando muestre esta ayuda, este script se debe ejecutar desde un directorio JazzInstallRoot/server.
+
+Uso:
+    jts_upgrade
+         -oldJTSHome <valor> --Vía de acceso completa al directorio de configuración de servidor JTS de la instalación anterior.  En una instalación típica, esta vía de acceso es <instalación de JTS>/server/conf.
+         [-jtsContextRoot jts] --Raíz de contexto de JTS.
+         [-oldJTSVersion <ninguno>] --La versión de JTS que se está actualizando.  De forma predeterminada, esto se determina ejecutando repotools -version en el JTS anterior.
+         [-lpaContextRoot admin] --Raíz de contexto LPA.
+         [-updateTomcatFiles <yes (valor predeterminado) | no>] --Si deben actualizarse los archivos de configuración tomcat.
+         [-oldTomcatHome <ninguno>] --Vía de acceso completa al directorio de inicio de Tomcat de la instalación anterior. De forma predeterminada, el valor del parámetro oldTomcatHome se deriva del valor de parámetro oldJTSHome.
+         [-newJTSHome conf] --Vía de acceso al directorio de configuración del servidor JTS de la nueva instalación.
+         [-newTomcatHome <ninguno>] --Vía de acceso al directorio de inicio de Tomcat de la nueva instalación. De forma predeterminada, el valor del parámetro newTomcatHome se deriva del valor de parámetro newJTSHome
+         [-noPrompt] --No solicitar antes de crear las tablas previas a la importación.
+         [-noEditor] --No abrir el archivo teamserver.properties con un editor.
+         [-ignoreLPA] -- Ignorar la actualización de la aplicación LPA
+         [-noVerify] --No realizar verificación de los archivos teamserver.properties.
+         [-noStepPrompt] --No solicitar antes de ejecutar un paso.
+
+Ejemplos:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

@@ -1,0 +1,29 @@
+
+
+Upgrade für bereits installiertes CCM
+
+Hinweis:
+      - Dieses Script führt ein Upgrade für CCM durch. Weitere Informationen enthält das Hilfethema "Upgrade für die Rational-Lösung für CLM durchführen".
+      - Dieses Script muss, außer zur Anzeige dieser Hilfe, vom Verzeichnis "JazzInstallRoot/server" aus ausgeführt werden. 
+
+Syntax:
+    ccm_upgrade
+         -oldApplicationHome <Wert> -- Vollständiger Pfad zum CCM-Server-Konfigurationsverzeichnis der alten Installation. Für die Standardinstallation lautet dieser Pfad <CCM-Installationsverzeichnis>/server/conf.
+         [-applicationContextRoot jazz] -- CCM-Kontextstammverzeichnis
+         [-oldApplicationVersion <ohne>] -- Die CCM-Version, für die das Upgrade durchgeführt wird. Standardmäßig wird sie mit repotools -version für die alte Anwendung CCM ermittelt.
+        [-updateTomcatFiles <yes (Standard) | no>] -- Angabe, ob die Tomcat-Konfigurationsdateien aktualisiert werden sollen
+         [-oldTomcatHome <ohne>] -- Vollständiger Pfad zum Tomcat-Ausgangsverzeichnis der alten CCM-Installation. Standardmäßig wird der Wert des Parameters oldTomcatHome aus dem Wert des Parameters oldApplicationHome abgeleitet.
+         [-newApplicationHome conf] -- Pfad zum CCM-Server-Konfigurationsverzeichnis der neuen Installation
+         [-newJTSHome <ohne>] -- Pfad zum Konfigurationsverzeichnis des von der neuen Installation verwendeten JTS. Standardmäßig wird der Wert des Parameters newJTSHome aus dem Wert des Parameters newApplicationHome abgeleitet.
+         [-jtsContextRoot jts] -- JTS-Kontextstammverzeichnis
+         [-newApplicationTomcatHome <ohne>] -- Pfad zum CCM-Tomcat-Ausgangsverzeichnis der neuen Installation. Standardmäßig wird der Wert des Parameters newApplicationTomcatHome aus dem Wert des Parameters newApplicationHome abgeleitet.
+        [-newJTSTomcatHome <ohne>] -- Pfad zum JTS-Tomcat-Ausgangsverzeichnis des von der neuen Installation verwendeten JTS. Standardmäßig wird der Wert des Parameters newJTSTomcatHome aus dem Wert des Parameters newJTSHome abgeleitet.
+        [-ignoreJTSVersionCheck] -- Nicht versuchen zu prüfen, ob die Anwendungsversion mit der JTS-Version unter newJTSHome kompatibel ist. Dieses Argument sollte nur in einer verteilten Implementierung verwendet werden, bei der sich JTS auf einem separaten System befindet, auf das das Anwendungssystem keinen Zugriff hat.
+        [-noPrompt] -- Keine Bestätigung für die Erstellung oder Modifizierung der Tabellen
+        [-noEditor] -- Keinen Editor für die teamserver.properties-Dateien öffnen.
+        [-noVerify] -- Keine Verifizierung der Dateien mit Team-Server-Eigenschaften
+        [-noStepPrompt] -- Keine Bestätigung für die Ausführung eines Schrittes anfordern
+
+Beispiele:
+    upgrade/ccm/ccm_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

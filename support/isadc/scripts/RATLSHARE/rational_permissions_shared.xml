@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!--  Shared targets for Rational tools -->
+<!--  Use this with AutoPD 1.2.2 or later. Must include autopd share target to use this.-->
+<!--
+  This script provide a set of utility to determine access permission. 
+  -->
+
+<project name="rational_permissions_shared"> 
+	<!-- Load "custom" tasks -->
+	<taskdef file="${autopdrootdir}/properties/autopdtaskdef.properties" loaderref="ISA" />
+	
+	<dirname property="rational.rational.permissions.shared.targets.basedir" file="${ant.file.rational_permissions_shared}" />
+	<dirname property="rational.rational.permissions.shared.targets.parentdir" file="${rational.rational.permissions.shared.targets.basedir}" />
+	<dirname property="rational.rational.permissions.shared.targets.bundle.basedir" file="${rational.rational.permissions.shared.targets.parentdir}" />
+	
+	<!-- import the common file --> 
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+	
+	<!-- automation files -->
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_automation_recovery_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	
+	<!-- common properties -->
+	<!-- CHANGE ME - if this is not the default location of install -->
+	<property name="ratl.permissions.admin.group.unix" value="root"/>
+	<property name="ratl.permissions.admin.group.win" value="Administrators"/>
+	
+	<!-- =========================================================== -->
+	<!-- Code to test to see if a user is in the specified group -->
+	<!-- =====================================================-===== -->
+	
+	
+	<!-- 
+	TODO:
+	  - update shared version. 
+	  - possibly use this for ISADC 2.0.1
+	  
+	  Code in mustgathers. 
+	    - server collector
+	    - run :ratl.check.current.user.is.admin
+	    
+	  -->
+		
+	<!-- RETURNS : 
+	     has.ratl.current.userid.found = if code is not successful at finding current user info
+	     ratl.user.is.in.group 
+	     
+	     Calculates & set  : 
+	     internal.ratl.user.is.admin 
+	     internal.has.check.current.user = true (run once) 
+	     -->
+	<macrodef name="ratl.check.current.user.is.admin">
+		<sequential>
+			<!-- get default info !! -->
+			<autopd_if isNotTrue="${internal.has.check.current.user}">
+				<autopdproperty name="internal.has.check.current.user" value="true"/>
+				<internal.ratl.get.default.admin.group/>
+				<internal.ratl.get.current.userid/>
+				
+				<autopd_if isNotTrue="${has.ratl.current.userid.found}">
+					<autopd_if isTrue="${isWindows}">
+						<ratl.check.user.in.group.win group="@{internal.ratl.default.admin}" user.id="@{internal.ratl.current.userid}"/>
+					</autopd_if>
+					<autopd_if isNotTrue="${isWindows}">
+						<ratl.check.user.in.group.unix group="@{internal.ratl.default.admin}" user.id="@{internal.ratl.current.userid}"/>
+					</autopd_if>
+					
+					<autopd_if isTrue="${ratl.user.is.in.group}">
+						<autopdproperty name="internal.ratl.user.is.admin" value="true"/>
+					</autopd_if>
+					<autopd_if isNotTrue="${ratl.user.is.in.group}">
+						<autopdproperty name="internal.ratl.user.is.admin" value="false"/>
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- ok. -->
+	<macrodef name="ratl.run.if.admin">
+		<element name="code" implicit="true"/>
+		<sequential>
+			<ratl.check.current.user.is.admin />
+			<autopd_if isTrue="${internal.ratl.user.is.admin}">
+				<code/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="ratl.run.if.not.admin">
+		<element name="code" implicit="true"/>
+		<sequential>
+			<ratl.check.current.user.is.admin />
+			<autopd_if isNotTrue="${internal.ratl.user.is.admin}">
+				<code/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+	<!--
+	Generalized.  This does not provide any defaults.  
+	INPUT: - group : group name to be checked with
+	       - user.id: user.id for the name to check with.
+	OUTPUT: 
+	    - has.input.error : empty group or user.id provided.   
+	    - ratl.user.is.in.group : true if user.id is in group
+	  -->
+	<macrodef name="ratl.check.user.in.group">
+		<attribute name="group" default=""/>
+		<attribute name="user.id" default=""/>
+		<sequential>
+			<!-- set up -->
+			<autopdproperty name="has.input.error" value="true"/>
+			
+			<!-- check group -->
+			<internal.check.empty value="@{group}" />
+			
+			<autopd_if isNotTrue="${internal.is.empty.value}">
+				
+				<!-- check user.id -->
+				<internal.check.empty value="@{user.id}" />				
+				<autopd_if isNotTrue="${internal.is.empty.value}">
+					
+					<!-- set input error flag -->
+					<autopdproperty name="has.input.error" value="false"/>
+					
+					<!-- ACTUAL code -->
+					<autopd_if isTrue="${isWindows}">
+						<ratl.check.user.in.group.win group="@{group}" user.id="@{user.id}"/>
+					</autopd_if>
+					<autopd_if isNotTrue="${isWindows}">
+						<ratl.check.user.in.group.unix group="@{group}" user.id="@{user.id}"/>
+					</autopd_if>
+					
+				</autopd_if>
+				
+			</autopd_if>			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- MAIN GUTS -->
+	<!-- INPUT:
+	       - group : group name to be checked with
+	       - user.id: user.id for the name to check with.
+	       Please verify that group or user.id has been checked before entering this method.
+         OUTPUT: 
+           ratl.user.is.in.group : true if user.id is in group
+           
+         This method uses: "net localgroup group" to pull users within the group. 
+         Then uses regex_extract_value to pull the id out.  
+	  -->
+	<macrodef name="ratl.check.user.in.group.win">
+		<attribute name="group"/>
+		<attribute name="user.id"/>
+		<sequential>
+			
+			<autopdproperty name="ratl.user.is.in.group" value="false"/>
+				
+			<!-- run net localgroup -->
+			<exec executable="cmd.exe" failifexecutionfails="false" failonerror="false"
+    			output="${autopdtmp}/local_group_info.txt" 
+    		    os="${os.windows}">    			
+				<arg value="/c" />
+				<arg line='net localgroup "@{group}"' />
+			</exec>
+			
+			<!-- scan it - to look for user.id --> 
+			<autopd_unset_property name="extracted.userid" />
+			<regex_extract_value 
+					file="${autopdtmp}/local_group_info.txt"
+					searchPattern="^(@{user.id})($|\s+)"
+					subPatternIndex="1"
+					extractedValue="extracted.userid"
+					returnOption="firstMatch"
+					match_across_multiple_lines="false"
+				/>
+			
+			<!-- check it -->
+			<autopd_unset_property name="has.extracted.userid" />						
+			<condition property="has.extracted.userid">
+				<isset property="extracted.userid"/>
+			</condition>
+			
+			<autopd_if isTrue="${has.extracted.userid}">
+				<autopdproperty name="ratl.user.is.in.group" value="true"/>
+			</autopd_if>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- INPUT:
+	       - group : group name to be checked with
+	       - user.id: user.id for the name to check with.
+	       Please verify that group or user.id has been checked before entering this method.
+         OUTPUT: 
+           ratl.user.is.in.group : true if user.id is in group
+           
+         This method uses: "groups @{user.id}" to pull the list of groups. 
+         Scans the output against the group name
+	  -->
+	<macrodef name="ratl.check.user.in.group.unix">
+		<attribute name="group"/>
+		<attribute name="user.id"/>
+		<sequential>
+			<autopdproperty name="ratl.user.is.in.group" value="false"/>
+			
+			<!-- ISADC WORKAROUND -->
+			<autopd_unset_property name="is.not.valid"/>
+			<condition property="is.not.valid">
+				<or>
+					<equals arg1="" arg2="@{user.id}"/>
+					<contains string="@{user.id}" substring="$${"/>
+					<contains string="@{user.id}" substring="@@{"/>
+					<equals arg1="" arg2="@{group}"/>
+					<contains string="@{group}" substring="$${"/>
+					<contains string="@{group}" substring="@@{"/>
+				</or>
+			</condition>
+			
+			<!-- input tested to be valid, so continue -->
+			<autopd_if isNotTrue="${is.not.valid}">
+
+				<autopd_unset_property name="groups.exec.result"/>
+				<exec executable="/bin/sh" outputproperty="groups.exec.result" 
+					failonerror="false" failifexecutionfails="false">
+					<arg value="-c"/>
+					<arg value="groups @{user.id}"/>
+				</exec>
+				
+				<autopd_unset_property name="has.groups.exec.result" />						
+				<condition property="has.groups.exec.result">
+					<isset property="groups.exec.result"/>
+				</condition>
+				
+				<autopd_if isTrue="${has.groups.exec.result}">
+					<!-- Group output format:  @{user.id} : group1 group2 group3 --> 
+					<!-- reg_match_pattern checks to make sure it starts with user.id, contains group: 
+					      - ensure not substring
+					      - make sure the end entry is caught --> 
+					<autopd_unset_property name="has.group.match"/>
+					<regex_match pattern="^@{user.id} :.*\s+@{group}($|\s+.*)" 
+					     propertyName="has.group.match" 
+					     string="${groups.exec.result}" />
+	
+					<autopd_if isTrue="${has.group.match}">
+						<autopdproperty name="ratl.user.is.in.group" value="true"/>
+					</autopd_if>
+					
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+			
+	<!-- =============================================================== -->
+	
+	<!-- 
+	  INPUT:
+	  	- user.id: a user.id
+	  OUTPUT:
+	     - internal.is.empty.value : true - if group name is not usable.
+	     - internal.ratl.user.id : 
+	            - set to @{user.id} value - if not empty user.id name
+	            - else set to current user.id if possible
+	   
+	  --> 
+	
+	<macrodef name="internal.ratl.verify.user">
+		<attribute name="user.id"/>
+		<sequential>
+			<internal.check.empty value="@{user.id}" />			
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	  INPUT:
+	  	- group: a group name.
+	  OUTPUT:
+	     - internal.is.empty.value : true - if group name provided is empty (not set)
+	     - internal.ratl.group : 
+	            - set to @{group} value - if not invalid group name.
+	            - set to default admin group value. (root, or Administrators)  
+	  --> 
+	<macrodef name="internal.ratl.verify.group">
+		<attribute name="group"/>
+		<sequential>
+			
+			<internal.check.empty value="@{group}" />
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- RETURNS: internal.ratl.default.admin  -->
+	<macrodef name="internal.ratl.get.default.admin.group">
+		<sequential>
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="internal.ratl.default.admin" value="${ratl.permissions.admin.group.win}"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="internal.ratl.default.admin" value="${ratl.permissions.admin.group.unix}"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- RETURNS: 
+	           - internal.ratl.current.userid   : "" or current user id. 
+	           - has.ratl.current.userid.found  : if found a userid base on methods below.
+	     Method: 
+	        - look for user.name property. 
+	        - if user.name not available, 
+	            - Windows: echo %USERNAME% 
+	            - UNIX: whoami 
+	        Results are checked for blank.
+	     -->
+	<macrodef name="internal.ratl.get.current.userid">
+		<sequential>
+			
+			<!-- set default not found values --> 
+			<autopdproperty name="internal.ratl.current.userid" value="" />
+			<autopdproperty name="has.ratl.current.userid.found" value="false"/>
+			
+			<!-- pull "user.name" - check available first -->
+			<autopd_if isTrue="${user.name.isSet}">
+				<autopdproperty name="internal.ratl.current.userid" value="${user.name}"/>
+				<autopdproperty name="has.ratl.current.userid.found" value="true"/>
+			</autopd_if>
+			
+			<!-- if user.name property is not set... --> 
+			<autopd_if isNotTrue="${user.name.isSet}">
+				<!-- UNIX/LINUX - try whoami -->
+				<autopd_if isNotTrue="${isWindows}">
+					<autopd_unset_property name="whoami.exec.result"/>
+					<exec executable="whoami" outputproperty="whoami.exec.result" failonerror="false" failifexecutionfails="false"/>
+					<autopd_unset_property name="has.whoami.result" />						
+					<condition property="has.whoami.result">
+						<and>
+							<isset property="whoami.exec.result"/>
+							<not>
+								<equals arg1="" arg2="${whoami.exec.result}"/>
+							</not>
+						</and>
+					</condition>
+					<autopd_if isTrue="${has.whoami.result}">
+						<autopdproperty name="internal.ratl.current.userid" value="${whoami.exec.result}"/>
+						<autopdproperty name="internal.is.current.userid.found" value="true"/>
+					</autopd_if>					
+				</autopd_if>
+				
+				<!-- WINDOWS - get %USERNAME% -->
+				<autopd_if isTrue="${isWindows}">
+					<autopd_unset_property name="cmd.username.exec.result"/>
+					
+					<exec executable="cmd.exe" failifexecutionfails="false" failonerror="false"
+		    			outputproperty="cmd.username.exec.result" 
+		    		    os="${os.windows}">    			
+						<arg value="/c" />
+						<arg line='echo %USERNAME%' />
+					</exec>
+					<autopd_unset_property name="has.cmd.username.result" />						
+					<condition property="has.cmd.username.result">
+						<isset property="cmd.username.exec.result"/>
+					</condition>
+					<autopd_if isTrue="${has.cmd.username.result}">
+						<autopdproperty name="internal.ratl.current.userid" value="${cmd.username.exec.result}"/>
+						<autopdproperty name="internal.is.current.userid.found" value="true"/>
+					</autopd_if>
+				</autopd_if>
+				
+			</autopd_if>
+		</sequential>
+	</macrodef>
+
+	<!--
+	  INPUT:
+	     value = entry value. 
+	  OUTPUT: 
+	     internal.is.empty.value = true if: value is "", or not set (as in @{value}, or ${something}, or unset).
+	            - reason: as values are passed between macros and targets, sometimes @{} or ${} gets interpreted literally. 	     
+	  -->
+	<macrodef name="internal.check.empty">
+		<attribute name="value"/>
+		<sequential>
+			<autopd_unset_property name="internal.is.empty.value"/>
+			<condition property="internal.is.empty.value">
+				<or>
+					<equals arg1="" arg2="@{value}"/>
+					<contains string="@{value}" substring="@{"/>
+					<contains string="@{value}" substring="$${"/>
+				</or>
+			</condition>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- UI/ Notifications --> 
+	<macrodef name="log.not.admin.user">
+		<attribute name="out.file" />
+		<sequential>
+			<echo file="@{out.file}" message="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++${line.separator}"/>
+			<echo append="true" file="@{out.file}" message="++ WARNING:  ${line.separator}"/>
+			<echo append="true" file="@{out.file}" message="++           USER is not logged in as root or administrator ${line.separator}" />
+			<echo append="true" file="@{out.file}" message="++           Collector will continue, but may fail and may not be able to gather all information ${line.separator}"/>
+			<echo append="true" file="@{out.file}" message="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ${line.separator}"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- UI/ Notifications --> 
+	<macrodef name="log.not.admin.user.exit">
+		<attribute name="out.file" />
+		<sequential>
+			<echo  file="@{out.file}" message="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++${line.separator}"/>
+			<echo append="true" file="@{out.file}" message="++ IMPORTANT:   ${line.separator}"/>
+			<echo append="true" file="@{out.file}" message="++           USER is not logged in as root or administrator ${line.separator}" />
+			<echo append="true" file="@{out.file}" message="++           Collection has stopped. ${line.separator}"/>
+			<echo append="true" file="@{out.file}" message="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ${line.separator}"/>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- UI/ Notifications -->
+	<macrodef name="prompt.log.exit.not.admin.user">
+		<attribute name="out.file" />
+		<sequential>
+			<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+				<fieldtask name="prompt" 
+							     label="ratl.permission.root.required.prompt" 
+							     type="prompt" />
+				<fieldtask type="label" name="label1" label="ratl.permission.root.required.label1"/>
+				<fieldtask type="label" name="label1a" label="${line.separator}"/>
+				<fieldtask type="label" name="label2" label="ratl.permission.root.required.label2"/> 
+			</inputdialogtask_v2>
+			
+			<!-- write to the file and zip it up -->
+			<log.not.admin.user.exit out.file="${autopdtmp}/@{outfile}"/>
+			<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset file="${autopdtmp}/@{out.file}"/>
+			</copy>
+			
+			<fail/>
+			
+		</sequential>
+	</macrodef>
+	
+	
+</project>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><site>
+<description>
+			Jazz Foundation Server nls2 Update Site
+		</description>
+<feature id="com.ibm.team.jazz.foundation.server.jfs.feature.nls2" url="features/com.ibm.team.jazz.foundation.server.jfs.feature.nls2_3.0.2.v20150519_1511.jar" version="3.0.2.v20150519_1511">
+<category name="foundationServer"/>
+</feature>
+<feature id="com.ibm.team.jazz.foundation.server.product.feature.nls2" url="features/com.ibm.team.jazz.foundation.server.product.feature.nls2_3.0.2.v20150519_1511.jar" version="3.0.2.v20150519_1511">
+<category name="foundationProduct"/>
+</feature>
+<category-def label="Jazz Foundation Server Component" name="foundationServer"/>
+<category-def label="Jazz Foundation Server Product" name="foundationProduct"/>
+</site>

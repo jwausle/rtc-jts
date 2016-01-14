@@ -1,0 +1,27 @@
+Manifest-Version: 1.0
+Bundle-ClassPath: lib/commons-codec-1.6.jar,lib/fluent-hc-4.3.5.jar,li
+ b/httpclient-4.3.5.jar,lib/httpclient-cache-4.3.5.jar,lib/httpmime-4.
+ 3.5.jar
+Bundle-Vendor: The Apache Software Foundation
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-Name: Apache HttpComponents HttpClient
+Bundle-SymbolicName: org.apache.http.client
+Require-Bundle: org.apache.http,org.apache.commons.logging
+Export-Package: org.apache.http.auth,org.apache.http.auth.params,org.a
+ pache.http.client,org.apache.http.client.cache,org.apache.http.client
+ .config,org.apache.http.client.entity,org.apache.http.client.fluent,o
+ rg.apache.http.client.methods,org.apache.http.client.params,org.apach
+ e.http.client.protocol,org.apache.http.client.utils,org.apache.http.c
+ onn,org.apache.http.conn.params,org.apache.http.conn.routing,org.apac
+ he.http.conn.scheme,org.apache.http.conn.socket,org.apache.http.conn.
+ ssl,org.apache.http.conn.util,org.apache.http.cookie,org.apache.http.
+ cookie.params,org.apache.http.entity.mime,org.apache.http.entity.mime
+ .content,org.apache.http.impl.auth,org.apache.http.impl.client,org.ap
+ ache.http.impl.client.cache,org.apache.http.impl.client.cache.ehcache
+ ,org.apache.http.impl.client.cache.memcached,org.apache.http.impl.con
+ n,org.apache.http.impl.conn.tsccm,org.apache.http.impl.cookie,org.apa
+ che.http.impl.execchain
+Bundle-Version: 4.3.5.v20141125_1845
+Bundle-ManifestVersion: 2
+
+

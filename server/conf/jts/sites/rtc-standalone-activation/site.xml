@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.ibm.team.licensing.product.rtc-standalone.feature_0.9.9.jar" 
+            id="com.ibm.team.licensing.product.rtc-standalone.feature"
+            version="0.9.9"/>
+</site>

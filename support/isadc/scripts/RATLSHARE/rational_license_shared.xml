@@ -1,0 +1,1088 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!--  Shared targets -->
+<!--  Use this with AutoPD 1.2.2 or later. Must include autopd share target to use this.-->
+
+<project name="rational_license_shared">
+	
+	<dirname property="rational.license.shared.targets.basedir" file="${ant.file.rational_license_shared}" />
+	<dirname property="rational.license.shared.targets.parentdir" file="${rational.license.shared.targets.basedir}" />
+	<dirname property="rational.license.shared.targets.bundle.basedir" file="${rational.license.shared.targets.parentdir}" />
+	
+	
+	<!-- automation files -->
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_automation_recovery_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	
+	<!-- shared -->
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	
+	<!-- import the common file --> 
+	<!-- ISADC needs -->
+	<import>
+		<javaresource name="scripts/sharedtargets.xml"/>
+	</import>
+	
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>	
+			
+	<!-- common properties -->
+	<property name="FlexLM.prefix" value="FlexLM"/>
+	<property name="Lmgrd.prefix" value="FlexLM/lmgrd"/>
+	
+	
+	<!-- This target is the main entry point into the script.  It is the target that is called
+		by the AutoPD Tool after this collection type has been selected, and collection in started. -->
+
+	<target name="Main_flexlm_license_collection"
+			depends="load_sharedelements_tasks,		
+					set_problem_type_with_nls_bundle,
+					setup_autopd_v2,
+					validate_os,
+					checkAutomation,
+					check_64_bit_JVM,
+					ratl.flexlm.license.collect,
+					cisa_scan,
+					zip_autopd_log,
+					set_rational_upload,
+					ftp_message_shared,
+					ftp_collected_information_shared">	
+	</target>		
+	
+	<target name="ratl.flexlm.license.collect">
+		<ratl.license.collect.prompt/>
+		<autopd_if isTrue="${isWindows}">
+			<win_getRationalFlexLMInfo />
+		</autopd_if>
+		<autopd_if isNotTrue="${isWindows}">
+			<unix_getRationalFlexLMInfo />
+		</autopd_if>
+	</target>
+	
+	<macrodef name="ratl.license.collect.prompt">
+		<sequential>
+			<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" >
+				<fieldtask name="prompt" type="prompt" label="prompt.ratl.flexlm.prompt" />
+				<fieldtask name="line1" type="label" label="prompt.ratl.flexlm.line1" />
+				<fieldtask name="line3" type="label" label="prompt.ratl.flexlm.line2" />
+				<fieldtask name="line4" type="label" label="prompt.ratl.flexlm.line3" />
+				<fieldtask name="line4" type="label" label="prompt.ratl.flexlm.line4" />						
+				<fieldtask name="line5" type="label" label="${line.separator}" />
+				<fieldtask name="line6" type="label" label="prompt.ratl.flexlm.ok" />
+			</inputdialogtask_v2>
+		</sequential>
+	</macrodef>
+	
+	<!-- default rational install location is defined in rational_shared.xml 
+		${ratl.unix.default.dir.pre71} = /opt/rational
+		${ratl.unix.default.dir.71} = /opt/ibm/RationalSDLC
+		If product install path is not default (especially for pre 71), please update these values 
+	-->
+	<!--
+		unix_getRationalFlexLMInfo
+			- Retrieves information relating to FlexLM on Linux/Unix system.
+			
+		Base FLEX LM Information :
+		Collect:
+			- env/setenv output (DONE) 
+			- Gather: (DONE) 
+				- file specified RATIONAL_LICENSE_FILE
+				- value for FLEXLM_NO_CKOUT_INSTALL_LIC
+				- value for FLEXLM_DIAGNOSTICS				
+				- file specified LM_LICENSE_FILE 
+				- /var/adm/rational/clearcase/config/flexlm_host
+				- ~/.flexlmrc
+				
+			- Gather : 				
+				- Scan & collect  start up file(s)- script containing _LICENSE 					
+						System wide: 
+						- /etc/profile 
+						- /etc/csh.cshrc  (or /etc/*shrc )
+						Rational  (NOT DONE) 
+						- /opt/rational/   
+						- /opt/[iI][bB][Mm] 
+					
+						Rational CC start up
+						- /opt/rational/clearcase/etc/clearcase  (7.0)  
+						- /opt/ibm/RationalSDLC/clearcase/etc/clearcase (7.1)
+						- /opt/IBM/RationalSDLC/clearcase/etc/clearcase (7.1)
+						
+						Rational CQ init script
+						- /opt/rational/clearquest/bin/clearquest (7.0)
+						- /opt/ibm/RationalSDLC/clearquest/bin/clearquest (7.1)
+						- /opt/IBM/RationalSDLC/clearquest/bin/clearquest (7.1)
+					
+						RWP scripts
+						- /var/adm/rational/common/ewas/conf/ewas_startup 
+						- /var/adm/rational/common/ihs/conf/ihs_startup
+						- /var/adm/rational/common/rwp/conf/ccrc.conf
+						
+			- FlexLM server:  (DONE) 
+				- Look for script that launches lmgrd.  
+						/etc/init.d  
+					- look for log file specified in the script (this is hard...) 
+				- Look for location of lmgrd :  ps -aef | grep lmgrd | awk '{print $8}'  Ignore "grep lmgrd"
+				- Execute lmutil lmstat -a  and gather the output.				
+				 
+	-->
+	<property name="internal.colon" value='":"'/>	
+    <macrodef name="unix_getRationalFlexLMInfo">        
+        <sequential>
+        	
+			<stepcount/>
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.license.flexlm.step" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Collecting FlexLM information"
+					replace="${autopdts};;${step.count}"
+					id="2088"
+					level="info"
+					messagePrefix="CWPDD"/>
+    		<!-- set up environment variables -->
+    		<property environment="env"/>
+    	
+    		<internal.unix_getBasicFlexLMInfo/>
+    		<internal.unix_scan_collect_LicenseStartUpFile/>
+    		<internal.unix_collect_known_startup_file/>        	
+    		<internal.unix_collect_lmserver_info/>
+    	
+        </sequential>
+    </macrodef>	
+	
+	<!--
+	  FlexLM server info :  
+	     Look for script that launches lmgrd.  
+			/etc/init.d  (no recurse into this)
+		 - look for log file specified in the script: LICENSE_LOG=(.*)
+		   Collect that log.
+		 - Look for location of lmgrd :  ps -aef | grep lmgrd | awk '{print $8}'  Ignore "grep lmgrd"
+		 - Execute lmutil lmstat -a  and gather the output.
+		   
+		--> 	
+	<macrodef name="internal.unix_collect_lmserver_info">
+		<sequential>
+
+						
+			<!-- scan and collect files in /etc/init.d -->
+			<autopdproperty name="etc.initd.dir" value="/etc/init.d"/>
+			<internal.unix_scanDir dir="${etc.initd.dir}" filter="*" keyword="lmgrd" prefix="${Lmgrd.prefix}"/>
+			<autopdproperty name="match.list" value="${matched.files}"/>
+			<internal.unix_scanDir dir="${etc.initd.dir}" filter="*.*" keyword="lmgrd" prefix="${Lmgrd.prefix}"/>
+			<autopdproperty name="match.list" value="${match.list},${matched.files}"/>
+			
+			<!-- Check for LICENSE_LOG & LICENSE_DIR
+			     Collect LICENSE_LOG, check LICENSE_DIR for lmgrd --> 
+			<autopdproperty name="license.dirs" value=""/>  
+			<autopdloop param="matched.file" paramlist="${match.list}" delimiter=",">
+				<autopd_unset_property name="isEmpty"/>
+				<condition property="isEmpty">
+					<equals arg1="" arg2="${matched.file}"/>
+				</condition>
+				<autopd_if isNotTrue="${isEmpty}">
+					
+					<!-- Collect LICENSE_LOG -->
+					<regex_extract_value 
+							file="${etc.initd.dir}/${matched.file}"
+							searchPattern="LICENSE_LOG=(.*)"
+							subPatternIndex="1"
+							extractedValue="license.log.path"
+							returnOption="firstMatch"
+							match_across_multiple_lines="false"
+						/>
+					<echo message="LICENSE_LOG = ${license.log.path}"/>
+					<autopd_unset_property name="hasFile"/>
+					<available file="${license.log.path}" type="file" property="hasFile"/>
+					<autopd_if isTrue="${hasFile}">
+						<!-- zip the license log file -->
+						<copy todir="${isadcTempOut}/${Lmgrd.prefix}" outputencoding="UTF-8">
+							<fileset file="${license.log.path}"/>						
+						</copy>												
+					</autopd_if>
+					
+					<!-- Check lmgrd from LICENSE_DIR -->
+					<regex_extract_value 
+							file="${etc.initd.dir}/${matched.file}"
+							searchPattern="LICENSE_DIR=(.*)"
+							subPatternIndex="1"
+							extractedValue="license.dir.path"
+							returnOption="firstMatch"
+							match_across_multiple_lines="false"
+						/>
+					<echo message="LICENSE_DIR = ${license.dir.path}"/>
+
+					<autopd_unset_property name="hasLmutil"/>
+					<available file="${license.dir.path}/lmutil" type="file" property="hasLmutil"/>
+					<autopd_if isTrue="${hasLmutil}">
+						<!-- update with the last one that is valid.. ah well..  -->
+						<autopdproperty name="script.lmutil.found" value="true"/>
+						<autopdproperty name="script.lmutil.dir" value="${license.dir.path}"/>
+					</autopd_if>
+				</autopd_if>				
+			</autopdloop>
+				
+			<!-- look for currently running lmgrd...  -->
+			<internal.unix_runtime_lmgrd/>
+
+			<!-- did we find lmgrd during runtime? if not check the script -->
+			<autopdproperty name="hasRanLmutil" value="false"/>
+			<autopd_if isTrue="${runtime.lmgrd.found}">
+				<!-- check for lmutil -->
+				<dirname property="runtime.lmgrd.dir" file="${runtime.lmgrd.path}"/>
+				<autopd_unset_property name="hasLmutil"/>
+				<available file="${runtime.lmgrd.dir}/lmutil" type="file" property="hasLmutil"/>
+				<autopd_if isTrue="${hasLmutil}">
+					<internal.collectLmutilInfo lmutil.location="${runtime.lmgrd.dir}/lmutil"/>
+					<autopdproperty name="hasRanLmutil" value="true"/>
+				</autopd_if>
+			</autopd_if>
+			
+			<!-- try script location -->
+			<autopd_if isNotTrue="${hasRanLmutil}">
+				<autopd_if isTrue="${script.lmutil.found}">
+					<internal.collectLmutilInfo lmutil.location="${script.lmutil.dir}/lmutil"/>
+				</autopd_if>
+			</autopd_if>
+
+		</sequential>
+	</macrodef>
+
+	
+	<!-- This macro collects ps -ef | grep lmgrd -->
+	<!-- OUTPUT:
+			lmgrd will parse out whether an lmgrd instance is found runnning :
+	    	runtime.lmgrd.found = true | unset
+	    	runtime.lmgrd.path = full path 
+	    -->	
+	<macrodef name="internal.unix_runtime_lmgrd">
+		<sequential>
+			<!-- get ps -aef | grep lmgrd information -->
+			<autopdproperty name="echo.command.name" value="ps -ef | grep lmgrd"/>			
+			<autopdproperty name="target.output" value="${autopdtmp}/ps_ef_out.txt"/>
+			
+			<saveresourcebundleproperty 
+					bundle="properties/RATLSHARE/autopd"
+					key="ratl.general.executing" 
+					propertyName="echo.output" 
+					message="Running command: {0}" 
+					replace="${echo.command.name}"/>
+			<echo message="${echo.output}"/>
+			<echo message="${line.separator}${echo.output}${line.separator}" append="true" file="${target.output}"/>
+			<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.output}"/>	
+			
+			<autopd_unset_property name="ps.out"/>
+			<autopd_unset_property name="ps.error"/>
+			<autopd_unset_property name="ps.result"/>
+			<exec executable="/bin/ksh" resultproperty="ps.result" 	os="${os.unixkind}" 					
+				outputproperty="ps.out" errorproperty="ps.error"
+				failifexecutionfails="false" failonerror="false">
+				<arg value="-c" />
+				<arg value="${echo.command.name}"/>
+			</exec>
+			
+			<!-- output to file & collect it --> 
+			<echo message="${line.separator}${ps.out}${line.separator}" append="true" file="${target.output}"/>						
+			<copy todir="${isadcTempOut}/${Lmgrd.prefix}" outputencoding="UTF-8">
+				<fileset file="${target.output}"/>						
+			</copy>
+			
+			<!-- scan for possible executable location -->
+			<autopd_unset_property name="awk.out"/>
+			<autopd_unset_property name="awk.error"/>
+			<autopd_unset_property name="awk.result"/>
+			<exec executable="/bin/ksh" resultproperty="awk.result" 	os="${os.unixkind}" 					
+				outputproperty="awk.out" errorproperty="awk.error"
+				inputstring="${ps.out}"
+				failifexecutionfails="false" failonerror="false">
+				<arg value="-c" />
+				<arg value="awk '{print $8}'"/>
+			</exec>
+			
+			<!-- check output -->
+			<autopdproperty name="runtime.lmgrd.found" value="false"/>
+			<autopdloop param="run.program" paramlist="${awk.out}" delimiter="${line.separator}">
+				<autopd_if isNotTrue="${lmgrd.found}">
+					<autopd_unset_property name="isEmpty"/>
+					<condition property="isEmpty">
+						<equals arg1="" arg2="${run.program}"/>
+					</condition>
+					<autopd_if isNotTrue="${isEmpty}">
+						<!-- check to see if it ends with /lmgrd -->
+						<regex_match pattern="^.*\/lmgrd$" propertyName="isMatched"  string="${run.program}"/>
+						
+						<autopd_if isTrue="${isMatched}">
+							<!-- found.  first one -->
+							<autopdproperty name="runtime.lmgrd.found" value="true"/>
+							<autopdproperty name="runtime.lmgrd.path" value="${run.program}"/>							
+						</autopd_if>
+					</autopd_if>
+				</autopd_if>				
+			</autopdloop>
+			
+			<!-- return result -->		
+			
+		</sequential>
+	</macrodef>
+	
+	<!--
+	    HARD CODE.  Its not guarentee that product installation will reside in these locations. 
+			Rational CC start up
+			- /opt/rational/clearcase/etc/clearcase  (7.0)  
+			- /opt/ibm/RationalSDLC/clearcase/etc/clearcase (7.1) Linux
+			- /opt/IBM/RationalSDLC/clearcase/etc/clearcase (7.1) UNIX
+			
+			Rational CQ init script
+			- /opt/rational/clearquest/bin/clearquest (7.0)
+			- /opt/ibm/RationalSDLC/clearquest/bin/clearquest (7.1) Linux
+			- /opt/IBM/RationalSDLC/clearquest/bin/clearquest (7.1) UNIX
+		
+			RWP scripts
+			- /var/adm/rational/common/ewas/conf/ewas_startup 
+			- /var/adm/rational/common/ihs/conf/ihs_startup
+			- /var/adm/rational/common/rwp/conf/ccrc.conf
+		-->
+	<macrodef name="internal.unix_collect_known_startup_file">
+		<sequential>
+			<echo message=""/>
+			<wsnlsecho key="ratl.license.known.startup.file" 
+			    	bundle="properties/RATLSHARE/autopd"
+			    	message="Collecting CC and RWP start up files..."
+			    	id="2088"
+			    	level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- Files in /opt/rational -->
+			<autopd_unset_property name="hasDir"/>
+			<available file="${ratl.unix.default.dir.pre71}" type="dir" property="hasDir"/>
+			<autopd_if isTrue="${hasDir}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}/opt_rational" outputencoding="UTF-8">
+					<fileset dir="${ratl.unix.default.dir.pre71}" includes="clearcase/etc/clearcase"/>
+					<fileset dir="${ratl.unix.default.dir.pre71}" includes="clearquest/bin/clearquest"/>
+				</copy>
+			</autopd_if>
+			
+			<!-- Files in /opt/ibm/RationalSDLC-->
+			<autopd_unset_property name="hasDir"/>
+			<available file="${ratl.unix.default.dir.71}" type="dir" property="hasDir"/>
+			<autopd_if isTrue="${hasDir}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}/opt_ibm_RationalSDLC" outputencoding="UTF-8">
+					<fileset dir="${ratl.unix.default.dir.71}" includes="clearcase/etc/clearcase"/>
+					<fileset dir="${ratl.unix.default.dir.71}" includes="clearquest/bin/clearquest"/>
+				</copy>
+			</autopd_if>
+			
+			<!-- Files in /opt/IBM/RationalSDLC-->
+			<autopd_unset_property name="hasDir"/>
+			<available file="${ratl.unix.default.dir.71.v2}" type="dir" property="hasDir"/>
+			<autopd_if isTrue="${hasDir}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}/opt_IBM_RationalSDLC" outputencoding="UTF-8">
+					<fileset dir="${ratl.unix.default.dir.71.v2}" includes="clearcase/etc/clearcase" />
+					<fileset dir="${ratl.unix.default.dir.71.v2}" includes="clearquest/bin/clearquest" />
+				</copy>
+			</autopd_if>
+						
+			<!-- common dir - collection -->
+			<autopdproperty name="rational.common.dir" value="/var/adm/rational/common"/>  <!-- hardcode -->
+			
+			<autopd_unset_property name="hasRationalCommonDir"/>
+			<available file="${rational.common.dir}" type="dir" property="hasRationalCommonDir"/>
+			<autopd_if isTrue="${hasRationalCommonDir}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}/var_adm_rational_common" outputencoding="UTF-8">
+					<fileset dir="${rational.common.dir}">
+						<include name="ewas/conf/ewas_startup"/>
+						<include name="ihs/conf/ihs_startup"/>
+						<include name="rwp/conf/ccrc.conf"/>
+					</fileset>
+				</copy>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!--
+	     - Scan & collect  start up file(s)- script containing _LICENSE 					
+						System wide: 
+						- /etc/profile 
+						- /etc/csh.cshrc  (or /etc/*shrc )
+						- $HOME/.*rc
+						Rational (NOT SCANNED - this is too time consuming) 
+						- /opt/rational/
+						- /opt/[iI][bB][Mm] 
+		-->
+	<macrodef name="internal.unix_scan_collect_LicenseStartUpFile">
+		<sequential>
+			<echo message=""/>
+			<wsnlsecho key="ratl.license.scan.startup.file" 
+			    	bundle="properties/RATLSHARE/autopd"
+			    	message="Scanning for files containing _LICENSE"
+			    	id="2088"
+			    	level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- scanning  & collect if found -->			
+			<internal.unix_scanDir dir="/etc" filter="*shrc" keyword="_LICENSE" prefix="${FlexLM.prefix}"/>
+			<internal.unix_scanFile file="/etc/profile" keyword="_LICENSE" prefix="${FlexLM.prefix}"/>			
+			<internal.unix_scanDir dir="${env.HOME}" filter=".*rc" keyword="_LICENSE" prefix="${FlexLM.prefix}/USER_HOME"/>			
+			
+			<!--  These two takes too long... and -r is not working right.. ... 
+			<internal.unix_scanDir file="${ratl.unix.default.dir.pre71}" keyword="_LICENSE" prefix="${FlexLM.prefix}${ratl.unix.default.dir.pre71}"/>
+			<internal.unix_scanDir file="/opt/[Ii][Bb][Mm]" keyword="_LICENSE" prefix="${FlexLM.prefix}/opt/ibm"/>
+			-->
+		</sequential>
+	</macrodef>
+	
+	<!-- checks for file in the directory --> 
+	<!-- 
+		Executes (in the <dir>
+			grep <keyword> <filter> | awk '{split($1,myarray,":"); names[myarray[1]]++} END { for (i in names) { print i}}'
+			
+		NOTE: this does not recurse.  The recurse output does not seem to have a good way to be collected. 
+		Example: 
+		in /etc - look for USER in files *shrc 
+		grep USER *shrc | awk '(split($1,myarray,":"); print myarray[1];}'
+		
+		INPUT:
+		keyword = keyword to search for
+		dir  =  directory in which the files are contained
+		filter = <blank> default.   
+		collect = true .  Determines whether matched files are to be collected or not. 
+
+		OUTPUT: 
+			- matched.files
+		-->
+	<macrodef name="internal.unix_scanDir">
+		<attribute name="keyword"/>
+		<attribute name="dir"/>
+		<attribute name="filter" default="*" />       <!-- example: *.* , *filename -->
+		<attribute name="collect" default="true"/>
+		<attribute name="prefix" default="${FlexLM.prefix}"/>
+		<sequential>
+			
+			<echo message=" "/>
+			<autopdproperty name="path.to.scan" value="@{dir}/@{filter}"/>
+			<wsnlsecho key="ratl.license.scan.keywords" 
+				    	bundle="properties/RATLSHARE/autopd"
+				    	message="Scanning {0} in {1}"
+				    	replace="@{keyword};;${path.to.scan}"
+				    	id="2088"
+				    	level="info"
+						messagePrefix="CWPDD"/>
+			
+			<autopd_unset_property name="hasValidDir"/>
+			<available file="@{dir}" type="dir" property="hasValidDir"/>
+			<autopd_if isTrue="${hasValidDir}">
+				<autopd_unset_property name="result.out"/>
+				<autopd_unset_property name="result.output"/>
+				<autopd_unset_property name="result.error"/>								
+	            <exec executable="/bin/sh"
+	                    resultproperty="result.out"  outputproperty="result.output" errorproperty="result.error"
+	            	    dir="@{dir}"
+	            		failifexecutionfails="false" failonerror="false">
+	                    <arg value="-c"/>
+	            	    <arg value="grep @{keyword} @{filter} | awk '{split($1,myarray,${internal.colon}); names[myarray[1]]++} END { for (i in names) { print i}}'"/>                    
+	            </exec>
+				
+				<!-- checks to see if there is output -->
+	            <autopd_unset_property name="hasValidOutput"/>
+	            <condition property="hasValidOutput">
+	            	<and>
+						<isset property="result.output"/>
+						<not>
+							<equals arg1="" arg2="${result.output}"/>
+						</not>
+	                </and>
+	            </condition>
+		
+				<autopdproperty name="matched.files" value=""/>
+	            <autopd_if isTrue="${hasValidOutput}">
+	            	<!-- constructs a fileset includes string -->
+	            	<autopdreplace property="result.output" token="${line.separator}" value="," />
+	            	<autopdproperty name="matched.files" value="${result.output}"/>
+	            	
+	            	<echo message="matched.files = ${matched.files}"/>
+	            	<autopd_if isTrue="@{collect}">
+						<copy todir="${isadcTempOut}/@{prefix}/@{dir}" outputencoding="UTF-8">
+							<fileset includes="${matched.files}" dir="@{dir}"/>						
+						</copy>	
+					</autopd_if>
+	            </autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- Scans for file only - not grep -r -->
+	<macrodef name="internal.unix_scanFile">
+		<attribute name="keyword"/>
+		<attribute name="file"/>
+		<attribute name="collect" default="true"/>
+		<attribute name="prefix" default="${FlexLM.prefix}"/>
+		<sequential>
+			<echo message=" "/>
+			<wsnlsecho key="ratl.license.scan.keywords" 
+				    bundle="properties/RATLSHARE/autopd"
+			    	message="Scanning {0} in {1}"
+			    	replace="@{keyword};;@{file}"
+			    	id="2088"
+			    	level="info"
+					messagePrefix="CWPDD"/>
+			<autopd_unset_property name="hasValidFile"/>
+			<available file="@{file}" type="file" property="hasValidFile"/>
+			<autopd_if isTrue="${hasValidFile}">
+				<autopd_unset_property name="result.out"/>
+				<autopd_unset_property name="result.output"/>
+				<autopd_unset_property name="result.error"/>								
+	            <exec executable="/bin/sh"
+	                    resultproperty="result.out"  outputproperty="result.output" errorproperty="result.error"
+	            		failifexecutionfails="false" failonerror="false">
+	                    <arg value="-c"/>
+	            	    <arg value="grep @{keyword} @{file}"/>                    
+	            </exec>
+				
+			   <autopd_unset_property name="hasValidOutput"/>
+	            <condition property="hasValidOutput">
+                    <and>
+                         <isset property="result.output"/>
+                         <not>
+                            	<equals arg1="" arg2="${result.output}"/>
+                          </not>
+                    </and>
+	            </condition>        
+				
+				<!-- if some results are there & collect -->
+				<autopd_if isTrue="${hasValidOutput}">
+					<autopd_if isTrue="@{collect}">
+						<autopd_unset_property name="file.dir"/>
+						<dirname file="@{file}" property="file.dir"/>
+						<copy todir="${isadcTempOut}/@{prefix}/${file.dir}" outputencoding="UTF-8">
+							<fileset file="@{file}"/>						
+						</copy>
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- 
+	The basics:
+		- basic linux information
+		- Gather:
+			- file specified RATIONAL_LICENSE_FILE
+			- value for FLEXLM_NO_CKOUT_INSTALL_LIC
+			- value for FLEXLM_DIAGNOSTICS				
+			- file specified LM_LICENSE_FILE 
+			- /var/adm/rational/clearcase/config/flexlm_host
+			- ~/.flexlmrc  (this is collected by internal.unix_scan_collect_known_startup_file)
+	-->
+	<macrodef name="internal.unix_getBasicFlexLMInfo">
+		<sequential>
+			<!-- more comments needed? -->
+			<!-- Environment information -->
+			<autopdproperty name="echo.command.name" value="env"/>
+			<autopdproperty name="target.output" value="${autopdtmp}/ENV_Information.txt"/>
+			<win_pathFixup type="/" inputDir="${target.output}" defaultDir="${target.output}"/>
+			<autopdproperty name="target.out.cleaned" value="${inputDir.out}"/>
+				
+			<saveresourcebundleproperty 
+					bundle="properties/RATLSHARE/autopd"
+					key="ratl.general.executing" 
+					propertyName="echo.output" 
+					message="Running command: {0}" 
+					replace="${echo.command.name}"/>
+			<echo message="${echo.output}"/>
+			<echo message="${line.separator}${line.separator}${echo.output}${line.separator}" append="true" file="${target.out.cleaned}"/>
+			<echo message="---------------------------------------------------------------------${line.separator}" append="true" file="${target.out.cleaned}"/>
+			<exec executable="/bin/sh" resultproperty="result.batch.exec" os="${os.unixkind}" 
+					failifexecutionfails="false" failonerror="false">
+				<arg value="-c"/>
+				<arg value="env >> ${target.out.cleaned}"/>
+			</exec>
+			
+			<copy todir="${isadcTempOut}/${FlexLM.prefix}" outputencoding="UTF-8">
+				<fileset file="${target.output}"/>						
+			</copy>
+			
+			
+			<!-- Gather Rational_LICENSE_FILE  / LM_LICENSE_FILE  -->			
+			<echo message="env.RATIONAL_LICENSE_FILE = ${env.RATIONAL_LICENSE_FILE}"/>
+			<echo message="env.LM_LICENSE_FILE = ${env.LM_LICENSE_FILE}"/>
+
+			<!-- gather RATIONAL_LICENSE_FILE  - this is to prevent bad value. -->
+			<autopd_unset_property name="isValidFile"/>
+			<available file="${env.RATIONAL_LICENSE_FILE}" property="isValidFile"/>
+			<autopd_if istrue="${isValidFile}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}" outputencoding="UTF-8">
+					<fileset file="${env.RATIONAL_LICENSE_FILE}"/>
+				</copy>
+			</autopd_if>
+			
+			<!-- gather env.LM_LICENSE_FILE - this is to prevent bad value. -->
+			<autopd_unset_property name="isValidFile"/>
+			<available file="${env.LM_LICENSE_FILE}" property="isValidFile"/>
+			<autopd_if istrue="${isValidFile}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}" outputencoding="UTF-8">
+					<fileset file="${env.LM_LICENSE_FILE}"/>
+				</copy>
+			</autopd_if>
+			
+			
+			<!-- check to see if /var/adm/rational/clearcase/config exists -->
+			<autopd_unset_property name="hasCCConfigDir"/>
+			<available file="/var/adm/rational/clearcase/config" property="hasCCConfigDir" type="dir"/>
+			<autopd_if isTrue="${hasCCConfigDir}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}/var_adm_rational_clearcase_config" outputencoding="UTF-8">				
+					<fileset file="/var/adm/rational/clearcase/config/flexlm_host"/>
+					<fileset file="/var/adm/rational/clearcase/config/license_host"/>
+				</copy>
+			</autopd_if>			
+
+		</sequential>
+	</macrodef>
+	
+	<!--
+	    win_getRationalFlexLMInfo
+			- Retrieves information relating to FlexLM on Windows system. 
+		FLEX LM information: 
+	    Windows: 
+		The entire contents of these registry keys:
+			HKLM\Software\Flexlm License Manager
+			HKLM\Software\Rational Software\Licensing
+			HKCU\Software\Rational Software\Licensing			
+		Flex/LM License server status. It does this by finding the lmutil command in the Rational Common Dir by looking for these registry Values (in this order):
+			HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Common\CommonDir
+			HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\2.0\Daemonlocs
+			HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\1.0\Daemonlocs
+			HKEY_LOCAL_MACHINE\SOFTWARE\Flexlm License Manager\lmgrd
+			Run lmutil lmstat -a to an output file
+		Rational license server log file.
+			Copies file at HKEY_LOCAL_MACHINE\SOFTWARE\Flexlm License Manager\LMGRD_LOG_FILE
+			License files from:
+			LicensePerm, LicensePermServer, LicenseTemp, and LicenseTempServer values in one of these 3 keys (in this order):
+			HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\8.0
+			HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\2.0
+			HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\2.0
+		OUTPUT: in the .zip folder
+			FlexLM/HKEY_LOCAL_MACHINE.Software.FlexLM_License_Manager.txt
+			FlexLM/HKEY_LOCAL_MACHINE.Software.Rational_Software.Licensing.txt
+			FlexLM/HKEY_CURRENT_USER.Software.Rational_Software.Licensing.txt
+			
+	-->
+	<!-- FLEX LM -->
+	<macrodef name="win_getRationalFlexLMInfo">
+		<sequential>
+		
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.license.flexlm.step" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Collecting FlexLM information"
+					replace="${autopdts};;${step.count}"
+					id="2088"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- 64 bit systems -->
+			<win_collectRegistryInfo prefix="${FlexLM.prefix}" filename="FlexLM_License_Data_registry_64.txt" regkey="HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\FLEXlm License Manager"/>
+			<win_collectRegistryInfo prefix="${FlexLM.prefix}" filename="System_RCL_License_Data_registry_64.txt" regkey="HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Rational Software\Licensing"/>
+			
+			<!-- registry exports - put the output in FlexLM directory -->
+			<win_collectRegistryInfo prefix="${FlexLM.prefix}" filename="FlexLM_License_Data_registry.txt" regkey="HKEY_LOCAL_MACHINE\SOFTWARE\Flexlm License Manager"/>
+			<win_collectRegistryInfo prefix="${FlexLM.prefix}" filename="System_RCL_License_Data_registry.txt" regkey="HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing"/>
+			<win_collectRegistryInfo prefix="${FlexLM.prefix}" filename="User_RCL_License_Data_registry.txt" regkey="HKEY_CURRENT_USER\Software\Rational Software\Licensing"/>
+
+			
+			<!-- Get License server status --> 
+			<!-- get common location -->			
+			<internal.win_getRationalCommonLocation  />
+			<!-- lmutil lmstat -->
+			<autopd_if isTrue="${rational.common.dir.isValid}">				
+				<internal.collectLmutilInfo lmutil.location="${rational.common.dir}\lmutil.exe" />
+			</autopd_if>
+			<autopd_if isNotTrue="${rational.common.dir.isValid}">
+				<!-- no license ! log it -->
+				<util.logToFile prefix="${FlexLM.prefix}" msg="Rational Common directory not found from registry keys." output="RATIONAL_COMMON_DIR_NOT_FOUND.txt"/>
+			</autopd_if>
+			
+			
+			<!-- get Rational License server log -->			
+			<internal.win_collectFlexLMServerLog />
+			
+			<!-- grab dat files from registry -->			
+			<internal.win_getRationalLicenseingLogs/>
+			
+			<!-- get Rational Telelogic info -->
+			<internal.win.get.telelogic.FlexLMinfo prefix="${FlexLM.prefix}"/>
+			
+		</sequential>
+	</macrodef>
+
+   	<!-- Windows:  internal.win_getRationalLicenseingLogs
+		Collects dat files from registry
+		Start with HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licenseing\8.0
+		then with HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licenseing\2.0
+		and then move to HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licenseing\1.0
+	
+		OUTPU: see output for macro = internal.win_getRationalLicenseServerLogs
+	-->	
+    <macrodef name="internal.win_getRationalLicenseingLogs">
+        <sequential>
+			<echo message=""/>
+        	<internal.win_getRationalLicenseServerLogs
+			   regkey="SOFTWARE\Rational Software\Licensing\8.0"
+			   altRegKey="SOFTWARE\Wow6432Node\Rational Software\Licensing\8.0"
+			   prefix="${FlexLM.prefix}/Licensing_8.0"/>
+			<internal.win_getRationalLicenseServerLogs
+			   regkey="SOFTWARE\Rational Software\Licensing\2.0"
+			   altRegKey="SOFTWARE\Wow6432Node\Rational Software\Licensing\2.0"
+			   prefix="${FlexLM.prefix}/Licensing_2.0"/>
+			<internal.win_getRationalLicenseServerLogs
+			   regkey="SOFTWARE\Rational Software\Licensing\1.0"
+			   altRegKey="SOFTWARE\Wow6432Node\Rational Software\Licensing\1.0"
+			   prefix="${FlexLM.prefix}/Licensing_1.0"/>
+        </sequential>
+    </macrodef>
+
+			   	
+	<!-- Windows:
+		Collects log file specified by registry key. 
+		HKEY_LOCAL_MACHINE\SOFTWARE\Flexlm License Manager\LMGRD_LOG_FILE or
+		HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\FLEXlm License Manager\FLEXlm License Manager\LMGRD_LOG_FILE
+		
+		OUTPUT:  FlexLM/<log found>
+			- or FlexLM/Flexlm_License_Manager_LMGRD_LOG_FILE_NOT_FOUND.txt
+	-->	
+    <macrodef name="internal.win_collectFlexLMServerLog">
+        <sequential>
+        	<echo message=" "/>
+        	<wsnlsecho key="ratl.license.flexlm.logdir.win" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Collecting license server logs specified in registry key SOFTWARE\\Flexlm License Manager\\LMGRD_LOG_FILE"					
+					id="2088"
+					level="info"
+					messagePrefix="CWPDD"/>
+						
+			<rtl.windows_registry_access propertyName="rational.flexlm.log.dir"  registryKey="SOFTWARE\Flexlm License Manager\LMGRD_LOG_FILE" altRegisteryKey="SOFTWARE\Wow6432Node\Flexlm License Manager\LMGRD_LOG_FILE"/>
+			<echo message="rational.flexlm.log.dir = ${rational.flexlm.log.dir}"/>
+        		
+			<internal.win_checkValidDir propertyName="rational.flexlm.log.dir"/>
+			<autopd_if isTrue="${rational.flexlm.log.dir.isValid}">
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}/log" outputencoding="UTF-8">
+					<fileset dir="${rational.flexlm.log.dir}"/>
+				</copy>	
+			</autopd_if>
+    		<!-- fix for 1569 -->
+			<autopd_if isNotTrue="${rational.flexlm.log.dir.isValid}">
+	            <autopd_unset_property name="is.logdir.registry.set"/>
+	            <condition property="is.logdir.registry.set">
+	                   <isset property="rational.flexlm.log.dir"/>
+	            </condition>
+	            <autopd_if isNotTrue="${is.logdir.registry.set}">
+	            	<autopdproperty name="flexlm.logdir.moreinfo" value="Registry key [HKEY_LOCAL_MACHINE\SOFTWARE\Flexlm License Manager\LMGRD_LOG_FILE] not set"/>
+	            </autopd_if>
+        		<autopd_if isTrue="${is.logdir.registry.set}">
+	            	<autopdproperty name="flexlm.logdir.moreinfo" value="Directory '${rational.flexlm.log.dir}' not found or not accessible"/>
+	            </autopd_if>
+	            
+				<util.logToFile prefix="${FlexLM.prefix}" 
+	                msg="no log files found for Flexlm License Manager. ${line.separator}${flexlm.logdir.moreinfo}" 
+					output="Flexlm_License_Manager_LMGRD_LOG_FILE_NOT_FOUND.txt"/>
+			</autopd_if>
+        </sequential>
+    </macrodef>
+		
+	
+	<!-- This macro sets: ${rational.flexlm.dat} -->
+	<macrodef name="internal.win.getFlexLMServerDatPath">
+		<sequential>
+			<autopd_unset_property name="rational.flexlm.dat"/>
+			<autopd_unset_property name="rational.flexlm.64.dat"/>
+			
+			<rtl.windows_registry_access propertyName="rational.flexlm.dat"  registryKey="SOFTWARE\FLEXlm License Manager\License" altRegisteryKey="SOFTWARE\Wow6432Node\FLEXlm License Manager\License"/>
+			<rtl.windows_registry_access propertyName="rational.flexlm.64.dat"  registryKey="SOFTWARE\FLEXlm License Manager\FLEXlm License Manager\License" altRegisteryKey="SOFTWARE\Wow6432Node\FLEXlm License Manager\FLEXlm License Manager\License"/>
+			
+			<!-- check to see if the 64 bit value is set -->
+			<autopd_unset_property name="is.dat.64.registry.set"/>
+			<condition property="is.dat.64.registry.set">
+                  <isset property="rational.flexlm.64.dat"/>
+            </condition>
+			
+			<!-- if set , then copy over, if not, no change -->
+			<autopd_if isTrue="${is.dat.64.registry.set}">
+				<autopdproperty name="rational.flexlm.dat" value="${rational.flexlm.64.dat}"/>
+			</autopd_if>			
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="internal.win.get.telelogic.FlexLMinfo">
+		<attribute name="prefix"/>
+		<sequential>
+			<autopd_unset_property name="rational.tele.lic.log"/>
+			<autopd_unset_property name="rational.tele.lic.dat"/>
+			<autopd_unset_property name="rational.flex.lic.log"/>
+			<autopd_unset_property name="rational.flex.lic.dat"/>
+
+			<rtl.windows_registry_access propertyName="rational.tele.lic.log"  registryKey="SOFTWARE\FLEXlm License Manager\Telelogic License Manager\LMGRD_LOG_FILE" altRegisteryKey="SOFTWARE\Wow6432Node\FLEXlm License Manager\Telelogic License Manager\LMGRD_LOG_FILE"/>
+			<rtl.windows_registry_access propertyName="rational.tele.lic.dat"  registryKey="SOFTWARE\FLEXlm License Manager\Telelogic License Manager\License" altRegisteryKey="SOFTWARE\Wow6432Node\FLEXlm License Manager\Telelogic License Manager\License"/>
+			<rtl.windows_registry_access propertyName="rational.flex.lic.log"  registryKey="SOFTWARE\FLEXlm License Manager\FLEXlm License Manager\LMGRD_LOG_FILE" altRegisteryKey="SOFTWARE\Wow6432Node\FLEXlm License Manager\FLEXlm License Manager\LMGRD_LOG_FILE"/>
+			<rtl.windows_registry_access propertyName="rational.flex.lic.dat"  registryKey="SOFTWARE\FLEXlm License Manager\FLEXlm License Manager\License" altRegisteryKey="SOFTWARE\Wow6432Node\FLEXlm License Manager\FLEXlm License Manager\License" />
+			
+			<saveresourcebundleproperty bundle="properties/RATLSHARE/autopd" propertyName="flexlm.collect.message"  key="ratl.license.collect.file" 
+				 			message="Collecting file specified by: {0}" replace="[HK_LOCAL_MACHINE\SOFTWARE\FLEXlm License Manager\Telelogic License Manager\LMGRD_LOG_FILE]"/>
+			<internal.check.and.collect file="${rational.tele.lic.log}" prefix="@{prefix}" message="${flexlm.collect.message}"/>
+			
+			<saveresourcebundleproperty bundle="properties/RATLSHARE/autopd" propertyName="flexlm.collect.message"  key="ratl.license.collect.file"
+							message="Collecting file specified by: {0}" replace="[HK_LOCAL_MACHINE\SOFTWARE\FLEXlm License Manager\Telelogic License Manager\License]"/>						
+			<internal.check.and.collect file="${rational.tele.lic.dat}" prefix="@{prefix}" message="${flexlm.collect.message}"/>
+			
+			<saveresourcebundleproperty bundle="properties/RATLSHARE/autopd" propertyName="flexlm.collect.message"  key="ratl.license.collect.file"
+							message="Collecting file specified by: {0}" replace="[HK_LOCAL_MACHINE\SOFTWARE\FLEXlm License Manager\FLEXlm License Manager\LMGRD_LOG_FILE]"/>
+			<internal.check.and.collect file="${rational.flex.lic.log}" prefix="@{prefix}" message="${flexlm.collect.message}"/>
+			
+			<saveresourcebundleproperty bundle="properties/RATLSHARE/autopd" propertyName="flexlm.collect.message"  key="ratl.license.collect.file"
+							message="Collecting file specified by: {0}" replace="[HK_LOCAL_MACHINE\SOFTWARE\FLEXlm License Manager\FLEXlm License Manager\License]"/>
+			<internal.check.and.collect file="${rational.flex.lic.dat}" prefix="@{prefix}"  message="${flexlm.collect.message}"/>			
+			
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="internal.check.and.collect">
+		<attribute name="file"/>
+		<attribute name="message"/>
+		<attribute name="prefix"/>
+		<sequential>
+			<!-- check to see if file available and set  -->
+			<autopd_unset_property name="is.file.available"/>
+			<condition property="is.file.available">
+				<and>
+				  <available file="@{file}" type="file"/>
+				</and>
+            </condition>			 
+			<autopd_if isTrue="${is.file.available}">
+				<echo message="@{message}"/>
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">				
+					<fileset file="@{file}"/>
+				</copy>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+
+	
+	<!-- Windows :  get Rational License Server logs, against base registry key 
+	   If regkey is valid, the following files in these values are collected
+	   	   LicensePerm, LicensePermServer, LicenseTemp, and LicenseTempServer	   
+	   input: registry key without HKEY_LOCAL_MACHINE
+	   		example: SOFTWARE\Rational Software\Licensing\2.0
+	   output:
+	   		regkey.isValid = true | false
+	-->
+	<macrodef name="internal.win_getRationalLicenseServerLogs">
+		<attribute name="regkey"/>
+		<attribute name="altRegKey"/>
+		<attribute name="prefix"/>
+		<sequential>
+			<echo message=""/>
+	   	 	<wsnlsecho key="ratl.license.flexlm.server.log.win" 
+				bundle="properties/RATLSHARE/autopd"
+				message="Collecting Rational License Server logs in registry key {0}"
+				replace="@{regkey}"
+				id="2088"
+				level="info"
+				messagePrefix="CWPDD"/>
+	   	   	
+			<autopd_unset_property name="license.perm"/>
+			<autopd_unset_property name="license.perm.server"/>
+			<autopd_unset_property name="license.temp"/>
+			<autopd_unset_property name="license.temp.server"/>
+			
+			<rtl.windows_registry_access propertyName="license.perm"  registryKey="@{regkey}\LicensePerm" altRegisteryKey="@{altRegKey}\LicensePerm"/>			
+			<rtl.windows_registry_access propertyName="license.perm.server"  registryKey="@{regkey}\LicensePermServer" altRegisteryKey="@{altRegKey}\LicensePermServer"/>
+			<rtl.windows_registry_access propertyName="license.temp"  registryKey="@{regkey}\LicenseTemp" altRegisteryKey="@{altRegKey}\LicenseTemp"/>
+			<rtl.windows_registry_access propertyName="license.temp.server"  registryKey="@{regkey}\LicenseTempServer" altRegisteryKey="@{altRegKey}\LicenseTempServer"/>
+			
+			<!-- check to see if this is set -->
+			<autopd_unset_property name="is.set.license.perm"/>
+			<condition property="is.set.license.perm">
+				<isset property="license.perm"/>
+			</condition>
+			<autopd_if isNotTrue="${is.set.license.perm}">
+				<wsnlsecho key="ratl.license.perm.not.set" 
+				    	bundle="properties/RATLSHARE/autopd"
+				    	message="license.perm not set in {0}"
+				    	replace="@{regkey}"
+				    	id="2088"
+				    	level="info"
+						messagePrefix="CWPDD"/>
+
+			</autopd_if>
+			<autopd_if isTrue="${is.set.license.perm}">
+				<echo message="license.perm = ${license.perm}"/>
+				<echo message="license.perm.server = ${license.perm.server}"/>
+				<echo message="license.temp = ${license.temp}"/>
+				<echo message="license.temp.server = ${license.temp.server}"/>
+				
+				<!-- zip the files found - this does not fail if files are not found -->
+				<copy todir="${isadcTempOut}/@{prefix}" outputencoding="UTF-8">				
+					<fileset file="${license.perm}"/>
+					<fileset file="${license.perm.server}"/>	
+					<fileset file="${license.temp}"/>
+					<fileset file="${license.temp.server}"/>
+				</copy>
+			</autopd_if>
+			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- Windows :  get Rational Common directory via windows registry entry
+		Will check each registry key- to determine - whether it has a value + that location is valid. 
+		INPUT: NONE
+		OUTPUT: 
+			- rational.common.dir.isValid:  true | unset				
+			- rational.common.dir : location of the common directory.
+			
+	-->
+	<macrodef name="internal.win_getRationalCommonLocation">
+		<sequential>
+		  <echo message=""/>			
+		  <wsnlsecho key="ratl.license.flexlm.common.dir" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Looking for Rational common directory location"					
+					id="2088"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- look for common location in order -->
+			<autopd_unset_property name="rational.common.dir"/>
+			
+			<!-- check 1. HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Common\CommonDir -->
+	        <rtl.windows_registry_access propertyName="rational.common.dir"  registryKey="SOFTWARE\Rational Software\Common\CommonDir" altRegisteryKey="SOFTWARE\Wow6432Node\Rational Software\Common\CommonDir"/>
+			<internal.win_checkValidDir propertyName="rational.common.dir"/>			
+			
+			<!-- continue if not valid -->
+			<autopd_if isNotTrue="${rational.common.dir.isValid}">
+				<!-- check 2.  HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\8.0\Daemonlocs -->				
+			    <rtl.windows_registry_access propertyName="rational.common.dir"  registryKey="SOFTWARE\Rational Software\Licensing\8.0\Daemonlocs" altRegisteryKey="SOFTWARE\Wow6432Node\Rational Software\Licensing\8.0\Daemonlocs"/>
+				<internal.win_checkValidDir propertyName="rational.common.dir"/>
+				
+				<autopd_if isnottrue="${rational.common.dir.isValid}">
+									
+					<!-- check 3.  HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\2.0\Daemonlocs -->
+					<rtl.windows_registry_access propertyName="rational.common.dir"  registryKey="SOFTWARE\Rational Software\Licensing\2.0\Daemonlocs" altRegisteryKey="SOFTWARE\Wow6432Node\Rational Software\Licensing\2.0\Daemonlocs"/>				
+					<internal.win_checkValidDir propertyName="rational.common.dir"/>
+					
+					<autopd_if isnottrue="${rational.common.dir.isValid}">
+						<!-- check 4.  HKEY_LOCAL_MACHINE\SOFTWARE\Rational Software\Licensing\1.0\Daemonlocs -->
+						<rtl.windows_registry_access propertyName="rational.common.dir"  registryKey="SOFTWARE\Rational Software\Licensing\1.0\Daemonlocs" altRegisteryKey="SOFTWARE\Wow6432Node\Rational Software\Licensing\1.0\Daemonlocs"/>
+						<internal.win_checkValidDir propertyName="rational.common.dir"/>
+						
+						<autopd_if isnottrue="${rational.common.dir.isValid}">						
+							<!-- check 4.  HKEY_LOCAL_MACHINE\SOFTWARE\Flexlm License Manager\lmgrd -->
+							<rtl.windows_registry_access propertyName="rational.common.dir"  registryKey="SOFTWARE\Flexlm License Manager\lmgrd" altRegisteryKey="SOFTWARE\Wow6432Node\Flexlm License Manager\lmgrd"/>						
+							<!-- last check ! --> 
+							<internal.win_checkValidDir propertyName="rational.common.dir"/>
+						</autopd_if>
+						
+					</autopd_if>
+				</autopd_if>
+				
+			</autopd_if>
+			
+			<!-- debug echos -->
+			<echo message="rational.common.dir = ${rational.common.dir}"/>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- returns :
+		<propertyName>.isValid : true | unset 
+		-->
+	<macrodef name="internal.win_checkValidDir">
+	<attribute name="propertyName"/>
+	<sequential>
+		<!-- retrive the value contained in the property -->
+		<autopdproperty name="propertyValue" value="${@{propertyName}}"/>
+		<autopd_unset_property name="@{propertyName}.isValid"/>
+		
+		<!-- not "" && availabel -->
+		<condition property="@{propertyName}.isValid">
+			<and>
+				<not>
+					<equals arg1="" arg2="${propertyValue}"/>
+				</not>
+				<available file="${propertyValue}" type="dir"/>
+			</and>
+		</condition>
+		
+	</sequential>
+	</macrodef>
+	
+	
+
+    <!-- Windows/Linux:
+    	Executes @{lmutil.location} lmstat -a  
+    	collects the resulting output in FlexLM/Lmutil_lmstat_out.txt
+    	
+    	INPUT:
+    	   win: lmutil.location => @{rational.common.dir}\lmutil.exe 
+    	   unix : lmutil.location => @{license.exe.dir}/lmutil   
+    		- Make sure that this value has been validated.
+    		
+    	OUTPUT (stored in .zip file)
+    		- FlexLM/Lmutil_lmstat_out.txt if lmutil is found
+    		- FlexLM/RATIONAL_LMUTIL_NOT_FOUND.txt if lmutil is not found
+    	-->
+	<macrodef name="internal.collectLmutilInfo">
+		<attribute name="lmutil.location" />
+		<sequential>
+			<echo message=" "/>
+		   	<wsnlsecho key="ratl.license.flexlm.lmutil" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Collecting lmutil information"					
+					id="2088"
+					level="info"
+					messagePrefix="CWPDD"/>
+		   		
+		   	<!-- execute lmutil -->
+			<autopdproperty name="lmutil.location" value="@{lmutil.location}"/>
+		   		
+			<autopd_unset_property name="hasLmUtil"/>
+			<available file="${lmutil.location}" property="hasLmUtil"/>
+			<autopd_if isTrue="${hasLmUtil}">
+				<autopdproperty name="lmutil.outfile" value="Lmutil_lmstat_out.txt"/>
+				<autopdproperty name="lmutil.command" value="lmutil lmstat -a"/>				
+				<wsnlsecho key="ratl.general.executing" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Running command: {0}"
+						replace="${lmutil.command}"
+						id="2001"
+						level="info"
+						messagePrefix="CWPDD"/>
+							
+				<exec executable="${lmutil.location}" dir="."  failifexecutionfails="false" failonerror="false" 
+					output="${autopdtmp}/${lmutil.outfile}" 
+					append="false">	
+					<arg line="lmstat -a" />
+				</exec>
+				<copy todir="${isadcTempOut}/${FlexLM.prefix}" outputencoding="UTF-8">
+					<fileset file="${autopdtmp}/${lmutil.outfile}"/>
+				</copy>
+			</autopd_if>
+			<autopd_if isNotTrue="${hasLmUtil}">
+				<util.logToFile prefix="${FlexLM.prefix}" msg="Rational lmutil.exe not found in ${lmutil.location}" output="RATIONAL_LMUTIL_NOT_FOUND.txt"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	
+</project>

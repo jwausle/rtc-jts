@@ -1,0 +1,36 @@
+
+
+Aggiornare un RM già installato
+
+Note:
+      - Questo script aggiorna RM. Per ulteriori informazioni, fare riferimento all'argomento della guida "Aggiornamento della soluzione Rational per CLM".
+      - Eccezione durante la visualizzazione di questa guida, questo script deve essere eseguito dalla directory JazzInstallRoot/server.
+
+Uso:
+    rm_upgrade
+         -oldApplicationHome <valore> -- Il percorso completo della directory di configurazione del server RM della vecchia installazione.  In caso di installazione tipica, il percorso è <Installazione RM>/server/conf.
+         [-oldJTSHome <value>] --Percorso completo della directory di configurazione del server JTS dell'installazione precedente. Per un'installazione tipica, questo percorso è <installazione JTS>/server/conf.
+         [-applicationContextRoot rdm] -- Root di contesto RM.
+         [-db.jdbc.location <nessun valore>] -- Il percorso della posizione del database RM 5.0; questo database deve essere una copia esatta del DB JTS da 4.0.X.
+         [-db.jdbc.password <nessun valore>] -- La password del database JDBC. 
+         [-db.db2i.schema.name <nessun valore>] -- Il nome dello schema DB2i. Utilizzato solo per il tipo di database DB2i.
+         [-db.db2.dsn.dbname <nessun valore>] -- Il DBName DSN DB2. Utilizzato solo per il tipo di database DB2z.
+         [-db.schemaPrefix <nessun valore>] -- Il prefisso dello schema DB. Utilizzato solo per il tipo di database DB2z.
+  		 [-oldApplicationVersion <nessun valore>] -- La versione che viene aggiornata.  Per impostazione predefinita, ciò è determinata mediante l'esecuzione di repotools -version sulla vecchia applicazione RM.
+         [-updateTomcatFiles <sì (predefinito) | no>] -- Indica se aggiornare i file di configurazione Tomcat.
+         [-oldApplicationTomcatHome <nessun valore>] -- Il percorso completo della directory root Tomcat RM della vecchia installazione.  Per impostazione predefinita, il valore del parametro oldApplicationTomcatHome deriva dal valore del parametro oldApplicationHome.
+         [-oldJTSTomcatHome <nessun valore>] -- Il percorso completo della directory root Tomcat JTS della vecchia installazione.  Per impostazione predefinita, il valore del parametro oldJTSTomcatHome deriva dal valore del parametro oldJTSHome.
+         [-newApplicationHome conf] -- Il percorso della directory di configurazione del server RM della nuova installazione.
+         [-newJTSHome <nessun valore>] -- Il percorso completo della directory di configurazione del server JTS del JTS che sarà utilizzato dalla nuova installazione. Per impostazione predefinita, il valore del parametro newJTSHome deriva dal valore del parametro newApplicationHome.
+         [-newJTSContextRoot jts] -- La root di contesto JTS della nuova installazione.
+	     [-newApplicationTomcatHome <nessun valore>] -- Il percorso della directory home Tomcat RM della nuova installazione. Per impostazione predefinita, il valore del parametro newApplicationTomcatHome deriva dal valore del parametro newApplicationHome.
+         [-newJTSTomcatHome <nessun valore>] -- Il percorso della directory home Tomcat JTS del JTS che sarà utilizzato dalla nuova installazione. Per impostazione predefinita, il nuovo valore del parametro JTSTomcatHome deriva dal valore del parametro newJTSHome.
+         [-ignoreJTSVersionCheck] -- Non provare a verificare che la versione dell'applicazione è compatibile con la versione JTS presente su newJTSHome.  Questo argomento deve essere utilizzato solo in un ambiente distribuito in cui JTS si trova su un sistema separato a cui non è possibile accedere dal sistema dell'applicazione.
+         [-noPrompt] -- Non richiede prima di creare o modificare le tabelle.
+         [-noEditor] -- Non apre un editore sul file teamserver.properties.
+         [-noVerify] -- Non esegue la verifica dei file teamserver.properties.
+         [-noStepPrompt] -- Non richiede prima di eseguire un passo.
+
+Esempi:
+   upgrade/rm/rm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer4_0/rm/server/conf 
+

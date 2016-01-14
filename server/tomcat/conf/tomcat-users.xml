@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?><!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2011, 2015. All Rights Reserved.
+   
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ -->
+
+<tomcat-users>
+  <role rolename="JazzUsers"/>
+  <role rolename="JazzAdmins"/>
+  <role rolename="JazzGuests"/>
+  <role rolename="JazzProjectAdmins"/>
+  <role rolename="manager-gui"/>
+  <user username="ADMIN" password="b521caa6e1db82e5a01c924a419870cb72b81635" roles="JazzUsers,JazzAdmins,JazzProjectAdmins"/>
+</tomcat-users>

@@ -1,0 +1,16 @@
+{ 
+  "taxonomy":"SAMPLE_COLLECTOR",
+  "version":"2.0.1",
+  "name":"Sample Collector",
+  "productDeltas": "deltas/rational_isadcDelta_2.0.1.zip" ,
+  "productStandAlone": [
+				{ "win": "standalone/rational_isadc_2.0.1.zip" },
+				{ "unix": "standalone/rational_isadc_2.0.1.tar.gz" }
+			],
+	  "isaCoreBuildId": "2.0.1",
+	  "licenseURL": "" ,
+	  "libJarsURL": "lib/rational_isadc_2.0.1.jar,",
+      "supportedLocales":""
+}
+	
+

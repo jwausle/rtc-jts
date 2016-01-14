@@ -1,0 +1,401 @@
+<?xml version="1.0" ?>
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!-- Code to modify/update log / trace settings -->
+
+<project name="rational_settings_shared"> 
+    
+	<!-- Set script.basedir and bundle.basedir as described in the AutoPD/ISA Script Compatibility Guidelines document  -->
+	<dirname property="rational.settings.shared.targets.basedir" file="${ant.file.rational_settings_shared}" />
+	<dirname property="rational.settings.shared.script.parentdir" file="${rational.settings.shared.targets.basedir}" />
+	<dirname property="rational.settings.shared.bundle.basedir" file="${rational.settings.shared.bundle.parentdir}" />
+
+	<!-- import the common file --> 
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_eclipse_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_im_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATL_CUSTOM/rational.custom.taskdef.xml" osgiBundle="com.ibm.esupport.client.product.rational.custom.shared"/>
+	
+	<!-- ISADC needs -->
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+
+	
+	<!-- ============================================================== -->
+	<!--  Utilities to modify .properties file                          -->
+	<!-- ============================================================== -->	
+	<!-- Enable logging: 
+	   - Determines the availability of the target preference file.
+	   - if not available, determine whether default should be created
+	   - Update the target preference file with updating content -
+	       - provided by createMergeFile	      
+	   INPUT:
+	      targetPrefFile : target file containing logging settings
+	      createDefault : true  - if to create a default
+	      
+	      <createDefaultLoggingFile> :  code element that creates default logging file.
+	      	- This will only be run if createDefault is valid.
+	      	- This also should create the targetPrefFile
+	      	
+	      <createMergeFile> : code element that creates the update content.
+	          - MUST: define a "mergeFile" property 
+	          
+	   OUTPUT:
+	      backup.file :  value for backup file.
+	      logfileAvailable : whether the target log file is available
+	      
+	      has.logging.enable.error : true | false  : true if there is an error when trying to update logging file. 
+	      logging.enable.error.msg : error message 
+	-->
+	<property name="NO.BACKUP" value="NO_FILE_FOR_BACKUP"/>
+	
+	<macrodef name="enable.properties.LoggerSetting">		
+		<attribute name="targetPrefFile"/>  <!-- @{workspace}/${targetPath} -->
+		<attribute name="createDefault" default="false"/> 
+		<element name="createDefaultLoggingFile" optional="true"/>
+		<element name="createMergingContent"/>  <!-- must result in an attribute mergeFile -->
+		<sequential>
+			
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.settings.enable.step" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="[{0}] Step {1}: Updating {2} to enable logging"
+    				replace="${autopdts};;${step.count};;@{targetPrefFile}"
+    				id="2086"
+    				level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- SET UP & Validate -->
+			<autopd_unset_property name="has.logging.enable.error"/>
+			<autopdproperty name="logging.enable.error.msg" value=""/>
+			
+			
+			<!-- VALIDATE: determine preference directory can be read/write -->
+			<!-- This is to allow backup + default preferences file (create DefaultLoggingFile) to be written -->
+			<autopd_unset_property name="targetPrefFile.dir"/>
+			<dirname file="@{targetPrefFile}" property="targetPrefFile.dir"/>
+			<autopd_unset_property name="has.valid.parentDir"/>
+			<condition property="has.valid.parentDir">
+				<and>
+					<available file="${targetPrefFile.dir}" type="dir"/>
+					<user_access file="${targetPrefFile.dir}" accessType="w"/>
+				</and>
+			</condition>
+			
+			<!-- VALIDATION: Failed -->
+			<autopd_if isNotTrue="${has.valid.parentDir}">
+				<autopdproperty name="has.logging.enable.error" value="true"/>
+				<autopdproperty name="logging.enable.error.msg" value="Directory '${targetPrefFile.dir}' not available or cannot be written to for creating backup for file '@{targetPrefFile}'"/>
+			</autopd_if>
+			
+			<!-- Can write to directory -->
+			<autopd_if isTrue="${has.valid.parentDir}">
+			
+				<!-- this variable serves to :
+					- determine whether a log file previously exist
+					- or the actual backup file name
+				-->
+				<autopd_unset_property name="backup.file"/>
+				<autopdproperty name="run_merge_content" value="true"/> <!-- flag -->
+					
+				<!-- Determine whether preference file is available  -->
+				<autopd_unset_property name="logfileAvailable"/>
+				<available file="@{targetPrefFile}" property="logfileAvailable"/>
+					
+				<!-- If file available:  Create a backup & check read/write --> 
+				<autopd_if isTrue="${logfileAvailable}">
+					
+					<!-- check file read/writeable -->
+					<condition property="has.logging.enable.error">
+						<not>
+							<user_access file="@{targetPrefFile}" accessType="rw"/>
+						</not>
+					</condition>
+					
+					<!-- if file not read writeable -->
+					<autopd_if isTrue="${has.logging.enable.error}">
+						<autopdproperty name="logging.enable.error.msg" value="Cannot update '@{targetPrefFile}' to enable trace."/>
+						<autopdproperty name="run_merge_content" value="false"/>  <!-- don't run merge code -->
+					</autopd_if>
+					<autopd_if isNotTrue="${has.logging.enable.error}">
+						<util.createBackup inputfile="@{targetPrefFile}"/>
+						<autopdproperty name="backup.file" value="${backupFile}"/>
+					</autopd_if>
+	
+				</autopd_if>
+				
+				<!-- if file not available: determine course of action depending on whether to create a default file  -->
+				<autopd_if isNotTrue="${logfileAvailable}">
+					<autopd_if isTrue="@{createDefault}">
+						<!-- if default logging file can be created, then should be read/writeable -->
+						<createDefaultLoggingFile />					
+					</autopd_if>
+					<autopd_if isNotTrue="@{createDefault}">
+						<!-- don't run merge code -->
+						<autopdproperty name="run_merge_content" value="false"/>
+						<wsnlsecho key="ratl.settings.preference.notfound" 
+				    				bundle="properties/RATLSHARE/autopd"
+				    				message="Preference file not found : {0}"
+				    				replace="@{targetPrefFile}"
+				    				id="2087"
+				    				level="warning"
+									messagePrefix="CWPDD"/>
+				    	<!-- log error -->
+				    	<autopdproperty name="has.logging.enable.error" value="true"/>
+						<autopdproperty name="logging.enable.error.msg" value="Preference file not found : '@{targetPrefFile}'"/>
+					</autopd_if>
+					<autopdproperty name="backup.file" value="${NO.BACKUP}"/>
+				</autopd_if>
+				
+				<!-- merge content - if run_merge_content is true -->
+				<!-- This includes appropriate file write permission checking -->
+				<autopd_if isTrue="${run_merge_content}">
+					<createMergingContent/>
+					
+					<!-- merge the properties -->
+					<propertychanger filename="@{targetPrefFile}" updatePropertyFileName="${mergeFile}" />
+					
+					<!-- workaround for : defect 14673 . -->
+					<internal.workaround.14673.postprocess file="@{targetPrefFile}.bak"/>
+					
+							
+					<!-- new contents are in @{iv.file}.bak - move it to @{iv.file} -->			
+					<move file="@{targetPrefFile}.bak" tofile="@{targetPrefFile}"/>
+				</autopd_if>
+			</autopd_if>
+						
+		</sequential>			 
+	</macrodef>
+		
+	<!-- workaround for defect 14673. File content has \: replaced with : and workback for preprocess-->
+	<!-- NOTE: defect escapes only - non escaped special characters 
+	        that is - if source contains : => propertychanger => \: 
+	                - if source contains \: => propertychanger => \:
+	        This impacts ! also, and possibly other characters. 
+	     possible additional work to preprocess file if this defect is not fixed. 
+	  -->	
+	<macrodef name="internal.workaround.14673.postprocess">
+		<attribute name="file"/>
+		<sequential>
+            <autopd_unset_property name="file.content"/>
+			<loadfile property="file.content" srcFile="@{file}"/>
+			
+			<!-- replace with some known replacements -->
+			<autopdreplace property="file.content" token="\\:" value="__RATIONAL_RCS_FILLER__"/>
+			<autopdreplace property="file.content" token="__RATIONAL_RCS_FILLER__" value=":"/>
+			<autopdreplace property="file.content" token="\\!" value="__RATIONAL_RCS_FILLER__"/>
+			<autopdreplace property="file.content" token="__RATIONAL_RCS_FILLER__" value="!"/>
+
+			<echo message="${file.content}" file="@{file}"/>
+            <autopd_unset_property name="file.content"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- Disable logging: 
+	   - Determines the availability of the target preference file.
+	      - if target preference file is not available - no action
+	      
+	   - Determines the availability of the backup file & its value.
+	      - Check to see if the preference file was created for debugging purposes only..
+	         - if so, delete it. 
+	         
+	      - Then, validates the backup file 
+	      - If backup file is invalid or does not exist:
+	          - disable debug content are merged with target preference file.
+	      
+	      - If backup file is an actual file.
+	         - target prefrence file is replaced with the backup. 
+	                  
+	   INPUT:
+	      backupFile : file that contains the backup information.
+	      targetPrefFile :  target file containing logging settings	      
+	      <createDefaultLoggingFile> :  code element that creates default logging file.
+	      <createMergeFile> : code element that creates the update content.
+	          - this must define a "mergeFile" property 
+	   OUTPUT:
+	      has.logging.disable.error : true | false  : true if there is an error when trying to disable logging file. 
+	      logging.disable.error.msg : error message 
+	-->		
+	<macrodef name="disable.properties.LoggerSetting">
+		<attribute name="backupFile"/>
+		<attribute name="targetPrefFile"/>  <!-- target to restore -->
+		<element name="createDisableMergingContent" optional="true"/>
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.settings.disable.step" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="[{0}] Step {1}: Disabling logger settings for {2}"
+    				replace="${autopdts};;${step.count};;@{targetPrefFile}"
+    				id="2086"
+    				level="info"
+					messagePrefix="CWPDD"/>
+
+			<rtl.debugecho message="backupFile = @{backupFile}"/>
+			
+			<!-- Set up -->			
+			<autopdproperty name="has.logging.disable.error" value="false"/>
+			<autopdproperty name="logging.disable.error.msg" value=""/>
+
+			<!-- VALIDATE: determine whether the target file (to be updated) is available and can be updated.-->
+			<autopd_unset_property name="has.logging.disable.error"/>
+			<condition property="has.logging.disable.error">
+				<not>
+					<and>
+						<available file="@{targetPrefFile}" type="file"/>
+						<user_access file="@{targetPrefFile}" accessType="w"/>
+					</and>
+				</not>
+			</condition>
+					
+			<autopd_if isTrue="${has.logging.disable.error}">
+				<!--
+				<wsnlsecho key="ratl.settings.disable.norestore" 
+	    				bundle="properties/RATLSHARE/autopd"
+	    				message="Target file to be updated '{0}' is not available or cannot be modified."
+	    				replace="@{targetPrefFile}"
+	    				id="2086"
+	    				level="info"
+						messagePrefix="CWPDD"/>
+				-->
+	    		<!-- log error -->
+				<autopdproperty name="logging.disable.error.msg" value="Target file to be updated '@{targetPrefFile}' is not available or not read/writeable"/>
+			</autopd_if>
+			
+			<!-- VALIDATED for target file -->
+			<autopd_if isNotTrue="${has.logging.disable.error}">
+									
+				    <!-- VALIDATE: target directory read/write -->
+				   	<!-- contents are copied / moved /deleted etc from previous log files -->
+					<autopd_unset_property name="targetPrefFile.dir"/>
+					<dirname file="@{targetPrefFile}" property="targetPrefFile.dir"/>
+
+			    	<!-- CHECK: directory read/writeable -->
+					<autopd_unset_property name="has.logging.disable.error"/>
+					<condition property="has.logging.disable.error">
+						<not>
+							<user_access file="${targetPrefFile.dir}" accessType="rw"/>
+						</not>
+					</condition>
+						
+					<!-- CHECK process: original logger file available?  --> 
+					<autopd_unset_property name="hasNoOriginalLogFile"/>
+					<condition property="hasNoOriginalLogFile">
+						<equals arg1="@{backupFile}" arg2="${NO.BACKUP}"/>				
+					</condition>
+					
+					<!-- SET ERROR MSG -->
+					<autopd_if isTrue="${has.logging.disable.error}">
+						<autopd_if isTrue="${hasNoOriginalLogFile}">
+							<!-- here - process is to delete the logging file, user is asked to remove file manually.  -->
+							<autopdproperty name="logging.disable.error.msg" value="Target directory to restore trace '${targetPrefFile.dir}' cannot be read or written to. Please manually remove generated trace file: '@{targetPrefFile}'"/>
+						</autopd_if>
+						<autopd_if isNotTrue="${hasNoOriginalLogFile}">
+							<!-- here - a backup or update to the target file (if no backup) needs to happen -->
+							<autopdproperty name="logging.disable.error.msg" value="Target directory to restore trace '${targetPrefFile.dir}' cannot be read or written to. Please update the trace file '@{targetPrefFile}' manually to remove trace settings."/>
+						</autopd_if>
+					</autopd_if>
+					
+					<!-- NO LOGGING ERROR -->
+					<autopd_if isNotTrue="${has.logging.disable.error}">
+				    
+						<!-- check to see if an original logger file was available -->						
+						<autopd_if isTrue="${hasNoOriginalLogFile}">
+							<!-- this is done ONLY when @{backupFile} content specifies ${NO.BACKUP} -->
+							<delete file="@{targetPrefFile}" failonerror="false"/>
+						</autopd_if>
+						
+						<!-- if an logger file was previously available -->			
+						<autopd_if isNotTrue="${hasNoOriginalLogFile}">
+														
+							<!-- check to see if backup is valid file -->
+							<autopd_unset_property name="backupFileName"/>
+							<basename file="@{backupFile}" property="backupFileName"/>
+							<autopdproperty name="backupfile.fullpath" value="${targetPrefFile.dir}/${backupFileName}"/>
+							
+							<!-- check to make sure that backup file is in the same directory as the targetPrefFile & not empty-->
+							<autopd_unset_property name="hasValidBackupFile"/>
+							<condition property="hasValidBackupFile">
+								<and>
+									<not>
+									  <equals arg1="" arg2="@{backupFile}"/> <!-- not blank -->
+									</not>
+									<available file="${backupfile.fullpath}" type="file"/>
+								</and>
+							</condition>
+							
+							<!-- HAS BACKUP: Restoring the backup file -->
+							<autopd_if isTrue="${hasValidBackupFile}">
+								<!-- restoring -->						
+								<wsnlsecho key="ratl.settings.disable.restore" 
+					    				bundle="properties/RATLSHARE/autopd"
+					    				message="Restoring backup file {0} to {1}"
+					    				replace="${backupfile.fullpath};;@{targetPrefFile}"
+					    				id="2086"
+					    				level="info"
+										messagePrefix="CWPDD"/>						
+								<move file="${backupfile.fullpath}" tofile="@{targetPrefFile}" failonerror="false" />
+							</autopd_if>
+							
+							<!-- NO BACKUP: Merge Disable contents with the file --> 
+							<autopd_if isNotTrue="${hasValidBackupFile}">
+								<wsnlsecho key="ratl.settings.disable.notvalid" 
+						    				bundle="properties/RATLSHARE/autopd"
+						    				message="Backup file specified {0} is not valid."
+						    				replace="${backupfile.fullpath}"
+						    				id="2087"
+						    				level="warning"
+											messagePrefix="CWPDD"/>
+								
+								<wsnlsecho key="ratl.settings.disable.restore.default" 
+						    				bundle="properties/RATLSHARE/autopd"
+						    				message="Updating {0} to disable trace logging"
+						    				replace="@{targetPrefFile}"
+						    				id="2086"
+						    				level="info"
+											messagePrefix="CWPDD"/>
+														
+								<!-- updating: This scenario can happen if user removed the backup file... or ran collector simutaneously.. -->
+								<createDisableMergingContent />						
+								<propertychanger filename="@{targetPrefFile}" updatePropertyFileName="${mergeFile}" />
+								
+								<!-- workaround for : defect 14673 . -->
+								<internal.workaround.14673.postprocess file="@{targetPrefFile}.bak"/>
+										
+								<!-- new contents are in in .bak ... no checking -->
+								<move file="@{targetPrefFile}.bak" tofile="@{targetPrefFile}" failonerror="false" /> <!-- don't die on error -->
+								
+							</autopd_if> <!-- end : isNotTrue="${hasValidBackupFile} -->
+						
+						</autopd_if>  <!-- Original file was available -->
+					
+					</autopd_if>   <!-- Target preference directory parent can be written to -->
+					
+			</autopd_if> <!-- Target preference file is not read/writable -->
+			
+		</sequential>			 
+	</macrodef>	
+
+	<!-- Utility to create a merge file -->
+	<macrodef name="createFile">
+	<attribute name="outfile"/>
+	<attribute name="input"/>
+	<element name="content" optional="true"/>
+	<sequential>			
+		<concat destfile="@{outfile}">@{input}</concat>		
+	</sequential>
+	</macrodef>
+	
+</project>

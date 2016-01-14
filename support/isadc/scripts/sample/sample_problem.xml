@@ -1,0 +1,50 @@
+<project name="Sample Collector - Sample Problem" default="autopdmain">
+
+	<taskdef file="${autopdrootdir}/properties/autopdtaskdef.properties" loaderref="ISA"/>
+
+	<!-- Targets shared among multiple scripts are in the XML documents *-sharedtargets.xml. -->
+	<import>
+		<javaresource name="scripts/sharedtargets.xml"/>
+	</import>
+	
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+
+	<property name="autopdProblem" value="Sample_Problem" />
+    <property name="autopdProblem_nlsbundle" value="mycollector/resources/nls/sample_problem_strings"/>
+	
+	<target name="autopdmain" description="This is AutoPD main to control running steps"  
+	        depends="load_sharedelements_tasks,
+		             set_problem_type_with_nls_bundle,
+	                 setup_autopd_v2, 
+	            	 validate_os,
+		             sample_input_dialog_1,
+		             ftp_message_shared,
+		             ftp_collected_information_shared" >
+
+	</target>
+
+	<target name="sample_input_dialog_1" description="sample input dialog 1" >
+		
+		
+		<inputdialogtask
+			bundle="mycollector/resources/nls/sample_problem_strings"
+			actionProperty="sample_input_dialog_1.prop">
+			<fieldtask name="prompt" 
+				label="sample_input_dialog_1_label" 
+				type="prompt"  />
+			<fieldtask name="sample_input_dialog_1_ft1" 
+				label="sample_input_dialog_ft1_label" 
+				type="plaintext" 
+				defaultValue="" />
+			<fieldtask name="select1" label="Select List 1"
+				defaultValue="" list="HTTP:SOCKS"
+				listDetails="TEXAS:LOGHORNS" type="selectlist"/>
+			<fieldtask name="select2" label="Select List 2"
+				defaultValue="" list="HTTP:SOCKS"
+				listDetails="DALLAS:COWBOYS" type="selectlist"  />
+		</inputdialogtask>
+	</target>
+
+</project>

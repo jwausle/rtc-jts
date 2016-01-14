@@ -1,0 +1,36 @@
+
+
+对已安装的 RM 进行升级
+
+注：
+      - 此脚本用于升级 RM。有关更多信息，请参阅帮助主题“升级 Rational solution for CLM”。
+      - 除了显示此帮助时之外，必须从 JazzInstallRoot/server 目录运行此脚本。
+
+用法：
+    rm_upgrade
+         -oldApplicationHome <值> -- 旧安装的 RM 服务器配置目录的完整路径。对于典型安装，此路径为 <RM installation>/server/conf。
+         [-oldJTSHome <value>] -- 旧安装的 JTS 服务器配置目录的完整路径。对于典型安装，此路径为 <JTS installation>/server/conf。
+         [-applicationContextRoot rdm] -- RM 上下文根。
+         [-db.jdbc.location <none>] -- 指向 RM 5.0 数据库位置的路径；此数据库应该为 4.0.X 中 JTS 数据库的完全相同的副本。
+         [-db.jdbc.password <none>] -- JDBC 数据库密码。
+         [-db.db2i.schema.name <none>] -- DB2i 模式名称。仅用于 DB2i 数据库类型。
+         [-db.db2.dsn.dbname <none>] -- DB2 DSN 数据库名称。仅用于 DB2z 数据库类型。
+         [-db.schemaPrefix <none>] -- 数据库模式前缀。仅用于 DB2z 数据库类型。
+      		 [-oldApplicationVersion <none>] -- 要升级的版本。缺省情况下，通过对旧 RM 应用程序运行 Reptools -version 来确定此版本。
+         [-updateTomcatFiles <yes（缺省值）| no>] -- 是否更新 Tomcat 配置文件。
+         [-oldApplicationTomcatHome <none>] -- 旧安装的 RM Tomcat 根目录的完整路径。缺省情况下，oldApplicationTomcatHome 参数值源于 oldApplicationHome 参数值。
+         [-oldJTSTomcatHome <none>] -- 旧安装的 JTS Tomcat 根目录的完整路径。缺省情况下，oldJTSTomcatHome 参数值源于 oldJTSHome 参数值。
+         [-newApplicationHome conf] -- 新安装的 RM 服务器配置目录的路径。
+         [-newJTSHome <none>] -- 新安装将使用的 JTS 的 JTS 服务器配置目录的完整路径。缺省情况下，newJTSHome 参数值源于 newApplicationHome 参数值。
+         [-newJTSContextRoot jts] -- 新安装的 JTS 上下文根。
+         [-newApplicationTomcatHome <none>] -- 新安装的 RM Tomcat 主目录的路径。缺省情况下，newApplicationTomcatHome 参数值源于 newApplicationHome 参数值。
+         [-newJTSTomcatHome <none>] -- 新安装将使用的 JTS 的 JTS Tomcat 主目录的路径。缺省情况下，JTSTomcatHome 参数值源于 newJTSHome 参数值。
+         [-ignoreJTSVersionCheck] -- 不尝试验证应用程序版本与位于 newJTSHome 中的 JTS 版本兼容。只应在满足以下条件的分布式部署中使用此参数：JTS 位于从应用程序系统无法访问的另外一个系统中。
+         [-noPrompt] -- 在创建或修改表之前不提示。
+         [-noEditor] -- 不要用编辑器打开 teamserver.properties 文件。
+         [-noVerify] -- 不对 teamserver.properties 文件执行验证。
+         [-noStepPrompt] -- 执行步骤之前不提示。
+
+示例：
+   upgrade/rm/rm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer4_0/rm/server/conf 
+

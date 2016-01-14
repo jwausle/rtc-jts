@@ -1,0 +1,1746 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014, 2015. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!-- Rational Serverside Shared                                   -->
+<!-- Version to be used mainly for tomcat related data collection -->
+<!-- compatible with AutoPD 1.3.0 -->
+<!-- must use this after validate_os -->
+
+<project name="rational_serverside_shared"> 
+
+
+	<dirname property="rational.serverside.shared.targets.basedir" file="${ant.file.rational_serverside_shared}" />
+	<dirname property="rational.serverside.shared.targets.parentdir" file="${rational.serverside.shared.targets.basedir}" />
+	<dirname property="rational.serverside.shared.targets.bundle.basedir" file="${rational.serverside.shared.targets.parentdir}" />
+	
+	<!-- import the common file --> 
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_im_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_eclipse_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_automation_recovery_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_wasutil_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATL_CUSTOM/rational.custom.taskdef.xml" osgiBundle="com.ibm.esupport.client.product.rational.custom.shared"/>
+
+	<!-- ISADC needs -->
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+	
+	
+	<!-- some hardcode properties -->
+	<!-- log4j.appender.file.File property  in log4j.properties file -->
+	<property name="log4j.properties.filename" value="log4j.properties"/>  <!-- ${jazz.server}/${log4j.properties.filename} -->
+	
+	<!-- property (properties) to extract from log4j.properties -->
+	<property name="appender.file" value="log4j.appender.file.File"/>  <!-- default -->
+	<property name="appender.etl" value="log4j.appender.file.File, log4j.appender.etl.File"/>       <!-- cpa:jts:ccm:qm:converter -->
+	<property name="appender.rrdg" value="log4j.appender.file.File, log4j.appender.rrdg.File"/>     <!-- rm -->
+	<property name="appender.jrs" value="log4j.appender.file.File, log4j.appender.R.File"/>     <!-- jrs -->
+	<property name="appender.dcc" value="log4j.appender.file.File, log4j.appender.dccetl.File, log4j.appender.dccetldata.File, log4j.appender.etlDriver.File"/>     <!-- dcc -->
+	<property name="appender.gc" value="log4j.appender.file.File, log4j.appender.R.File, log4j.appender.ssoDeveloperLog.File"/>     <!-- gc -->
+	<property name="appender.vvc" value="log4j.appender.file.File"/>     <!-- vvc -->
+	<property name="appender.csm" value="log4j.appender.file.File"/>     <!-- csm -->
+	
+	<!-- handler property in logging.properties -->
+	<property name="handlers" value="handlers"/>
+	
+	<!-- ${catalina.base} hardcode locations --> 
+	<property name="tomcat.logging.properties" value="conf/logging.properties"/>   <!-- ${catalina.base}/${tomcat.logging.properties} -->
+	<property name="tomcat.jazz.eclipse" value="work/Catalina/localhost/jazz/eclipse"/> <!-- ${catalina.base}/${tomcat.jazz.eclipse} -->
+	<property name="tomcat.converter.eclipse" value="work/Catalina/localhost/converter/eclipse"/> <!-- ${catalina.base}/${tomcat.jazz.eclipse} -->
+	<property name="tomcat.default.logs.dir" value="logs"/> <!-- ${catalina.base}/${tomcat.default.logs.dir} -->
+	<property name="rtl.clm.30.product.list" value="cpa:jts:ccm:rm:qm:converter"/>
+	
+	<!-- use for log4j.properties:  format: <prod1>:<prop1>,<prop2>;< prod2>:<prop1>;" etc ugh.. --> 
+	<property name="rtl.clm.30.product.list.log4j.properties" value="rm:${appender.rrdg};cpa:${appender.etl};jts:${appender.etl};ccm:${appender.etl};qm:${appender.etl};converter:${appender.etl}"/>
+	
+	<!-- default directory to jazz configuration -->
+	<property name="jazz.default.conf.dir" value="conf"/>  <!-- relative to server.base as normally defined in JAZZ_HOME -->
+			
+	
+	<!-- ################################## -->	
+	<!--  Entry targets                     -->
+	<!-- ################################## -->
+	<!-- collects Eclipse configuration data and workspace data-->
+		<!-- SAMPLE USAGE: 
+			<target name="autopdMain" depends="init_prod, Main_collectEclipseData"/>
+		-->	
+	
+	
+	    <!-- TO USE:  SET - rtc.server.product.id.list for a list of product id to scan for. 
+	                  Please separate it via '@'
+	                  SET - rtc.server.product.version to 3.0 if want to run 3.0 product. 
+	     -->
+		<target name="Main_collectJazzServer_Tomcat_multi_product"
+			depends="load_sharedelements_tasks,		
+					set_problem_type_with_nls_bundle,
+					setup_autopd_v2,
+					validate_os,
+					check_64_bit_JVM,
+					collectServerSideEclipseData_Tomcat_multiproduct,
+					ratl.collect.exclude.list,
+					cisa_scan,
+					zip_autopd_log,
+					set_rational_upload,
+					ftp_message_shared,
+					ftp_collected_information_shared"/>
+	
+			
+	 	<!-- TO USE:  
+	 	    SET - rtc.server.product.id.list for a list of product id to scan for.
+	 	    Please separate it via '@'
+	     -->
+		<target name="Main_collectJazzClient_multi_product"
+			depends="load_sharedelements_tasks,		
+					set_problem_type_with_nls_bundle,
+					setup_autopd_v2,
+					validate_os,
+					collectClientSideEclipseData_multiproduct,
+					ratl.collect.exclude.list,
+					cisa_scan,
+					zip_autopd_log,
+					set_rational_upload,
+					ftp_message_shared,
+					ftp_collected_information_shared"/>
+			
+
+	
+	<property name="DEFAULT.rtc.server.product.id.list" value="com.ibm.team.teamconcert.server"/>
+	<property name="DEFAULT.rtc.client.product.id.list" value="com.ibm.team.teamconcert.client"/>
+	
+	<!-- ================================================================  -->
+	<!--                            Shared                                 -->
+	<!-- ================================================================  -->	
+	<target name="collectClientSideEclipseData_multiproduct">
+		
+		<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+			<fieldtask name="prompt"  label="ratl.server.jazz.client.prompt"  type="prompt" />
+			<fieldtask type="label" name="label1" label="ratl.server.jazz.client.label1"/>
+			<fieldtask type="label" name="label2a" label="ratl.server.jazz.client.label2"/>
+			<fieldtask type="label" name="label2a" label="ratl.server.jazz.client.label3"/>
+			<fieldtask type="label" name="label_blank" label="${line.separator}"/>
+			<fieldtask type="label" name="label4" label="ratl.server.ok"/>
+		</inputdialogtask_v2>
+		
+		<!-- ================ Collecting potential web info =============== -->
+		<internal.collect.rrc.browser.data/>
+		
+		<!-- ================= Calculate the product list ================= -->
+		<autopd_unset_property name="has.rtc.client.product.id.list"/>
+		<condition property="has.rtc.client.product.id.list">
+			<isset property="rtc.client.product.id.list"/>
+		</condition>
+		
+		<!-- calculate the server listing to use -->
+		<autopd_if isTrue="${has.rtc.client.product.id.list}">
+			<autopdproperty name="internal.rtc.client.product.list" value="${rtc.client.product.id.list}"/>
+		</autopd_if>
+		<autopd_if isNotTrue="${has.rtc.client.product.id.list}">
+			<autopdproperty name="internal.rtc.client.product.list" value="${DEFAULT.rtc.client.product.id.list}"/>
+		</autopd_if>
+		
+		<!-- ================== CLIENT  PROMPTS  =====================================   --> 
+		<!-- construct a list of available products - and displays  --> 
+		<getMultiProductInfoFromIM_noprompt product.id.list="${internal.rtc.client.product.list}" 
+			collect.im.data="true" 
+			display.include.path="true" />
+
+		<!-- if product list is available  -->
+		<autopd_if isTrue="${has.product.id.available}">
+			<internal.prompt.jazz.client.multi_product 
+				product.names.list="${product.display.list}" 
+				product.paths.list="${product.install.path.list}"/>						
+		</autopd_if>
+		
+		<!-- if nothing found -->		
+		<autopd_if isNotTrue="${has.product.id.available}">
+			<internal.prompt.tomcat.jazz.client.path />
+		</autopd_if>
+		
+		<!-- ==================   CLIENT COLLECT  =====================================   -->
+		<!-- collect jazz data , if not skipped. -->
+		<autopd_if isNotTrue="${is.skipped}">
+			<autopd_if isTrue="${is.valid.jazz.client.path}">			
+	    		<autopdproperty name="prefix.name" value="Jazz_Client"/>
+	    		<!-- collect -->
+	    		<collectEclipseGeneralData 
+			    		eclipse.path="${target.jazz.client}"
+		    			prefix="${prefix.name}"/>
+				
+				<!-- no product.cacheLocation returned yet.
+				<collect_dir_listing
+						targetDir="${product.cacheLocation.path}/plugins"
+						outputFile="${autopdtmp}/SHARED_PLUGIN_DIR_LIST.txt"
+						zipPrefix="${prefix.name}/EclipseSHARED/plugins" />	
+						-->		
+			</autopd_if>
+		</autopd_if>
+		
+	</target>
+	
+	<!-- Prompting for a jazz client location with multiple inputs. 
+	   Use for eclipse directories.  
+	   This loops until a valid path is available. 
+	   4.1.3.20140828 - or if it is skipped.
+	   INPUT: none
+	   OUTPUT: 
+	   		target.jazz.client   (with 'configuration' as part of the path ) 
+	   		is.valid.jazz.client.path
+	   		is.skipped - if client selection is skipped. 
+	   	-->	
+	<macrodef name="internal.prompt.jazz.client.multi_product">
+		<attribute name="product.names.list"/>
+		<attribute name="product.paths.list"/>
+		<sequential>
+			
+			<!-- Prompt -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="path.example" value="C:\Program Files\jazz\client\eclipse"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="path.example" value="/opt/jazz/client/eclipse"/>
+			</autopd_if>
+			
+			
+			<autopdproperty name="is.valid.jazz.client.path" value="false"/>
+			<autopd_unset_property name="target.jazz.client"/>
+			<autopdproperty name="error.msg" value=""/>
+			<saveresourcebundleproperty 
+		       	    bundle="properties/RATLSHARE/autopd"
+					key="ratl.general.example" 
+					propertyName="output.label"
+					replace="${path.example}"
+					message="Example: {0}" />	
+			
+			<!-- prompt -->
+			<autopdproperty name="isContinue" value="true"/>
+			<autopdwhile property="isContinue">
+				
+				<saveresourcebundleproperty key="ratl.server.path.select.option.others"
+						bundle="properties/RATLSHARE/autopd"
+						propertyName="other.choice.translate"
+						message="OTHERS (Specify below)"
+						/>
+				<autopd_unset_property name="user.script.continue"/>
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" actionProperty="user.script.continue"  doskip="true">
+					<fieldtask name="prompt" type="prompt" label="ratl.server.jazz.client.select.prompt"/>
+					<fieldtask name="target.jazz.client.product.installed"  type="selectlist" label="ratl.server.jazz.client.select.label1"
+						listdetails="@{product.names.list}@${other.choice.translate}"
+						list="@{product.paths.list}@${other.choice}"
+						delimiter="@"/>	
+					
+					<fieldtask name="label1" type="label" label="ratl.server.jazz.client.select.label2"/>
+					<fieldtask name="label2" type="label" label="${output.label}"/>						
+					<fieldtask name="target.jazz.client.browse" label="ratl.server.jazz.location"
+			        		type="filebrowser" />
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+				</inputdialogtask_v2>
+				
+				
+				<!-- check value -->
+				<autopd_unset_property name="is.skipped" />
+				<autopd_unset_property name="is.ok" />
+				<condition property="is.skipped">
+					<equals arg1="skip" arg2="${user.script.continue}" casesensitive="false" />
+				</condition>
+				<condition property="is.ok">
+					<equals arg1="ok" arg2="${user.script.continue}" casesensitive="false"/>
+				</condition>
+				
+				<autopd_if isTrue="${is.skipped}">
+					<!-- exit loop and do nothing -->
+					<autopdproperty name="isContinue" value="false"/>
+					<autopdproperty name="target.jazz.client" value=""/>
+					<autopdproperty name="is.valid.jazz.client.path" value="false"/>
+					<util.logToFile msg="Jazz based eclipse client selection skipped..." output="Jazz_Client_Skipped.txt"/>
+				</autopd_if>
+				<autopd_if isTrue="${is.ok}">
+								
+					<!-- rule is - if target.jazz.server.browse is supplied - this should be checked first --> 
+					<!-- validate - this sets error.msg & is.is.valid.jazz.server.path -->
+					<validate.checkDirContainsDir parent.dir="${target.jazz.client.browse}" should.contain.dir="configuration"/>
+					
+					<autopd_if isTrue="${is.valid.parent.dir}">
+						<autopdproperty name="isContinue" value="false"/>
+						<autopdproperty name="target.jazz.client" value="${target.jazz.client.browse}"/>
+						<autopdproperty name="is.valid.jazz.client.path" value="true"/>
+					</autopd_if>
+					
+					<!-- if the input was blank ...  (so it can't be valid)  --> 
+					<autopd_if isTrue="${is.empty}">
+						<!-- then check the selection list , make sure its not ${other.choice} -->
+						<autopd_unset_property name="is.others"/>
+						<condition property="is.others">
+							<equals arg1="${other.choice}" arg2="${target.jazz.client.product.installed}"/>
+						</condition>
+						
+						<!-- ok - got a listed path item -->
+						<!-- no need to additionally validate b/c pulled from IM -->
+						<autopd_if isNotTrue="${is.others}">
+							<autopdproperty name="isContinue" value="false"/>
+							<autopdproperty name="target.jazz.client" value="${target.jazz.client.product.installed}"/>
+							<autopdproperty name="is.valid.jazz.client.path" value="true"/>
+						</autopd_if>
+						
+					</autopd_if>
+				</autopd_if>
+				
+			</autopdwhile>
+
+		</sequential>
+	</macrodef>
+	
+	<!-- 4.1.3.20140828 - code to gather web brower info for RRC -->
+	<!-- <user_profile>\IBM\RRC_3*\*\workspace\.metadata\.log -->
+	<macrodef name="internal.collect.rrc.browser.data">
+		<sequential>
+			
+			<!-- v3 -->
+			<autopd_unset_property name="has.ibm.user.profile"/>
+			<autopdproperty name="ibm.user.profile.location" value="${user.home}\IBM"/>
+			<available file="${ibm.user.profile.location}" property="has.ibm.user.profile" type="dir"/>
+			
+			<autopd_if isTrue="${has.ibm.user.profile}">
+				<trim_filename key="ibm.user.profile.location.trimmed" filename="${ibm.user.profile.location}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+				
+				<copy todir="${isadcTempOut}/${ibm.user.profile.location.trimmed}" outputencoding="UTF-8">
+					<fileset dir="${ibm.user.profile.location}">						
+						<include name="RRC_3*/*/workspace/.metadata/.log"/>  <!-- v3 -->
+						<include name="RequirementsComposer*/workspace/.metadata/.log"/>  <!-- v2 -->
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>
+				</copy>
+				<ratl.log.exclude.list dir.path="@{was.app.server.location}"/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- Prompting for a jazz server location for a tomcat setup.
+	   When jazz client is unzip 
+	   This loops until a valid path is available. 
+	   INPUT: none
+	   OUTPUT: 
+	   		target.jazz.client
+	   		is.valid.jazz.client.path
+	   		is.skipped - 4.1.3.20140828 - if selection is skipped.
+	   	Single product: (ie - scanning IM does not find anything)
+	   	-->
+	<macrodef name="internal.prompt.tomcat.jazz.client.path">
+		<sequential>
+						
+			<autopdproperty name="is.valid.jazz.client.path" value="false"/>
+			<autopd_unset_property name="target.jazz.client"/>
+			<autopdproperty name="error.msg" value=""/>
+			
+			<!-- prompt -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="path.example" value="C:\Program Files\jazz\client\eclipse"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="path.example" value="/opt/jazz/client/eclipse"/>
+			</autopd_if>				
+			
+			<saveresourcebundleproperty 
+		       	    bundle="properties/RATLSHARE/autopd"
+					key="ratl.general.example" 
+					propertyName="output.label"
+					replace="${path.example}"
+					message="Example: {0}" />
+		
+			<!-- prompt -->
+			<autopdproperty name="isContinue" value="true"/>
+			<autopdwhile property="isContinue">
+				
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" actionProperty="user.script.continue" doskip="true">
+					<!-- GUI : TODO NLS -->
+					<fieldtask name="prompt" type="prompt" label="ratl.server.jazz.client.provide.prompt"/>
+					<fieldtask name="label1" type="label" label="${output.label}"/>
+					<fieldtask name="target.jazz.client.browse" label="ratl.server.jazz.location"
+		        		type="filebrowser" />
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+				</inputdialogtask_v2>
+				
+				<!-- check value -->
+				<autopd_unset_property name="is.skipped" />
+				<autopd_unset_property name="is.ok" />
+				<condition property="is.skipped">
+					<equals arg1="skip" arg2="${user.script.continue}" casesensitive="false" />
+				</condition>
+				<condition property="is.ok">
+					<equals arg1="ok" arg2="${user.script.continue}" casesensitive="false"/>
+				</condition>
+				
+				<autopd_if isTrue="${is.skipped}">
+					<!-- exit loop and do nothing -->
+					<autopdproperty name="isContinue" value="false"/>
+					<util.logToFile msg="Jazz based eclipse client selection skipped..." output="Jazz_Client_Skipped.txt"/>
+				</autopd_if>
+				
+				<autopd_if isTrue="${is.ok}">
+					<!-- validate - this sets "error.msg" & is.valid.parent.dir -->
+					<validate.checkDirContainsDir parent.dir="${target.jazz.client.browse}" should.contain.dir="configuration"/>
+				
+					<autopd_if isTrue="${is.valid.parent.dir}">					
+						<autopdproperty name="isContinue" value="false"/>  <!-- exit loop -->
+						<autopdproperty name="target.jazz.client" value="${target.jazz.client.browse}"/>
+						<autopdproperty name="is.valid.jazz.client.path" value="true"/>		
+					</autopd_if>
+				</autopd_if>
+			
+			</autopdwhile>
+		</sequential>
+	</macrodef>
+	
+	<!-- calls the ratl.server.util.set.jazz.home.root  to preserve the jazz home root location -->
+	<target name="collectServerSideEclipseData_Tomcat_multiproduct">		
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		
+		<!-- GUI -->		
+		<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+			<fieldtask name="prompt"  label="ratl.serverside.tomcat.prompt"  type="prompt" />
+			<fieldtask type="label" name="label1" label="ratl.serverside.tomcat.desc1"/>
+			<fieldtask type="label" name="label2a" label="ratl.serverside.tomcat.desc2a"/>
+			<fieldtask type="label" name="label2a" label="ratl.serverside.tomcat.desc2b"/>
+			<fieldtask type="label" name="label3" label="ratl.serverside.tomcat.desc3"/>
+			<fieldtask type="label" name="label_blank" label="${line.separator}"/>
+			<fieldtask type="label" name="label4" label="ratl.serverside.tomcat.desc4"/>
+		</inputdialogtask_v2>
+		
+		<!-- ==================   CALCULATE PRODUCT LIST   ====================== -->
+		<!-- check to see if a list of server product has been specified -->
+		<autopd_unset_property name="has.rtc.server.product.id.list"/>
+		<condition property="has.rtc.server.product.id.list">
+			<isset property="rtc.server.product.id.list"/>
+		</condition>
+		
+		<!-- calculate the server listing to use -->
+		<autopd_if isTrue="${has.rtc.server.product.id.list}">
+			<autopdproperty name="internal.rtc.product.list" value="${rtc.server.product.id.list}"/>
+		</autopd_if>
+		<autopd_if isNotTrue="${has.rtc.server.product.id.list}">
+			<autopdproperty name="internal.rtc.product.list" value="${DEFAULT.rtc.server.product.id.list}"/>
+		</autopd_if>
+		
+		
+		<!-- ==================   PROMPTS  =====================================   --> 
+		<!-- construct a list of available products - and displays  --> 
+		<getMultiProductInfoFromIM_noprompt product.id.list="${internal.rtc.product.list}" 
+			collect.im.data="true" display.include.path="true"/>
+
+		<!-- if product list is available  -->
+		<autopd_if isTrue="${has.product.id.available}">
+			<internal.prompt.jazz.server.multi_product 
+				product.names.list="${product.display.list}" 
+				product.paths.list="${product.install.path.list}"/>						
+		</autopd_if>
+		
+		<!-- if nothing found -->
+		<autopd_if isNotTrue="${has.product.id.available}">
+			<internal.prompt.tomcat.jazz.server.path />
+		</autopd_if>
+		
+	
+		<!-- ==================   COLLECT  =====================================   -->
+		<!-- collect jazz data -->
+		<autopd_if isTrue="${is.valid.jazz.server.path}">
+			<!-- since target.jazz.server contains the "server" in path -->
+			<dirname file="${target.jazz.server}" property="target.jazz.server.dir"/> 
+			<ratl.server.util.set.jazz.home.root target.path="${target.jazz.server.dir}"/>
+			<collectServerSideEclipseData_Tomcat 
+					server.base="${target.jazz.server}"
+					catalina.base="${target.jazz.server}/tomcat"
+				/>
+		</autopd_if>
+		
+	</target>
+	
+	<!-- Prompting for a jazz server location with multiple inputs. 
+	   Use for TOMCAT directories.  
+	   This loops until a valid path is available. 
+	   INPUT: none
+	   OUTPUT: 
+	   		target.jazz.server  (with server in one name segment) 
+	   		is.valid.jazz.server.path
+	   	-->	
+	<macrodef name="internal.prompt.jazz.server.multi_product">
+		<attribute name="product.names.list"/>
+		<attribute name="product.paths.list"/>
+		<sequential>
+			
+			<!-- Prompt -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="path.example" value="C:\Program Files\jazz\server"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="path.example" value="/opt/jazz/server"/>
+			</autopd_if>
+			
+			
+			<autopd_unset_property name="is.valid.jazz.server.path"/>
+			<autopd_unset_property name="target.jazz.server"/>
+			<autopdproperty name="error.msg" value=""/>			
+			<saveresourcebundleproperty 
+		       	    bundle="properties/RATLSHARE/autopd"
+					key="ratl.general.example" 
+					propertyName="output.label"
+					replace="${path.example}"
+					message="Example: {0}" />
+
+			<!-- prompt -->
+			<autopdproperty name="isContinue" value="true"/>
+			<autopdwhile property="isContinue">
+
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" actionProperty="user.script.continue" >
+					<fieldtask name="prompt" type="prompt" label="ratl.server.jazz.server.provide.prompt"/>
+					<fieldtask name="target.jazz.product.installed"  type="selectlist" label="ratl.server.jazz.server.provide.prompt"
+						listdetails="@{product.names.list}@OTHERS(SpecifiedBelow)"
+						list="@{product.paths.list}@${other.choice}"
+						delimiter="@"/>	
+					
+					<fieldtask name="label1" type="label" label="ratl.server.jazz.server.provide.label2"/>
+					<fieldtask name="label2" type="label" label="${output.label}"/>						
+					<fieldtask name="target.jazz.server.browse" label="ratl.server.jazz.location"
+			        		type="filebrowser" />
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+				</inputdialogtask_v2>
+			
+			
+				<!-- rule is - if target.jazz.server.browse is supplied - this should be checked first --> 
+				<!-- validate - this sets error.msg & is.is.valid.jazz.server.path -->
+				<validate.checkDirContainsDir parent.dir="${target.jazz.server.browse}" should.contain.dir="tomcat"/>
+				
+				<autopd_if isTrue="${is.valid.parent.dir}">
+					<autopdproperty name="isContinue" value="false"/>
+					<autopdproperty name="target.jazz.server" value="${target.jazz.server.browse}"/>
+					<autopdproperty name="is.valid.jazz.server.path" value="true"/>
+				</autopd_if>
+				
+				<!-- if the input was blank ...  (so it can't be valid)  --> 
+				<autopd_if isTrue="${is.empty}">
+					<!-- then check the selection list , make sure its not ${other.choice} -->
+					<autopd_unset_property name="is.others"/>
+					<condition property="is.others">
+						<equals arg1="${other.choice}" arg2="${target.jazz.product.installed}"/>
+					</condition>
+					
+					<!-- ok - got a listed path item -->
+					<!-- no need to additionally validate b/c pulled from IM -->
+					<autopd_if isNotTrue="${is.others}">
+						<autopdproperty name="isContinue" value="false"/>
+						<autopdproperty name="target.jazz.server" value="${target.jazz.product.installed}/server"/>
+						<autopdproperty name="is.valid.jazz.server.path" value="true"/>
+					</autopd_if>
+					
+				</autopd_if>
+				
+			</autopdwhile>
+
+		</sequential>
+	</macrodef>
+
+	<!-- Prompting for a jazz server location for a tomcat setup.
+	   When jazz is unzip 
+	   This loops until a valid path is available. 
+	   INPUT: none
+	   OUTPUT: 
+	   		target.jazz.server
+	   		is.valid.jazz.server.path
+	   	Single product: (ie - scanning IM does not find anything)
+	   	-->
+	<macrodef name="internal.prompt.tomcat.jazz.server.path">
+		<sequential>
+			
+			<autopd_unset_property name="is.valid.jazz.server.path"/>
+			<autopd_unset_property name="target.jazz.server"/>
+			<autopdproperty name="error.msg" value=""/>
+
+			<!-- prompt -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="path.example" value="C:\Program Files\jazz\server"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="path.example" value="/opt/jazz/server"/>
+			</autopd_if>
+			
+			<saveresourcebundleproperty 
+		       	    bundle="properties/RATLSHARE/autopd"
+					key="ratl.general.example" 
+					propertyName="output.label"
+					replace="${path.example}"
+					message="Example: {0}" />
+			
+			<!-- prompt -->
+			<autopdproperty name="isContinue" value="true"/>
+			<autopdwhile property="isContinue">
+				
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" actionProperty="user.script.continue">
+					<fieldtask name="prompt" type="prompt" label="ratl.server.jazz.server.location.prompt"/>
+					<fieldtask name="label1" type="label" label="${output.label}"/>
+					<fieldtask name="target.jazz.server.browse" label="ratl.server.jazz.location"
+		        		type="filebrowser" />
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+				</inputdialogtask_v2>
+				
+				<!-- validate - this sets "error.msg" & is.valid.parent.dir -->
+				<validate.checkDirContainsDir parent.dir="${target.jazz.server.browse}" should.contain.dir="tomcat"/>
+			
+				<autopd_if isTrue="${is.valid.parent.dir}">					
+					<autopdproperty name="isContinue" value="false"/>  <!-- exit loop -->
+					<autopdproperty name="target.jazz.server" value="${target.jazz.server.browse}"/>
+					<autopdproperty name="is.valid.jazz.server.path" value="true"/>
+				</autopd_if>
+			
+			</autopdwhile>
+		</sequential>
+	</macrodef>
+	
+	
+
+	<!-- same as internal.prompt.nifregistry -->
+	<!-- returns:
+	    has.jazz.home
+	    
+	    has.jazz.location
+		jazz.location
+		
+		-->
+	<!-- Deprecated.  -->
+	<macrodef name="internal.prompt.jazz.home">
+		<attribute name="jazz.home.list" default=""/>
+		<sequential>
+			
+			<!-- Set up -->
+			<autopd_unset_property name="has.jazz.location"/>
+			<autopd_unset_property name="jazz.location"/>
+				
+			<!-- IF EMPTY:  Standard prompt -->
+			<autopd_unset_property name="contains.none"/>
+			<condition property="contains.none">
+				<equals arg1="" arg2="@{jazz.home.list}"/>
+			</condition>
+			
+			<autopd_if isTrue="${contains.none}">
+				<internal.prompt.jazz.for.WAS/>
+			</autopd_if>
+				
+			<!-- IF NOT EMPTY -->
+			<autopd_if isNotTrue="${contains.none}">
+				<!-- all entries has been validated so.. -->
+				<autopdproperty name="has.jazz.location" value="true"/>
+				
+				<!-- If MULTIPLE -->
+				<autopd_unset_property name="contains.multiple"/>
+				<regex_match pattern="@" 
+				     propertyName="contains.multiple" 
+				     string="@{jazz.home.list}" />
+	
+				<!-- If Multiple = no  - that means one product -->				
+				<autopd_if isNotTrue="${contains.multiple}">
+					<autopdproperty name="jazz.location" value="@{jazz.home.list}"/>
+				</autopd_if>
+				<!-- If Multiple = yes - prompt user -->
+				<autopd_if isTrue="${contains.multiple}">
+					<!-- select one -->
+					
+					<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" nocancel="true">
+						<fieldtask name="prompt" type="prompt" label="ratl.server.was.jazz.location.select.prompt"/>
+						<fieldtask name="jazz.location"  type="selectlist" label="ratl.server.was.jazz.location.select.label1"
+								list="@{jazz.home.list}"
+								listdetails="@{jazz.home.list}"
+								delimiter="@"/>
+					</inputdialogtask_v2>
+				</autopd_if>
+								
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- INPUT: none
+	    bleah need to consolidate some of this duplicate code ! See: <internal.prompt.WASinstall/>
+		OUTPUT:
+		has.jazz.location: 
+		jazz.location: 
+		
+		WAS
+	-->
+	<!-- Deprecated.  -->
+	<macrodef name="internal.prompt.jazz.for.WAS">
+		<sequential>
+            <wsnlsecho key="ratl.server.jazz.location.was" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="Determining jazz installation location ..."
+    				id="2090"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+			
+			<!-- similar stuff for internal.prompt.WASinstall -->
+			<!-- clean up -->
+			<autopd_unset_property name="has.jazz.location"/>
+			<autopd_unset_property name="jazz.location"/>
+				
+			<!-- Set example -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="example.jazz.location" value="C:\Program Files\IBM\WebSphere\AppServer\profiles\AppSrv01\jazz\conf"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="example.jazz.location" value="/opt/IBM/WebSphere/AppServer/profiles/AppSrv01/jazz/conf"/>
+			</autopd_if>
+			<saveresourcebundleproperty 
+	       	    bundle="properties/RATLSHARE/autopd"
+				key="ratl.general.example" 
+				propertyName="output.label"
+				replace="${example.jazz.location}"
+				message="Example: {0}" />
+			
+			<!-- loop until a available location is found --> 
+			<autopdproperty name="is.countinue" value="true"/>
+			<autopdproperty name="error.msg" value=""/>  <!-- property is modified in <validate.checkDirExist.required -->
+			
+
+			<autopdwhile property="is.countinue">
+				<!-- GUI: TODO NLS -->
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">  
+					<fieldtask name="prompt" type="prompt" label="ratl.server.was.jazz.location.prompt"/>
+					<fieldtask type="label" name="label1" label="ratl.server.was.jazz.location.label1"/>
+					<fieldtask type="label" name="label2" label="${output.label}"/>
+					<fieldtask type="filebrowser" browserTargetType="directory" name="jazz.location" label="ratl.server.jazz.location"/>
+					<fieldtask type="label" name="error.msg" label="${error.msg}"/>
+				</inputdialogtask_v2>
+				
+				<!-- some validation...  -->
+				<validate.checkDirContainsDir parent.dir="${jazz.location}" should.contain.dir="jazz"/>
+				<autopd_if isTrue="${is.valid.parent.dir}">
+					<autopdproperty name="is.countinue" value="false"/>
+					<!-- set the return values : was.app.server.location is set from user input -->
+					<autopdproperty name="has.jazz.location" value="true"/>
+				</autopd_if>
+				
+			</autopdwhile>
+		</sequential>
+	</macrodef>
+	
+	<!-- property persisted: ${ratl.jazz.team.server.root.path} -->
+    <!-- NOTE:  this can be a @ separated list, especailly when pulled from WAS -->
+	<macrodef name="ratl.server.util.set.jazz.home.root">
+		<attribute name="target.path"/>
+		<sequential>
+			<autopdproperty name="ratl.jazz.team.server.root.path" value="@{target.path}"/>
+			<persistproperty property="ratl.jazz.team.server.root.path"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- task sets a property name: ${target.jazz.server.root} -->
+	<target name="collectServerSideEclipseData_Tomcat.entry">		
+		<fail unless="product.id"/>
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		
+		<!-- GUI -->		
+		<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+			<fieldtask name="prompt"  label="ratl.serverside.tomcat.prompt"  type="prompt" />
+			<fieldtask type="label" name="label1" label="ratl.serverside.tomcat.desc1"/>
+			<fieldtask type="label" name="label2" label="ratl.serverside.tomcat.desc2"/>
+			<fieldtask type="label" name="label3" label="ratl.serverside.tomcat.desc3"/>
+			<fieldtask type="label" name="label3" label="${line.separator}"/>
+			<fieldtask type="label" name="label4" label="ratl.serverside.tomcat.desc4"/>
+		</inputdialogtask_v2>
+						
+		<collectIMData/>
+		
+		<getIMInstallDir/>
+		<getProductPathsFromIM_noprompt 
+    		im.appdata.path="${im.appdata.path}"
+    		product.offering.id="${product.id}"/>
+    	<rtl.debugecho message="product.isFound = ${product.isFound}"/>
+		<rtl.debugecho message="product.match.path = ${product.match.path}"/>
+		<rtl.debugecho message="product.match.eclipse.path = ${product.match.eclipse.path}"/>
+		
+		<!-- TODO : assumptions -->
+		<autopd_if isTrue="${product.isFound}">
+			<ratl.server.util.set.jazz.home.root target.path="${product.match.path}"/>
+			<collectServerSideEclipseData_Tomcat 
+							server.base="${product.match.path}/server"
+							catalina.base="${product.match.path}/server/tomcat"
+						/>
+		</autopd_if>
+		
+		<autopd_if isNotTrue="${product.isFound}">
+    		<util.logToFile msg="Product ${product.id} not found. " output="${product.id}.txt"/>
+		</autopd_if>
+		
+		
+	</target>
+	
+	
+	<!-- MAIN: ServerSide Eclipse Data Tomcat entry --> 
+	<macrodef name="collectServerSideEclipseData_Tomcat">
+		<attribute name="server.base"/>
+		<attribute name="catalina.base"/>
+		<sequential>
+			<autopd_unset_property name="is.match.30"/>
+			<condition property="is.match.30">
+				<equals arg1="3.0" arg2="${rtc.server.product.version}"/>
+			</condition>
+			
+			<!-- v3.0 -->
+			<autopd_if isTrue="${is.match.30}">	
+				<internal.collectServerSideEclipseData_Tomcat_v3 
+					server.base="@{server.base}"
+				    catalina.base="@{catalina.base}"/>
+			</autopd_if>
+			
+			<!-- something other than v3 -->
+			<autopd_if isNotTrue="${is.match.30}">
+				<internal.collectServerSideEclipseData_Tomcat_v2 
+					server.base="@{server.base}"
+					catalina.base="@{catalina.base}" />
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+						
+	<!-- property persisted: ${ratl.tomcat.server.root.path} -->
+	<macrodef name="ratl.server.util.set.tomcat.home.root">
+		<attribute name="target.path"/>
+		<sequential>
+			<autopdproperty name="ratl.tomcat.server.root.path" value="@{target.path}"/>
+			<persistproperty property="ratl.tomcat.server.root.path"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- original -->
+	<macrodef name="internal.collectServerSideEclipseData_Tomcat_v2">
+		<attribute name="server.base"/>  <!-- "server" -->
+		<attribute name="catalina.base"/>  <!-- "server/tomcat" -->  
+		<sequential>
+			
+			<!-- gather server based properties -->	
+			<collectServerBaseProperties server.base="@{server.base}"/>
+			
+			<!-- check for log4j.properties to get the jazz.log : log4j.appender.file.File -->
+			<collectJazzLogFromLog4j server.base="@{server.base}" log4j.location="${log4j.properties.filename}"/>
+			
+			<!-- gather catalina (tomcat) version -->
+			<collectCatalinaVersion catalina.base="@{catalina.base}" />
+			
+			<!-- gather catalina configuration information -->
+			<collectCatalinaConfiguration catalina.base="@{catalina.base}" />
+			
+			<!-- checks for logging.properties to get handler => prefix information -->
+			<collectCatalinaLogs catalina.base="@{catalina.base}" />
+						
+			<!-- get product eclipse data and also product workspace info -->			
+			<collectEclipseGeneralData 
+				   eclipse.path="@{catalina.base}/${tomcat.jazz.eclipse}" prefix="work_Catalina_localhost_jazz"/>
+			
+			<!-- 4.1.3.20140828 - add RRC 2.0 data if available -->
+			<collectEclipseGeneralData 
+				   eclipse.path="@{catalina.base}/${tomcat.converter.eclipse}" prefix="work_Catalina_localhost_converter"/>
+		
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- New for 3.0  -->
+	<macrodef name="internal.collectServerSideEclipseData_Tomcat_v3">
+		<attribute name="server.base"/>  <!-- "server" -->
+		<attribute name="catalina.base"/>  <!-- "server/tomcat" -->  
+		<sequential>
+			
+			<!-- gather server based properties -->	
+			<collectServerBaseProperties server.base="@{server.base}"/>
+			
+			<!-- check for log4j.properties to get the jazz.log : log4j.appender.file.File -->
+			<dirname property="server.parent.dir" file="@{server.base}"/>
+			<collectProductLogFromLog4j server.base="@{server.base}" />
+			
+			<!-- gather catalina (tomcat) version -->
+			<collectCatalinaVersion catalina.base="@{catalina.base}" />
+			
+			<!-- gather catalina (tomcat) configuration information -->
+			<collectCatalinaConfiguration_v3 catalina.base="@{catalina.base}" />
+			
+			<!-- checks for logging.properties to get handler => prefix information -->
+			<collectCatalinaLogs catalina.base="@{catalina.base}" />
+			
+			<collectAdditionalCatalinaLogs catalina.base="@{catalina.base}" />
+						
+			<!-- get product eclipse data and also product workspace info -->
+			<!-- 4.1.3.20140828 - added converter for RRC -->
+			<!-- ISADC WORKAROUND -->
+			<run.if.not.empty input="${rtl.clm.30.product.list}">
+				<autopdloop delimiter=":" param="a.product" paramlist="${rtl.clm.30.product.list}">
+					<!-- workspace logs & eclipse general config. -->				
+					<collectEclipseGeneralData 
+						   eclipse.path="@{catalina.base}/work/Catalina/localhost/${a.product}/eclipse"
+					       prefix="work_Catalina_localhost/${a.product}"/>
+				</autopdloop>
+			</run.if.not.empty>
+		
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- see : item 2206 : for RTC 3.0 -->
+	<!-- Support request that all logs from tomcat/logs directory are collected -->
+	<macrodef name="collectAdditionalCatalinaLogs">
+		<attribute name="catalina.base"/>
+		<sequential>
+			<autopdproperty name="tomcat.logPath" value="@{catalina.base}/${tomcat.default.logs.dir}"/>
+			<autopd_unset_property name="has.tomcat.logpath"/>
+			<available file="${tomcat.logPath}" type="dir" property="has.tomcat.logpath"/>
+
+			<autopd_if isTrue="${has.tomcat.logpath}">
+				<trim_filename key="path.trimmed" filename="${tomcat.logPath}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+				<copy todir="${isadcTempOut}/${path.trimmed}" outputencoding="UTF-8">
+					<fileset file="${tomcat.logPath}/*.log"/>
+				</copy>
+			</autopd_if>
+	
+		</sequential>
+	</macrodef>
+	
+
+	<!-- sample server.path = jazz.install.path/server/ -->
+	<!-- gather <server>/*.properties -->
+	<!-- gather <server>/*.log -->
+	<!-- gather <server>/logs/**/* <subdirs> -->	
+	<!-- gather <server>/backup* (most recent) <subdirs> -->
+	<!-- Changes for RTC 3.0 -->
+	<!-- ADD *.bat, *.txt for RTC 3.0 --> 
+	<!-- Instead of: gather <server>/conf/**/* <subdirs> 
+	    add: 
+	    conf/*/*.*                        - this covers RTC 2.0
+	    conf/*/provision_profiles/*.ini   - this covers RTC 2.0 
+	    conf/*/derby/repositoryDB/log/*.*
+        conf/*/derby/repositoryDB/*.properties
+	    conf/*/derby/warehouseDB/log/*.*
+        conf/*/derby/warehouseDB/*.properties
+        conf/*/build/built-on.txt
+        conf/*/setup/configurations/*.*
+        conf/*.* - file only
+        
+        Note: for 3.5 -> "conf" may be substitued with other directory, 
+        as this really is the directory pointed to by JAZZ_HOME
+	-->	
+	
+	<macrodef name="collectServerBaseProperties">
+		<attribute name="server.base"/>
+		<attribute name="collect.config" default="true"/>
+		<attribute name="collect.logs" default="true"/>
+		<attribute name="conf.dir" default="${jazz.default.conf.dir}"/>
+		<sequential>
+			
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>			
+			<wsnlsecho key="ratl.serverside.base.info" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Gathering server based properties."
+					replace="${autopdts};;${step.count}"
+					id="2081"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- prefix -->
+			<trim_filename key="server.base.trimmed" filename="@{server.base}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+			
+			 <!-- check to see if directory is available -->
+			<autopd_unset_property name="dir_available"/>
+			<available file="@{server.base}" type="dir" property="dir_available"/>
+			<autopd_if isTrue="${dir_available}">
+				
+				<!-- look for the most recent backup* dir -->
+				<!-- see enh : 1497 -->
+				<autopd_unset_property name="latest.matched.backup"/>
+				<file_filter_by_latest key="latest.matched.backup" 
+						path="@{server.base}" 
+						selector="^backup*" />
+				
+				<rtl.debugecho message="Latest backup dir: ${latest.matched.backup}"/>
+				<basename file="${latest.matched.backup}" property="latest.matched.backup.basename"/>
+				
+				<!-- zip : config -->
+				<autopd_if isTrue="@{collect.config}">
+					<!-- collect site listing -->
+					<internal.conf.site.dirlist server.base="@{server.base}" conf.dir="@{conf.dir}"/>
+					
+					<!-- collect config relative to server.base -->
+					<copy todir="${isadcTempOut}/${server.base.trimmed}" outputencoding="UTF-8">
+						<fileset dir="@{server.base}">
+							<include name="*.properties"/>
+							<include name="${latest.matched.backup.basename}/**/*"/>
+							<include name="*.bat"/>
+							<include name="*.txt"/>
+							<include name="@{conf.dir}/*/*"/>
+							<include name="@{conf.dir}/*/provision_profiles/*.ini"/>
+							<include name="@{conf.dir}/*/derby/repositoryDB/log/*.*"/>
+							<include name="@{conf.dir}/*/derby/repositoryDB/*.properties"/>
+							<include name="@{conf.dir}/*/derby/warehouseDB/log/*.*"/>
+							<include name="@{conf.dir}/*/derby/warehouseDB/*.properties"/>
+							<include name="@{conf.dir}/*/build/built-on.txt"/>
+							<include name="@{conf.dir}/*/setup/configurations/*.*"/>
+							<include name="@{conf.dir}/*.*"/>
+							<exclude name="@{conf.dir}/*.log"/>  <!-- no log -->
+							<exclude name="**/*.dmp"/> <!-- ignore the dump files -->
+							<selector refid="ratl.readable.log.exclude.list"/>
+						</fileset>
+					</copy>
+				</autopd_if>
+					
+				<!-- zip: logs -->
+				<autopd_if isTrue="@{collect.logs}">
+					<copy todir="${isadcTempOut}/${server.base.trimmed}" outputencoding="UTF-8">
+						<fileset dir="@{server.base}">
+							<include name="*.log"/>
+							<include name="${latest.matched.backup.basename}/**/*.log"/>
+							<include name="logs/**/*"/>
+							<include name="@{conf.dir}/*/log4j.properties"/>
+							<include name="@{conf.dir}/*.log"/>
+							<exclude name="**/*.dmp"/> <!-- ignore the dump files -->
+							<selector refid="ratl.readable.log.exclude.list"/>
+						</fileset>										
+					</copy>
+				</autopd_if>
+				<ratl.log.exclude.list dir.path="@{server.base}"/>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- gather a directory listing of the conf/*/sites -->
+	<!-- RTC 3.0 --> 
+	<macrodef name="internal.conf.site.dirlist">
+		<attribute name="server.base"/>
+		<attribute name="conf.dir" default="${jazz.default.conf.dir}"/>
+		<sequential>
+			<!-- get a list of the directories available under conf/*/site -->
+			<dirset dir="@{server.base}" id="server.base.sites">
+				<include name="@{conf.dir}/*/sites"/>				
+		    </dirset>
+	
+			<!-- check to see if anything matched -->
+			<autopd_unset_property name="server.base.sites.list"/>
+		    <pathconvert pathsep="|" property="server.base.sites.list" refid="server.base.sites"/>
+			<autopd_unset_property name="has.server.base.sites.list"/>
+			<condition property="has.server.base.sites.list">
+				<and>
+					<isset property="server.base.sites.list"/>
+					<not>
+						<equals arg1="" arg2="${server.base.sites.list}"/>
+					</not>
+				</and>
+			</condition>
+			
+			<!-- Zip information for user -->
+			<autopd_if isTrue="${has.server.base.sites.list}">
+				<autopdloop delimiter="|" param="server.site" paramlist="${server.base.sites.list}">
+					<autopd_unset_property name="server.site.trimmed"/>
+					<trim_filename key="server.site.trimmed" filename="${server.site}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+					<collect_dir_listing_recursive 
+							targetDir="${server.site}"
+							outputFile="${autopdtmp}/SITE_DIR_LIST.txt"
+							zipPrefix="${server.site.trimmed}"/>
+				</autopdloop>
+			</autopd_if>			
+		</sequential>
+	</macrodef>
+	
+	
+	
+	<!-- input value attribute with ${catalina.base} values -->
+	<!-- output: value.replaced  : replaced values  -->
+	<macrodef name="internal_expandTomcatLocationValue">
+		<attribute name="value"/>
+		<attribute name="catalina.base"/>
+		<sequential>
+			<!-- expecting ${catalina.base} to be in the values -->			
+			<autopdproperty name="catalina.base" value="@{catalina.base}"/>
+			<autopdproperty name="value.replaced" value="@{value}"/>  <!-- force string replacement -->
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- Gathers tomcat configuration information for CLM based product 3.0
+	      webapps/jazz/WEB-INF/web.xml => replace jazz with:  buildingblocks, cpa, jts, rm, ccm, qm then converter
+	      webapps/jazz/WEB-INF/built-on.txt  => replace jazz with same as above	      
+		 <catalina.base>\conf\*.* (recursively)   : Same. 
+	   INPUT: catalina.base :  Location of tomcat. 
+	     <install>/server/tomcat 
+	     
+	-->
+	<macrodef name="collectCatalinaConfiguration_v3">
+		<attribute name="catalina.base"/>
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>		
+			<wsnlsecho key="ratl.serverside.tomcat.config.info" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Gathering tomcat configuration..."
+					replace="${autopdts};;${step.count}"
+					id="2081"
+					level="info"
+					messagePrefix="CWPDD"/>	
+			
+			<autopd_unset_property name="is.catalina.available"/>			
+			<available file="@{catalina.base}" type="dir" property="is.catalina.available"/>
+			<autopd_if isTrue="${is.catalina.available}">
+				<!-- prefix -->
+				<trim_filename key="catalina.base.trimmed" filename="@{catalina.base}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+				
+				<!-- zip it. -->
+				<copy todir="${isadcTempOut}/${catalina.base.trimmed}" outputencoding="UTF-8">
+					<fileset dir="@{catalina.base}">
+						<!-- web.xml -->
+						<include name="webapps/*/WEB-INF/web.xml"/>
+						
+						<!-- built-on -->
+						<include name="webapps/*/WEB-INF/built-on.txt"/>
+						
+						<!-- context.xml -->
+						<include name="webapps/*/META-INF/context.xml"/>
+																		
+						<include name="conf/**/*"/>
+						<include name="conf/**/*.*"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>												
+				</copy>
+				<ratl.log.exclude.list dir.path="@{catalina.base}"/>
+				
+				<!--				
+				<internal.collect.clean.tomcat.user.info catalina.base="@{catalina.base}" path.prefix="${catalina.base.trimmed}"/>
+				-->
+			</autopd_if>
+			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- code to strip out password info and gather the file. -->
+	<macrodef name="internal.collect.clean.tomcat.user.info">
+		<attribute name="catalina.base"/>
+		<attribute name="path.prefix"/>
+		<sequential>
+			<autopdproperty name="tomcat.user.xml" value="@{catalina.base}/conf/tomcat-users.xml"/>
+			<autopdproperty name="tomcat.usr.tmp" value="${autopdtmp}/tomcat-users.xml"/>
+			
+			<!-- check file available & readable -->
+		    <autopd_unset_property name="has.tomcat.user"/>
+			<available file="${tomcat.user.xml}" type="file" property="has.tomcat.user"/>
+			
+			<!-- process file, but first check for read -->
+			<autopd_if isTrue="${has.tomcat.user}">
+				<!-- check read...  --> 
+				<autopd_unset_property name="has.file.read.access"/>
+				<condition property="has.file.read.access">
+					<user_access file="${tomcat.user.xml}" accessType="r"/>
+			   </condition>
+				<!-- Process it -->
+				<autopd_if isTrue="${has.file.read.access}">
+					<!-- run replacement -->
+					<autopd_unset_property name="tomcat.user.file.property" />
+					<loadfile property="tomcat.user.file.property" srcFile="${tomcat.user.xml}"/>
+
+                    <autopdreplace property="tomcat.user.file.property" 
+                             token='[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]="[^"]*"' value='AUTOPD_ISA_REPLACE_PASSWORD'/>
+
+                    <autopdreplace property="tomcat.user.file.property" 
+                             token='AUTOPD_ISA_REPLACE_PASSWORD' value='password="PASSWORD_REMOVED_FOR_SECURITY"'/>
+					
+					<echo message="${tomcat.user.file.property}" file="${tomcat.usr.tmp}"/>
+					<autopd_unset_property name="tomcat.user.file.property"/>
+					
+					<!-- collect the resulting file -->
+					<copy todir="${isadcTempOut}/@{path.prefix}/conf" outputencoding="UTF-8">
+						<fileset file="${tomcat.usr.tmp}"/>
+					</copy>					
+					
+				</autopd_if>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+	
+	<!-- Gathers tomcat configuration information 
+	   Enh: 1497 : Collects 
+	     <catalina.base>\webapps\jazz\WEB-INF\web.xml
+	     <catalina.base>\webapps\jazz\WEB-INF\built-on.txt
+		 <catalina.base>\conf\*.* (recursively)
+	   INPUT: catalina.base :  Location of tomcat. 
+	     <install>/server/tomcat 
+	     
+	-->
+	
+	<macrodef name="collectCatalinaConfiguration">
+		<attribute name="catalina.base"/>
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>		
+			<wsnlsecho key="ratl.serverside.tomcat.config.info" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Gathering tomcat configuration..."
+					replace="${autopdts};;${step.count}"
+					id="2081"
+					level="info"
+					messagePrefix="CWPDD"/>	
+			
+			<autopd_unset_property name="is.catalina.available"/>			
+			<available file="@{catalina.base}" type="dir" property="is.catalina.available"/>
+			<autopd_if isTrue="${is.catalina.available}">
+				<!-- prefix -->
+				<trim_filename key="catalina.base.trimmed" filename="@{catalina.base}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+				
+				<!-- zip it. -->
+				<copy todir="${isadcTempOut}/${catalina.base.trimmed}" outputencoding="UTF-8">
+					<fileset dir="@{catalina.base}">
+						<include name="webapps/jazz/WEB-INF/web.xml"/>
+						<include name="webapps/jazz/WEB-INF/built-on.txt"/>
+						<include name="conf/**/*"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>												
+				</copy>
+				<ratl.log.exclude.list dir.path="@{catalina.base}"/>
+			</autopd_if>
+			
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- Collecting catalinaversion  -->
+	<!-- Emulate version.bat or .sh by execution: 
+	   - <jre.home>\bin\java -classpath "@{catalina.base}\server\lib\catalina.jar" org.apache.catalina.util.ServerInfo
+	   in newer version of Tomcat: 
+	   - <jre.home>\bin\java -classpath "@{catalina.base}\lib\catalina.jar" org.apache.catalina.util.ServerInfo
+	   NOTE: discussion with team, determine might not be possible to determine JAVA_HOME or JRE_HOME used by tomcat during runtime
+	   It is sufficient to use - JRE installed with product or JRE that launched ISA to determine tomcat version.
+	-->	
+	<macrodef name="collectCatalinaVersion">
+		<attribute name="catalina.base"/>                    <!-- example: C:\IBM\JazzTeamServer\server\tomcat -->
+		<attribute name="jre.home" default="${java.home}"/>  <!-- example: C:\PROGRA~2\IBM\WEBSPH~1\APPSER~1\java\jre -->
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />			
+			<wsnlsecho key="ratl.server.tomcat.collect.version" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="[{0}] Step {1}: Gathering tomcat version information"
+    				replace="${autopdts};;${step.count}"
+    				id="2090"
+    				level="info"
+    				messagePrefix="CWPDD"/>		
+			
+			<!-- reset the values -->
+			<autopdproperty name="output.file" value="${autopdtmp}/tomcat_version_out.txt"/>
+			
+			<!-- set catalina.jar path -->
+			<autopd_unset_property name="has.server.catalina.jar"/>
+			<available file="@{catalina.base}\server\lib\catalina.jar" type="file" property="has.server.catalina.jar"/>
+			<autopd_if isTrue="${has.server.catalina.jar}">
+				<autopdproperty name="catalina.jar.path" value="@{catalina.base}\server\lib\catalina.jar"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${has.server.catalina.jar}">  <!-- the other case, which will get validated later -->
+				<autopdproperty name="catalina.jar.path" value="@{catalina.base}\lib\catalina.jar"/>
+			</autopd_if>
+			
+			
+			<!-- Setup: WINDOWS -->
+			<autopd_if isTrue="${isWindows}">
+				<!-- java -->
+				<autopdproperty name="server.java.path" value="@{jre.home}\bin\java.exe"/>
+				<win_pathFixup type="\" inputDir="${server.java.path}" defaultDir="${server.java.path}"/>
+				<autopdproperty name="server.java.path" value="${inputDir.out}"/>
+				
+				<!-- java base path for windows only; needed because running exec for tomcat below blows up without dir specified 
+				<autopdproperty name="server.java.bin" value="@{jre.home}\bin"/>
+				<win_pathFixup type="\" inputDir="${server.java.bin}" defaultDir="${server.java.bin}"/>
+				<autopdproperty name="server.java.bin" value="${inputDir.out}"/>
+				-->
+					
+				<!-- catalina.jar -->
+				<win_pathFixup type="\" inputDir="${catalina.jar.path}" defaultDir="${catalina.jar.path}"/>
+				<autopdproperty name="catalina.jar.path" value="${inputDir.out}"/>
+			</autopd_if>
+			
+			<!-- Setup: NON Windows -->
+			<autopd_if isNotTrue="${isWindows}">
+				<!-- java -->
+				<autopdproperty name="server.java.path" value="@{jre.home}/bin/java"/>
+				<win_pathFixup type="/" inputDir="${server.java.path}" defaultDir="${server.java.path}"/>
+				<autopdproperty name="server.java.path" value="${inputDir.out}"/>
+					
+				<!-- catalina.jar -->
+				<win_pathFixup type="/" inputDir="${catalina.jar.path}" defaultDir="${catalina.jar.path}"/>
+				<autopdproperty name="catalina.jar.path" value="${inputDir.out}"/>
+			</autopd_if>
+
+			<!-- CODE: Check resources -->
+			<autopd_unset_property name="has.required.files"/>
+			<condition property="has.required.files">
+				<and>
+					<available file="${server.java.path}" type="file"/>
+					<available file="${catalina.jar.path}" type="file"/>
+				</and>
+			</condition>
+			
+			<!-- CODE: Record & execute -->
+			<autopd_if isNotTrue="${has.required.files}">
+				<echo file="${output.file}" message="Files '${server.java.path}' and/or '${catalina.jar.path}' not found to determine tomcat version"/>
+			</autopd_if>
+			<autopd_if isTrue="${has.required.files}">
+				<echo file="${output.file}" message='Checking Tomcat version via: "${server.java.path}" -classpath "${catalina.jar.path}" org.apache.catalina.util.ServerInfo ${line.separator}'/> 
+				<echo file="${output.file}" append="true" message="=========================================================================${line.separator}"/>
+				
+				<!-- WINDOWS  -->
+				<exec executable="cmd.exe" os="${os.windows}" failifexecutionfails="false" failonerror="false"
+				    output="${output.file}" dir="${autopdtmp}" append="true">
+					<arg value="/c" />
+				    <arg line="&quot;${server.java.path}&quot; -classpath &quot;${catalina.jar.path}&quot; org.apache.catalina.util.ServerInfo"/>				
+				</exec>
+				
+				<!-- UNIX/LINUX  -->
+				<exec executable="sh" os="${os.unixkind}" failifexecutionfails="false" failonerror="false"
+					output="${output.file}" dir="${autopdtmp}" append="true">
+					<arg value="-c" />
+				    <arg line="&quot;${server.java.path}&quot; -classpath &quot;${catalina.jar.path}&quot; org.apache.catalina.util.ServerInfo"/>					
+				</exec>
+			</autopd_if>
+				
+			<!-- collec execution output -->
+			<copy todir="${isadcTempOut}" outputencoding="UTF-8">
+				<fileset file="${output.file}" />
+			</copy>
+			
+			
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- Gathers tomcat logs - base on logging.properties file -->
+	<!-- input:  catalina.base :  Location of tomcat. 
+	     <install>/server/tomcat 
+	     Assumption logging.properties resides in  <catalina.base>/conf/logging.properties
+	     If logging.properties is not found, it will look for logs folder in <catalina.base>/logs	     
+	 -->
+	<macrodef name="collectCatalinaLogs">
+		<attribute name="catalina.base"/>
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>		
+			<wsnlsecho key="ratl.serverside.tomcat.info" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Gathering tomcat logs."
+					replace="${autopdts};;${step.count}"
+					id="2081"
+					level="info"
+					messagePrefix="CWPDD"/>			
+			
+			<!-- look for logging.properties file -->
+			<autopdproperty name="tomcat.logging.property.path" value="@{catalina.base}/${tomcat.logging.properties}"/>
+			<echo message=" "/>
+			<wsnlsecho key="ratl.general.looking.file" 
+								bundle="properties/RATLSHARE/autopd"
+								message="Looking for file: {0}"
+								replace="${tomcat.logging.property.path}"
+								id="2081"
+								level="info"
+								messagePrefix="CWPDD"/>	
+									
+			<autopd_unset_property name="hasLogging.properties"/>
+			<available  file="${tomcat.logging.property.path}" property="hasLogging.properties"/>
+			
+			<!-- NOT FOUND:  logging.properties -->
+			<autopd_if isNotTrue="${hasLogging.properties}">
+				<wsnlsecho key="ratl.general.file.not.found" 
+						bundle="properties/RATLSHARE/autopd"
+						message="File {0} not found"
+						replace="${tomcat.logging.property.path}"
+						id="2082"
+						level="warn"
+						messagePrefix="CWPDD"/>	
+				<!-- get a set of most recent default logs -->
+				<collectDefaultServerLogs logsDir="@{catalina.base}/${tomcat.default.logs.dir}"/>					
+			</autopd_if>
+			
+			
+			<!-- FOUND:  logging.properties  -->			
+			<autopd_if isTrue="${hasLogging.properties}">				
+				<echo message=" "/>
+				<wsnlsecho key="ratl.serverside.tomcat.logs.stat" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Gathering most recent log files specified by the {0} property in {1}"
+						replace="${handlers};;${tomcat.logging.property.path}"
+						id="2081"
+						level="info"
+						messagePrefix="CWPDD"/>	
+										
+				<ratl_autopd_property_reader key="handler.property"
+						name="${handlers}" filename="${tomcat.logging.property.path}" />
+
+				<rtl.debugecho message="handler.property = ${handler.property}"/> 
+				
+				<!-- loop - for each handler, we want .prefix  / .directory-->
+				<autopdproperty name="value.name" value="" />
+				
+				<!-- ISADC WORKAROUND -->
+				<run.if.not.empty input="${handler.property}">
+					<autopdloop paramList="${handler.property}"
+						param="value.name" delimiter=",">
+						
+						<!-- get the directory / prefix properties -->
+						<autopdproperty name="logDir.property" value="${value.name}.directory"/>
+						<autopdproperty name="prefix.property" value="${value.name}.prefix"/>
+						
+						<!-- prefix.property - clean and retrieve from the logging.properties -->
+						<trim_filename key="step1" filename="${prefix.property}" prefixTrim="^[ ]*"/>
+						<trim_filename key="step2" filename="${step1}" suffixTrim="[ ].*$"/>
+						<autopd_unset_property name="prefix"/>
+						<ratl_autopd_property_reader key="prefix"
+									name="${step2}" filename="${tomcat.logging.property.path}" />
+						
+						<!-- logdir.property - clean and retrieve from the logging.properties -->
+						<trim_filename key="step1" filename="${logDir.property}" prefixTrim="^[ ]*"/>
+					    <trim_filename key="step2" filename="${step1}" suffixTrim="[ ].*$"/>
+						<autopd_unset_property name="logDir"/>
+						<ratl_autopd_property_reader key="logDir"
+									name="${step2}" filename="${tomcat.logging.property.path}" />
+						<!-- sub ${catalina.base} -->
+						<internal_expandTomcatLocationValue catalina.base="@{catalina.base}" value="${logDir}"/>
+												
+						<!-- collect the file -->
+						<collectMostRecent_log prefix="${prefix}" path="${value.replaced}"/>
+																
+					</autopdloop>
+				</run.if.not.empty>
+								
+			</autopd_if>
+						
+		</sequential>
+	</macrodef>
+		
+	
+	<!-- default set of logs to collect from tomcat/logs directory -->	
+	<macrodef name="collectDefaultServerLogs">
+		<attribute name="logsDir"/>
+		<sequential>
+			<echo message=" "/>
+			<wsnlsecho key="ratl.serverside.tomcat.collec.default" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Gathering logs from default tomcat location: {0}"
+					replace="@{logsDir}"
+					id="2081"
+					level="info"
+					messagePrefix="CWPDD"/>	
+			
+			<collectMostRecent_log prefix="catalina" path="@{logsDir}"/>
+			<collectMostRecent_log prefix="admin" path="@{logsDir}"/>
+			<collectMostRecent_log prefix="host-manager" path="@{logsDir}"/>
+			<collectMostRecent_log prefix="manager" path="@{logsDir}"/>
+			<collectMostRecent_log prefix="localhost" path="@{logsDir}"/>
+		</sequential>
+	</macrodef>
+	
+	
+	
+	<!-- standard log4j.location -->
+	<!-- input :  log4j.location = location of the log4j.properties file 
+	     -->
+	<macrodef name="collectJazzLogFromLog4j">
+		<attribute name="server.base"/>
+		<attribute name="log4j.location"/>	
+		<sequential>
+
+			<autopdproperty name="log4j.path" value="@{server.base}/@{log4j.location}"/>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ratl.serverside.jazz.log4j" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Gathering jazz log from {2}"
+					replace="${autopdts};;${step.count};;${log4j.path}"
+					id="2081"
+					level="info"
+					messagePrefix="CWPDD"/>	
+			
+			<internal.collectServerLogFromLog4j server.base="@{server.base}" log4j.location="@{log4j.location}"/>
+
+		</sequential>		
+	</macrodef>
+	
+	<!-- for RTC 3.0 -->
+	<!-- <product install>/server/log4j.properties. nok, log4j.properties are now in conf/<prod like ccm,qm, rm, cpa, converter/ instead -->
+	<macrodef name="collectProductLogFromLog4j">
+		<attribute name="server.base"/>
+		<attribute name="conf.dir" default="${jazz.default.conf.dir}"/> 
+		<attribute name="clm.product.list.log4j" default="${rtl.clm.30.product.list.log4j.properties}"/>
+		<attribute name="prompt" default="false"/>
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+            <wsnlsecho key="ratl.server.tomcat.collect.log4j" 
+    				bundle="properties/RATLSHARE/autopd"
+    				message="[{0}] Step {1}: Gathering log4j based logs for the server"
+    				replace="${autopdts};;${step.count}"
+    				id="2090"
+    				level="info"
+    				messagePrefix="CWPDD"/>
+			
+			<!-- loop thru conf/ccm, qm, rm, cpa, converter. Added property list to gather files -->
+			<autopdloop param="a.product.property" paramlist="@{clm.product.list.log4j}" delimiter=";">
+				
+				<!-- splitting the product and property between : -->
+				<autopd_unset_property name="a.product"/>
+				<autopd_unset_property name="property.list"/>
+				<trim_filename key="a.product" filename="${a.product.property}" suffixTrim=":.*$"/>  <!-- remove everything after and include : -->
+				<trim_filename key="property.list" filename="${a.product.property}" prefixTrim="^[^:]*:"/>  <!-- remove everything before and upto including : -->
+				
+				<internal.collectServerLogFromLog4j server.base="@{server.base}" 
+					log4j.location="@{conf.dir}/${a.product}/log4j.properties"
+					property.list="${property.list}"
+					prompt="@{prompt}"
+					/>
+			</autopdloop>
+						
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- collect logs from specified log4j -->
+	<!-- 
+		-->
+	<macrodef name="internal.collectServerLogFromLog4j">
+		<attribute name="server.base"/>                    				<!-- server base file -->
+		<attribute name="log4j.location"/>                              <!-- log4j.properties file location -->
+		<attribute name="property.list" default="log4j.appender.file.File"/> <!-- property (properties to look for log file -->
+		<attribute name="prompt" default="false"/>                           <!-- prompt the user if any of the property in the list is missing -->
+		<sequential>
+			
+			<!-- set up logj4 path -->
+			<autopdproperty name="log4j.path" value="@{server.base}/@{log4j.location}"/>
+		
+			<!--  Check for log4j.properties -->
+			<autopd_unset_property name="log4j.available"/>
+			<available file="${log4j.path}" property="log4j.available"/>
+			
+			<!--  NO: log4j.properties -->
+			<autopd_if isNotTrue="${log4j.available}">
+				<rtl.debugecho message="File ${log4j.path} not found"/>				
+			</autopd_if>
+						
+			<!-- HAS log4j.properties -->		
+			<autopd_if isTrue="${log4j.available}">
+				
+				<!-- loop .. delimiter = , --> 
+				<autopdproperty name="has.valid.properties" value="true"/>
+				<autopdloop delimiter="," param="a.property" paramlist="@{property.list}">
+					
+					<trim_filename key="a.property" filename="${a.property}" prefixtrim="^\s+"  suffixtrim="\s+$"/>
+					<internal.collect.log4j.log.file 
+							log4j.file="${log4j.path}"
+							log4j.property="${a.property}"
+							server.base="@{server.base}"
+							/>
+					
+					<!-- check for failure -->
+					<autopd_unset_property name="has.error"/>
+					<condition property="has.error">
+						<or>
+							<not>
+								<equals arg1="true" arg2="${has.log4j.property.defined}"/>
+							</not>
+							<equals arg1="true" arg2="${is.log4j.property.blank}"/>
+						</or>
+					</condition>
+					
+					<autopd_if isTrue="${has.error}">
+						<autopdproperty name="has.valid.properties" value="false"/>
+					</autopd_if>
+				</autopdloop>
+				
+				
+				<!-- prompt the user if needed -->
+				<autopd_if isNotTrue="${has.valid.properties}">
+					<saveresourcebundleproperty key="ratl.server.log4j.config.missing.label"
+								bundle="properties/RATLSHARE/autopd"
+								propertyName="ratl.server.error.ui.msg"
+								message="Log4j.properties file {0}: missing property definition: {1}. The system may not generate logs properly"
+						 		replace="${log4j.path};;@{property.list}"
+								/>
+					
+					<wsnlsecho key="ratl.server.log4j.config.missing.label" 
+								bundle="properties/RATLSHARE/autopd"
+								message="Log4j.properties file {0}: missing property definition: {1}. The system may not generate logs properly"
+								replace="${log4j.path};;@{property.list}"
+								id="2100"
+								level="warn"
+								messagePrefix="CWPDD"/>	
+					
+					<autopd_if isTrue="@{prompt}">
+						<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" noCancel="true">
+					  	    <fieldtask label="ratl.server.log4j.config.missing.prompt" type="prompt" name="prompt1"/>
+							<fieldtask label="${ratl.server.error.ui.msg}" type="label" name="label1"/>
+					  	</inputdialogtask_v2>
+					</autopd_if>
+				</autopd_if>
+				
+			</autopd_if>
+			
+		</sequential>		
+	</macrodef>
+				
+	<!--
+	  Code to read a property (*.File) in log4j.properties file and gathers this file.
+	  OUTPUT: 	
+	   - has.log4j.property.defined - true | unset: if the specified property is defined.
+	   -  is.log4j.property.blank   - true | unset: if the specified property is defined to be blank. 
+	   -     log4j.property.value   - value of the log4j.property
+	   -     log4j.file.path        - file path to the log4j.property (file to be collected)
+	   -  is.log4j.file.available   - whether this resolved to a file. 
+	   -  has.var.log4j.property.value : true | unset : if log4j.property.value contains a varible substitution.
+	  -->
+	<macrodef name="internal.collect.log4j.log.file">
+		<attribute name="log4j.property"/>   <!-- property in log4j.properties file to pull file from -->
+		<attribute name="log4j.file"/>       <!-- log4j.properties file path -->
+		<attribute name="server.base"/>      <!-- if relative path, this is relative to server base-->
+		<sequential>
+			
+			<!-- Setup -->
+			<autopd_unset_property name="has.log4j.property.defined"/>
+			<autopd_unset_property name="is.log4j.property.blank"/>
+			<autopd_unset_property name="log4j.property.value"/>
+			<autopd_unset_property name="has.var.log4j.property.value"/>
+			<autopd_unset_property name="log4j.file.path"/>
+			<autopd_unset_property name="is.log4j.file.available"/>
+			
+			<!-- read it -->
+			<ratl_autopd_property_reader key="log4j.property.value"
+					name="@{log4j.property}" filename="@{log4j.file}" />
+			
+			<!-- check it -->
+			<condition property="has.log4j.property.defined">
+				<isset property="log4j.property.value"/>
+			</condition>
+			
+			<autopd_if isTrue="${has.log4j.property.defined}">
+				<condition property="is.log4j.property.blank">
+					<equals arg1="" arg2="${log4j.property.value}"/>
+				</condition>
+			</autopd_if>
+			
+			<!-- collect the file by resolving the file, if defined and not blank -->
+			<autopd_if isTrue="${has.log4j.property.defined}">
+				<autopd_if isNotTrue="${is.log4j.property.blank}">
+					
+					<!-- check whether it contains a string substitute -->
+					<condition property="has.var.log4j.property.value">
+						<contains string="${log4j.property.value}" substring="$${"/>
+					</condition>
+					
+					<rtl.debugecho message="@{log4j.property} = ${log4j.property.value} "/>
+					
+					<autopd_if isNotTrue="${has.var.log4j.property.value}">
+						
+						<!-- check whether it is a relative path entry -->
+						<autopd_unset_property name="is.abs.path"/>
+						<condition property="is.abs.path">
+							<is_absolute_path file="${log4j.property.value}"/>
+						</condition>
+						
+						<autopd_if isNotTrue="${is.abs.path}">
+							<!-- construct path -->
+							<autopdproperty name="log4j.file.path" value="@{server.base}/${log4j.property.value}"/>						
+						</autopd_if>  <!-- if is not abs path -->
+						<autopd_if isTrue="${is.abs.path}">
+							<autopdproperty name="log4j.file.path" value="${log4j.property.value}"/>
+						</autopd_if>
+						
+						<!-- check file available -->
+						<available file="${log4j.file.path}" property="is.log4j.file.available" type="file"/>
+						<autopd_if isNotTrue="${is.log4j.file.available}">
+							<rtl.debugecho message="Log file '${log4j.file.path}' specified by @{log4j.property} in @{log4j.file} not found"/>
+						</autopd_if>
+						<autopd_if isTrue="${is.log4j.file.available}">
+							<!-- collect file -->
+							<rtl.debugecho message="Collecting log file: ${log4j.file.path}"/>
+							<wsnlsecho key="ratl.serverside.log4j.collect" 
+									bundle="properties/RATLSHARE/autopd"
+									message="Collecting log file: {0}"
+									replace="${log4j.file.path}"
+									id="2081"
+									level="info"
+									messagePrefix="CWPDD"/>	
+							
+							<autopd_unset_property name="log4j.log.dir"/>
+							<dirname file="${log4j.file.path}" property="log4j.log.dir"/>
+							<trim_filename key="log4j.log.dir.trimmed" filename="${log4j.log.dir}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+				
+							<copy todir="${isadcTempOut}/${log4j.log.dir.trimmed}" outputencoding="UTF-8">
+								<fileset file="${log4j.file.path}"/>
+							</copy>
+						</autopd_if>
+						
+					</autopd_if>  <!-- if no var substitution -->
+				</autopd_if> <!-- if not blank -->
+			</autopd_if>   <!-- if defined -->
+			
+		</sequential>
+	</macrodef>
+				
+	
+	<!-- ===================================================  -->
+	<!--  Utilitiy methods                                    -->
+	<!-- ===================================================  -->
+	
+	<!-- code to collect the most recent .log file matching a prefix -->
+	<!-- utility -->
+	<macrodef name="collectMostRecent_log">
+		<attribute name="prefix"/>
+		<attribute name="path"/>		
+		<sequential>
+			<!-- gathering prefix log -->
+			
+			<rtl.debugecho message="path = @{path}, prefix = @{prefix} "/>
+			
+			<!-- ISADC WORKAROUND -->
+			<autopd_unset_property name="is.empty"/>
+			<condition property="is.empty">
+				<or>
+					<equals arg1="" arg2="@{prefix}"/>
+					<contains string="@{prefix}" substring="$${"/>
+					<contains string="@{prefix}" substring="@@{"/>
+				</or>
+			</condition>
+			
+			<autopd_if isTrue="${is.empty}">
+				<rtl.debugecho message="prefix is not defined. "/>
+			</autopd_if>
+			<autopd_if isNotTrue="${is.empty}">
+				<autopd_unset_property name="latest.matched"/>
+				<file_filter_by_latest key="latest.matched" 
+						path="@{path}" 
+						selector="^@{prefix}[^a-z]*.log" />
+				
+				<trim_filename key="path.trimmed" filename="@{path}" prefixTrim=".:\\|.:/|..:\\|..:/|/" />
+				
+				<copy todir="${isadcTempOut}/${path.trimmed}" outputencoding="UTF-8">
+					<fileset file="${latest.matched}"/>
+				</copy>
+			</autopd_if>
+
+			
+		</sequential>
+	</macrodef>
+
+
+</project>

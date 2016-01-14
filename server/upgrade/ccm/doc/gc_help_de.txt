@@ -1,0 +1,29 @@
+
+
+Upgrade für bereits installiertes GC
+
+Hinweis:
+      - Dieses Script führt ein Upgrade für GC durch. Weitere Informationen enthält das Hilfethema "Upgrade für die Rational-Lösung für CLM durchführen".
+      - Dieses Script muss, außer zur Anzeige dieser Hilfe, vom Verzeichnis "JazzInstallRoot/server" aus ausgeführt werden. 
+
+Syntax:
+    gc_upgrade
+         -oldApplicationHome <Wert> -- Vollständiger Pfad zum GC-Server-Konfigurationsverzeichnis der alten Installation. Für die Standardinstallation lautet dieser Pfad <GC-Installationsverzeichnis>/server/conf.
+         [-applicationContextRoot jazz] -- GC-Kontextstammverzeichnis
+         [-oldApplicationVersion <ohne>] -- Die GC-Version, für die das Upgrade durchgeführt wird. Standardmäßig wird sie mit repotools -version für die alte GC-Anwendung ermittelt.
+        [-updateTomcatFiles <yes (Standard) | no>] -- Angabe, ob die Tomcat-Konfigurationsdateien aktualisiert werden sollen
+         [-oldTomcatHome <ohne>] -- Vollständiger Pfad zum Tomcat-Ausgangsverzeichnis der alten GC-Installation. Standardmäßig wird der Wert des Parameters oldTomcatHome aus dem Wert des Parameters oldApplicationHome abgeleitet.
+         [-newApplicationHome conf] -- Pfad zum GC-Server-Konfigurationsverzeichnis der neuen Installation
+         [-newJTSHome <ohne>] -- Pfad zum Konfigurationsverzeichnis des von der neuen Installation verwendeten JTS. Standardmäßig wird der Wert des Parameters newJTSHome aus dem Wert des Parameters newApplicationHome abgeleitet.
+         [-jtsContextRoot jts] -- JTS-Kontextstammverzeichnis
+         [-newApplicationTomcatHome <ohne>] -- Pfad zum GC-Tomcat-Ausgangsverzeichnis der neuen Installation. Standardmäßig wird der Wert des Parameters newApplicationTomcatHome aus dem Wert des Parameters newApplicationHome abgeleitet.
+         [-newJTSTomcatHome <ohne>] -- Pfad zum JTS-Tomcat-Ausgangsverzeichnis des von der neuen Installation verwendeten JTS. Standardmäßig wird der Wert des Parameters newJTSTomcatHome aus dem Wert des Parameters newJTSHome abgeleitet.
+         [-ignoreJTSVersionCheck] -- Nicht versuchen zu prüfen, ob die Anwendungsversion mit der JTS-Version unter newJTSHome kompatibel ist. Dieses Argument sollte nur in einer verteilten Implementierung verwendet werden, bei der sich JTS auf einem separaten System befindet, auf das das Anwendungssystem keinen Zugriff hat.
+        [-noPrompt] -- Keine Bestätigung für die Erstellung oder Modifizierung der Tabellen
+        [-noStepPrompt] -- Keine Bestätigung für die Ausführung eines Schrittes anfordern
+        [-noVerify] -- Keine Verifizierung der Dateien mit Team-Server-Eigenschaften
+        [-noEditor] -- Keinen Editor für die teamserver.properties-Dateien öffnen. 
+
+Beispiele:
+    upgrade/gc/gc_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

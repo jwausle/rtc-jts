@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2004-2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+
+<project name="productgen_server_collect_multi_product" default="autopdmain">
+
+	<!-- Load "custom" tasks -->
+	<taskdef file="${autopdrootdir}/properties/autopdtaskdef.properties" loaderref="ISA" />
+
+	<!-- Set script.basedir and bundle.basedir as described in the AutoPD/ISA Script Compatibility Guidelines document  -->
+	<dirname property="script.basedir" file="${ant.file.productgen_server_collect_multi_product}" />
+	<dirname property="script.parentdir" file="${script.basedir}" />
+	<dirname property="bundle.basedir" file="${script.parentdir}" />
+
+	<!-- Targets shared among multiple scripts are in the XML documents *-
+		sharedtargets.xml. The following imports pull these shared targets into this 
+		script. Targets shared by multiple plugins (e.g. sharedtargets.xml, portal-
+		was-sharedtargets.xml) are placed in the com.ibm.autopd bundle. Targets that 
+		are shared by scripts from a single plugin (e.g. was-sharedtargets.xml) are 
+		placed into the same bundle as the scripts. -->
+	
+	<import>
+        <javaresource name="scripts/sharedtargets.xml"/>
+    </import>
+    <import>
+        <javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+    </import>
+    
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared" />
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_jas_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared" />
+	
+    <property name="autopdProblem" value="com.ibm.esupport.client.product.SSCP6535.gencollect_server_multi_product" />
+	<property name="autopdProblem_nlsbundle" value="properties/SSCP6535/autopd" />
+	<property name="taxonomy" value="SSCP6535"/>
+
+	<!-- This target is the main entry point into the script. -->	
+	<target name="autopdmain"
+			description="This is AutoPD main to control running steps"
+			depends="cleanTmpOut,
+					 common_ratl_pre_collection_tasks,
+					 rtl.enable.debug.log,
+					 collectJazzFoundation_server.entry,
+					 collectJazzFoundation_stack_product.entry,
+					 rtl.disable.debug.log.and.collect,
+					 common_ratl_post_collection_tasks">
+	</target>
+
+
+
+</project>

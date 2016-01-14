@@ -1,0 +1,27 @@
+
+
+Upgrade für bereits installierten JTS
+
+Hinweis:
+      - Dieses Script führt ein Upgrade für JTS durch. Weitere Informationen enthält das Hilfethema "Upgrade für die Rational-Lösung für CLM durchführen".
+      - Dieses Script muss, außer zur Anzeige dieser Hilfe, vom Verzeichnis "JazzInstallRoot/server" aus ausgeführt werden. 
+
+Syntax:
+    jts_upgrade
+         -oldJTSHome <Wert> -- Vollständiger Pfad zum JTS-Konfigurationsverzeichnis der alten Installation. Für die Standardinstallation lautet dieser Pfad <JTS-Installationsverzeichnis>/server/conf.
+         [-jtsContextRoot jts] -- JTS-Kontextstammverzeichnis
+         [-oldJTSVersion <ohne>] -- Die JTS-Version, für die das Upgrade durchgeführt wird. Standardmäßig wird dies durch Ausführen von repotools -version für den alten JTS ermittelt.
+         [-lpaContextRoot admin] -- LPA-Kontextstammverzeichnis
+        [-updateTomcatFiles <yes (Standard) | no>] -- Angabe, ob die Tomcat-Konfigurationsdateien aktualisiert werden sollen
+         [-oldTomcatHome <ohne>] -- Vollständiger Pfad zum Tomcat-Ausgangsverzeichnis der alten Installation. Standardmäßig wird der Wert des Parameters oldTomcatHome vom Wert des Parameters oldJTSHome abgeleitet. 
+         [-newJTSHome conf] -- Pfad zum JTS-Konfigurationsverzeichnis der neuen Installation
+         [-newTomcatHome <ohne>] -- Pfad zum Tomcat-Ausgangsverzeichnis der neuen Installation. Der neue Parameter newTomcatHome wird standardmäßig vom Wert des Parameters newJTSHome abgeleitet.
+         [-noPrompt] -- Keine Bestätigung für die Erstellung der Tabellen vor dem Import anfordern.
+         [-noEditor] -- Keinen Editor für die teamserver.properties-Datei öffnen.
+         [-ignoreLPA] -- Upgrade der LPA-Anwendung ignorieren
+         [-noVerify] -- Keine Verifizierung der Dateien mit Team-Server-Eigenschaften.
+         [-noStepPrompt] -- Keine Bestätigung für die Ausführung eines Schrittes anfordern
+
+Beispiele:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

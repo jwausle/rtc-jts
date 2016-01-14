@@ -1,0 +1,29 @@
+
+
+Actualizar una Configuración global ya instalada
+
+Notas:
+      - Este script actualiza Configuración global. Para obtener más información, consulte el tema de ayuda, "Actualización de la solución de Rational para CLM".
+      - Excepto cuando muestre esta ayuda, este script se debe ejecutar desde un directorio JazzInstallRoot/server.
+
+Uso:
+    gc_upgrade
+         -oldApplicationHome <value> --Vía de acceso completa al directorio de configuración de servidor de Configuración global de la instalación anterior.  Para una instalación típica, esta vía de acceso es <instalación de Configuración global>/server/conf.
+         [-applicationContextRoot jazz] --Raíz de contexto de Configuración global.
+         [-oldApplicationVersion <ninguno>] --La versión de Configuración global que se está actualizando.  De forma predeterminada, esto se determina ejecutando repotools -version en la aplicación Configuración global anterior.
+         [-updateTomcatFiles <yes (valor predeterminado) | no>] --Si deben actualizarse los archivos de configuración tomcat.
+         [-oldTomcatHome <ninguno>] --Vía de acceso completa del directorio de inicio de Tomcat de la instalación de Configuración global anterior. De forma predeterminada, el valor del parámetro oldTomcatHome se deriva del valor del parámetro oldApplicationHome.
+         [-newApplicationHome conf] --Vía de acceso al directorio de configuración de servidor de Configuración global de la nueva instalación.
+         [-newJTSHome <ninguno>] --Vía de acceso al directorio de configuración de servidor de JTS que la nueva instalación utilizará. De forma predeterminada, el valor del parámetro newJTSHome se deriva del valor del parámetro newApplicationHome.
+         [-jtsContextRoot jts] --Raíz de contexto de JTS.
+         [-newApplicationTomcatHome <ninguno>] --Vía de acceso al directorio de inicio de Tomcat de Configuración global de la nueva instalación. De forma predeterminada, el valor del parámetro newApplicationTomcatHome se deriva del valor del parámetro newApplicationHome.
+         [-newJTSTomcatHome <ninguno>] --Vía de acceso al directorio de inicio de Tomcat de JTS del JTS que la nueva instalación utilizará. De forma predeterminada, el valor del parámetro newJTSTomcatHome se deriva del valor del parámetro newJTSHome.
+         [-ignoreJTSVersionCheck] --No intente comprobar si la versión de la aplicación es compatible con la versión de JTS ubicada en newJTSHome.  Este argumento solo debe utilizarse en un despliegue distribuido donde JTS esté en un sistema aparte y no se pueda acceder a él desde el sistema de aplicaciones.
+         [-noPrompt] --No solicitar antes de crear o modificar las tablas.
+         [-noStepPrompt] --No mostrar solicitud antes de ejecutar un paso.
+         [-noVerify] --No realizar verificación de los archivos teamserver.properties.
+         [-noEditor] --No abrir los archivos teamserver.properties con un editor.
+
+Ejemplos:
+    upgrade/gc/gc_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

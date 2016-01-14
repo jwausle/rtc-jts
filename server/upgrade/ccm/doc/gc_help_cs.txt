@@ -1,0 +1,29 @@
+
+
+Upgrade již instalované aplikace GC
+
+Poznámky:
+      - Tento skript provádí upgrade aplikace GC. Další informace viz téma nápovědy "Upgrade produktu Rational Solution for CLM".
+      - S výjimkou zobrazení této nápovědy musí být tento skript spuštěn z adresáře JazzInstallRoot/server.
+
+Použití:
+    gc_upgrade
+         -oldApplicationHome <hodnota> --Úplná cesta ke konfiguračnímu adresáři serveru GC staré instalace. V případě typické instalace je cesta: <instalace GC>/server/conf.
+         [-applicationContextRoot jazz] --Kontextový kořenový adresář GC.
+         [-oldApplicationVersion <není>] --Verze upgradované aplikace GC. Ve výchozím nastavení se toto určuje spuštěním nástrojů repotool -version vůči staré aplikaci GC.
+         [-updateTomcatFiles <yes (výchozí) | no>] --Aktualizace konfiguračních souborů Tomcat.
+         [-oldTomcatHome <není>] --Úplná cesta k domovskému adresáři Tomcat staré instalace GC. Ve výchozím nastavení je hodnota parametru oldTomcatHome odvozena od hodnoty parametru oldApplicationHome.
+         [-newApplicationHome conf] --Cesta ke konfiguračnímu adresáři serveru GC nové instalace.
+         [-newJTSHome <není>] --Cesta ke konfiguračnímu adresáři serveru JTS pro novou instalaci. Ve výchozím nastavení je hodnota parametru newJTSHome odvozena od hodnoty parametru newApplicationHome.
+         [-jtsContextRoot jts] --Kontextový kořenový adresář JTS.
+         [-newApplicationTomcatHome <není>] --Cesta k domovskému adresáři GC Tomcat nové instalace. Ve výchozím nastavení je hodnota parametru newApplicationTomcatHome odvozena od hodnoty parametru newApplicationHome.
+         [-newJTSTomcatHome <není>] --Cesta k domovskému adresáři JTS Tomcat nové instalace JTS. Ve výchozím nastavení je hodnota parametru newJTSTomcatHome odvozena od hodnoty parametru newJTSHome.
+         [-ignoreJTSVersionCheck] --Nepokoušejte se ověřit, zda je verze aplikace kompatibilní s verzí JTS umístěnou v newJTSHome. Tento argument by se měl používat pouze v rozdělené implementaci, kde JTS je na samostatném systému, který je nepřípustný z aplikačního systému.
+         [-noPrompt] --Bez výzvy před vytvořením nebo úpravou tabulek.
+         [-noStepPrompt] --Bez výzvy před provedením kroku.
+         [-noVerify] --Neprovádět verifikaci souborů teamserver.properties.
+         [-noEditor] --Neotevírat editor v souborech teamserver.properties.
+
+Příklady:
+    upgrade/gc/gc_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

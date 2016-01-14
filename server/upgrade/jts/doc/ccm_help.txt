@@ -1,0 +1,29 @@
+
+
+Upgrade an already installed CCM
+
+Notes:
+      - This script upgrades CCM. For more information, see the help topic, "Upgrading the Rational solution for CLM".
+      - Except while displaying this help, this script must be run from the JazzInstallRoot/server directory.
+
+Usage:
+    ccm_upgrade
+         -oldApplicationHome <value> --Full path to the CCM server configuration directory of the old installation.  For a typical installation, this path is <CCM installation>/server/conf.
+         [-applicationContextRoot jazz] --CCM context root.
+         [-oldApplicationVersion <none>] --The version of CCM that is being upgraded.  By default, this is determined by running repotools -version against the old CCM application.
+         [-updateTomcatFiles <yes (default) | no>] --Whether to update the tomcat configuration files.
+         [-oldTomcatHome <none>] --Full path to the Tomcat home directory of the old CCM installation. By default, the oldTomcatHome parameter value is derived from the oldApplicationHome parameter value.
+         [-newApplicationHome conf] --Path to the CCM server configuration directory of the new installation.
+         [-newJTSHome <none>] --Path to the server configuration directory of the JTS that the new installation will use. By default, the newJTSHome parameter value is derived from the newApplicationHome parameter value.
+         [-jtsContextRoot jts] --JTS Context root.
+         [-newApplicationTomcatHome <none>] --Path to the CCM Tomcat home directory of the new installation. By default, the newApplicationTomcatHome parameter value is derived from the newApplicationHome parameter value.
+         [-newJTSTomcatHome <none>] --Path to the JTS Tomcat home directory of the JTS that the new installation will use. By default, the newJTSTomcatHome parameter value is derived from the newJTSHome parameter value.
+         [-ignoreJTSVersionCheck] --Do not attempt to verify that the application version is compatible with the JTS version located at newJTSHome.  This argument should only be used in a distributed deployment where the JTS is on a separate system that is inaccessible from the application system.
+         [-noPrompt] --Do not prompt before creating or modifying the tables.
+         [-noEditor] --Do not open an editor on the teamserver.properties files.
+         [-noVerify] --Do not perform teamserver.properties files verification.
+         [-noStepPrompt] --Do not prompt before executing a step.
+
+Examples:
+    upgrade/ccm/ccm_upgrade -oldApplicationHome /opt/JazzTeamServer3.x/jazz/server/conf
+

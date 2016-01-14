@@ -1,0 +1,29 @@
+
+
+Önceden kurulu bir QM'yi yükseltme
+
+Notlar:
+      - Bu komut dosyası QM'i yükseltir. Daha fazla bilgi için "CLM için Rational çözümünü yükseltme" başlıklı yardım konusuna bakın.
+      - Bu yardım konusunun görüntülenmesi sırası dışında, bu komut dosyası JazzInstallRoot/server dizininden çalıştırılmalıdır.
+
+Kullanım:
+    qm_upgrade
+         -oldApplicationHome <value> --Eski kuruluşun QM ana dizininin tam yolu.  Tipik bir kuruluş için bu yol: <QM installation>/server/conf.
+         [-applicationContextRoot jazz] --QM bağlam kökü.
+         [-oldApplicationVersion <none>] --Yükseltilmekte olan sürüm.  Varsayılan olarak bu, eski QM uygulamasına karşı repotools -version çalıştırılarak belirtilir.
+         [-updateTomcatFiles <yes (varsayılan) | no>] --tomcat yapılandırma dosyalarının güncellenip güncellenmeyeceği.
+         [-oldTomcatHome <none>] --Eski kuruluşun Tomcat kök dizini tam yolu. Varsayılan olarak, oldTomcatHome parametre değeri oldApplicationHome parametre değerinden türetilir.
+         [-newApplicationHome conf] --Yeni kuruluşun QM sunucusu yapılandırma dizini yolu.
+         [-newJTSHome <none>] --Yeni kuruluşun kullanacağı JTS sunucu yapılandırma dizini yolu. Varsayılan olarak, newJTSHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-jtsContextRoot jts] --JTS Bağlam kökü.
+         [-newApplicationTomcatHome <none>] --Yeni kuruluşun QM Tomcat ana dizini yolu. Varsayılan olarak, newApplicationTomcatHome parametre değeri newApplicationHome parametre değerinden türetilir.
+         [-newJTSTomcatHome <none>] --Yeni kuruluşun kullanacağı JTS'nin JJTS Tomcat ana dizini yolu. Varsayılan olarak, newJTSTomcatHome parametre değeri newJTSHome parametre değerinden türetilir.
+         [-ignoreJTSVersionCheck] --Uygulama sürümünün newJTSHome'da bulunan JTS sürümüyle uyumlu olduğunu doğrulamayı denemeyin.  Bu bağımsız değişken yalnızca JTS'in uygulama sisteminden erişilemeyen ayrı bir sistemde olduğu dağıtımlı konuşlandırmada kullanılabilir.
+         [-noPrompt] --Tablolar yaratılmadan ya da değiştirilmeden önce sorulmasın.
+         [-noEditor] --teamserver.properties dosyalarında bir düzenleyici açılmasın.
+         [-noVerify] --teamserver.properties dosyaları doğrulaması gerçekleştirilmesin.
+         [-noStepPrompt] --Bir adım gerçekleştirilmeden önce sorulmasın.
+
+Örnekler:
+    upgrade/qm/qm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer3.0.x/jazz/server/conf -importFromFile /tmp/qmData.tar
+

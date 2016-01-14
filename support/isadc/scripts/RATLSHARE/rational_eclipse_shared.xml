@@ -1,0 +1,1402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2007, 2012, 2014. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ --> 
+
+<!-- Eclipse shared. -->
+<!-- compatible with AutoPD 1.2.2 -->
+<!-- must use this after validate_os -->
+
+<project name="rational_eclipse_shared"> 
+
+
+	<dirname property="rational.eclipse.shared.targets.basedir" file="${ant.file.rational_eclipse_shared}" />
+	<dirname property="rational.eclipse.shared.targets.parentdir" file="${rational.eclipse.shared.targets.basedir}" />
+	<dirname property="rational.eclipse.shared.targets.bundle.basedir" file="${rational.eclipse.shared.targets.parentdir}" />
+	
+	<!-- import the common file --> 
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATLSHARE/rational_automation_recovery_shared.xml" osgiBundle="com.ibm.esupport.client.product.rational.shared"/>
+	<autopdimport file="${autopdimportdir}/scripts/RATL_CUSTOM/rational.custom.taskdef.xml" osgiBundle="com.ibm.esupport.client.product.rational.custom.shared"/>
+	
+	<!-- ISADC need -->
+	<import>
+		<javaresource name="scripts/sharedelements/sharedelements-sharedtargets.xml"/>
+	</import>
+	
+	<!-- ################################## -->	
+	<!--  Entry targets                     -->
+	<!-- ################################## -->
+	
+	<!-- collects Eclipse configuration data and workspace data-->
+	<!-- SAMPLE USAGE: 
+		<target name="autopdMain" depends="Main_collectEclipseData"/>
+	-->
+	<target name="Main_collectEclipseData"
+		depends="load_sharedelements_tasks,		
+				set_problem_type_with_nls_bundle,
+				setup_autopd,
+				validate_os,
+				checkAutomation,
+				check_64_bit_JVM,
+				collectEclipseGeneralData_entry,
+				ratl.collect.exclude.list, 
+				cisa_scan,
+				zip_autopd_log,
+				ftp_message_shared,
+				ftp_collected_information_shared">
+		<!-- Dependencies used above...
+					   load_sharedelements_tasks,			// load shared elements - ying add.
+					   set_problem_type_with_nls_bundle,    //set and log the problem type
+					   setup_autopd,						// initialize autopd (from sharedtargets.xml)
+					   validate_os,							// validates we are running on a supported os (from sharedtargets.xml)
+					   collectEclipseGeneralData_entry,		//call the collectEclipseGeneralData_entry target below
+					   zip_autopd_log,                      // add autopd logs to the zip file  (from sharedtargets.xml)
+					   ftp_message_shared, 					// asks the user if they want to ftp the zip file in (from sharedtargets.xml)
+					   ftp_collected_information_shared,	// Not used: performs the ftp if desired (from sharedtargets.xml)
+			-->		
+	</target>
+	
+	<target name="Main_collectEclipseData_v2"
+			depends="load_sharedelements_tasks,		
+					set_problem_type_with_nls_bundle,
+					setup_autopd_v2,
+					validate_os,
+					checkAutomation,
+					check_64_bit_JVM,
+					collectEclipseGeneralData_entry,
+					ratl.collect.exclude.list, 
+					cisa_scan,		
+					zip_autopd_log,
+					set_rational_upload,
+					ftp_message_shared,
+					ftp_collected_information_shared">			
+		</target>
+	
+	
+	<!-- ################################## -->	
+	<!--  General Collector entry           -->
+	<!-- ################################## -->
+	<!-- Collects Eclipse data + workspace - prompt - entry -->
+	<!-- AUTOMATION: DONE: log error & fail -->
+	<target name="collectEclipseGeneralData_entry" >
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<!-- use a different prompt for ISAGui vs non gui -->
+		
+		<!-- V4 - GUI and non GUI looks the same, no need ro useISAGuiCollector tag --> 
+		
+		<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd">
+			<fieldtask name="prompt" 
+			     label="ies32.gencollect.start.prompt" 
+			     type="prompt" />
+			<fieldtask type="label" name="label1" label="ies32.gencollect.start.desc1"/>
+			<fieldtask type="label" name="label2" label="ies32.gencollect.start.desc2"/>
+		</inputdialogtask_v2>
+
+		<getEclipsePathFromUser/>  <!-- CANNOT AUTOMATE THIS -->
+		<collectEclipseGeneralData eclipse.path="${eclipse.path}"/>
+
+	</target>
+	
+	<!-- Collects Eclipse data + workspace -->
+	<!-- AUTOMATION: DONE: log error-->
+	 <macrodef name="collectEclipseGeneralData">
+	    <attribute name="eclipse.path"/>
+	 	<attribute name="prefix" default="ECLIPSE"/>    <!-- default to empty path string -->
+	 	<attribute name="short.path" default="false"/>  <!-- default to include "/Eclipse/" in collection output -->
+	    <sequential>
+	    	<validateEclipsePath eclipse.path="@{eclipse.path}"/>
+    		<autopd_if isTrue="${eclipse.existing}">
+
+    			<!-- collect Eclipse data -->
+    			<collectEclipseData.internal 
+    				eclipse.install.path="@{eclipse.path}"
+    				path.prefix="@{prefix}"
+    				short.path="@{short.path}"/>	    		
+    			
+    			<!-- collect Eclipse Workspace data --> 
+	    		<collectEclipseWorkspaceData
+	    			eclipse.install.path="@{eclipse.path}"
+	    			path.prefix="@{prefix}"
+	    			short.path="@{short.path}"/>
+    			
+    		</autopd_if>
+
+    		<autopd_if isNotTrue="${eclipse.existing}">
+    			<echo message=" "/>
+    			<wsnlsecho key="ies32.shared.warn.2007"
+    						bundle="properties/RATLSHARE/autopd"
+    					   message="Eclipse not found at : {0}"
+    					   replace="@{eclipse.path}" 
+    						id="2007" 
+    					   level="warning"/>
+    			<!-- AUTOMATION LOG -->
+    			<logErrorMessage component="${ant.file}" problem.id="2091"/>	
+    		</autopd_if>
+	    	
+	 	</sequential>
+	 </macrodef>
+	 	
+	
+	
+	<!-- ################################## -->	
+	<!--  Eclipse Collectors                -->
+	<!-- ################################## -->
+		
+	<!-- inputs should be validated -->
+	<!-- AUTOMATION: DONE - NOOP -->
+	<macrodef name="collectEclipseData.internal">
+		<attribute name="eclipse.install.path"/>
+		<attribute name="path.prefix"/>
+		<attribute name="short.path" default="false"/>
+		<sequential>
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ies32.shared.info.2001" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Collecting Eclipse Data from {2}"
+					replace="${autopdts};;${step.count};;@{eclipse.install.path}"
+					id="2001"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			    <!-- set up prefix segment -->
+			    <autopdproperty name="path.segment" value="Eclipse/"/>
+			    <autopd_if isTrue="@{short.path}">
+			    	<autopdproperty name="path.segment" value=""/>  <!-- no segment -->
+			    </autopd_if>
+			
+				<!-- collects configuration *.ini data -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/configuration"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}configuration"/>
+					<param name="includes" value="*.ini"/>
+				</antcall>
+			
+				<!-- collects configuration *.log data -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/configuration"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}configuration"/>
+					<param name="includes" value="*.log"/>
+				</antcall>
+			
+					
+				<!--  collect update -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/configuration/org.eclipse.update"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}configuration/org.eclipse.update"/>
+				</antcall>
+				
+				<!--  collect core runtime --> 
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/configuration/org.eclipse.core.runtime"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}configuration/org.eclipse.core.runtime"/>
+				</antcall>
+				
+				<!--  collect debug core --> 
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/configuration/org.eclipse.debug.core"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}configuration/org.eclipse.debug.core"/>
+				</antcall>
+			
+				<!-- for RAD 7.5/7.6 : item 1408 -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/configuration/org.eclipse.equinox.simpleconfiguration/"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}configuration/org.eclipse.equinox.simpleconfiguration/"/>
+				</antcall>
+			
+				<!-- item 1380 - need runtime logs-->
+				<!-- check to see if directory is available -->	
+			    <autopd_unset_property name="hasRuntime"/>
+				<available file="@{eclipse.install.path}/runtimes/" type="dir" property="hasRuntime"/>
+				<autopd_if isTrue="${hasRuntime}">
+					<ratl.reset.exclude.list/>
+					<copy todir="${isadcTempOut}/@{path.prefix}/${path.segment}" outputencoding="UTF-8">
+						<fileset dir="@{eclipse.install.path}">
+							<include name="runtimes/*/logs/*.*"/>
+							<selector refid="ratl.readable.log.exclude.list"/>
+						</fileset>
+					</copy>
+					<ratl.log.exclude.list dir.path="@{eclipse.install.path}"/>
+				</autopd_if>
+					
+			    <!-- ?? -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/runtimes/org.eclipse.equinox.simpleconfiguration/"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}runtimes/org.eclipse.equinox.simpleconfiguration/"/>
+				</antcall>
+		
+				<!--  collect features  --> 
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/features"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}features"/>
+					<param name="includes" value="*.*"/>
+				</antcall>
+			
+			   <!--  collect plugin - listing  -->
+			    <collect_dir_listing
+					targetDir="@{eclipse.install.path}/plugins"
+					outputFile="${autopdtmp}/PLUGIN_DIR_LIST.txt"
+					zipPrefix="@{path.prefix}/${path.segment}plugins" />
+			
+				<!--  collect links  -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{eclipse.install.path}/links"/>
+					<param name="targetPrefix" value="@{path.prefix}/${path.segment}links"/>
+				</antcall>
+
+				<!-- check if the OSGI folder exist, and if so, collect it -->				
+				<file_available path_key="eclipse.osgi.location"
+					existing_key="osgi.existing"
+					paths="@{eclipse.install.path}/configuration/org.eclipse.osgi/"
+					pattern=".lazy.?" />
+
+				<autopd_if isNotTrue="${osgi.existing}">
+					<wsnlsecho key="ies32.shared.warn.2008" 
+							bundle="properties/RATLSHARE/autopd"
+							message="No OSGI data found for this product. (File Not found: {0}/configuration/org.eclipse.osgi/*.*)"
+							replace="@{eclipse.install.path}"
+							id="2008"
+							level="warn"
+							messagePrefix="CWPDD"/>
+				</autopd_if><!-- no ofering present -->
+
+				<autopd_if isTrue="${osgi.existing}">
+					<zipDirectory.bundle.log
+						zipDir="@{eclipse.install.path}/configuration/org.eclipse.osgi"
+						targetPrefix="@{path.prefix}/${path.segment}configuration/org.eclipse.osgi"
+						includesBundleLog="true" />				
+				</autopd_if><!-- osgi existing -->
+			
+	    </sequential>
+	</macrodef>
+	
+	
+	<!-- inputs should be validated -->	
+	<!-- AUTOMATION: DONE - workspace data list gets logged, invalid workspace are logged -->
+	<!-- new: 20090729 -->
+	<target name="collectEclipseMostRecentWorkspaceData">
+		<fail unless="eclipse.install.path"/>
+		<fail unless="path.prefix"/>
+		
+		<!-- validate the input value -->
+		<stepcount />
+		<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+		<echo message=" "/>
+		<wsnlsecho key="ies32.shared.info.2002.a" 
+   					bundle="properties/RATLSHARE/autopd"
+   					message="[{0}] Step {1}: Collecting Most Recent Workspace data for Eclipse at: {2}"
+   					replace="${autopdts};;${step.count};;${eclipse.install.path}"
+   					id="2002"
+   					level="info"
+   					messagePrefix="CWPDD"/>		
+		
+		<!-- look for workspace information -->
+		<getWorkspaceLocations eclipse.install.path="${eclipse.install.path}"/>
+		
+		<autopd_if isNotTrue="${hasWorkspaceList}">
+			<autopd_if isNotTrue="${workspace.existing}">
+				<wsnlsecho key="ies32.shared.warn.2010" 
+						bundle="properties/RATLSHARE/autopd"
+						message="No recent workspaces found from Eclipse preferences."
+						id="2010"
+						level="warn"
+						messagePrefix="CWPDD"/>
+			</autopd_if><!-- no ofering present -->			
+		</autopd_if> <!-- No Workspace listing --> 
+	
+		<!-- get some data ! -->
+		<autopd_if isTrue="${hasWorkspaceList}">
+			<wsnlsecho key="ies32.shared.info.2003" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Recent workspaces: {0}"
+					id="2003"
+					replace="${eclipse.workspace.path}"					
+					level="info"
+					messagePrefix="CWPDD"/>				
+				
+			<!-- Find the first entry -->
+			<trim_filename key="most.recent.workspace" 
+					filename="${eclipse.workspace.path}" 
+					suffixTrim=",.*" />
+			<rtl.debugecho message="most.recent.workspace = ${most.recent.workspace} "/>
+
+			<collect.metadata.all workspace="${most.recent.workspace}" path.prefix="${path.prefix}"/>
+			
+		</autopd_if><!-- end workspace exist -->
+		
+	</target>
+	
+	<!-- inputs should be validated -->	
+	<!-- AUTOMATION: DONE - workspace data list gets logged, invalid workspace are logged -->
+	<macrodef name="collectEclipseWorkspaceData">
+		<attribute name="eclipse.install.path"/>
+		<attribute name="path.prefix"/>
+		<attribute name="short.path" default="false"/>
+		<sequential>
+			<!-- validate the input value -->
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			<echo message=" "/>
+			<wsnlsecho key="ies32.shared.info.2002" 
+					bundle="properties/RATLSHARE/autopd"
+					message="[{0}] Step {1}: Collecting Workspace data for Eclipse at: {2}"
+					replace="${autopdts};;${step.count};;@{eclipse.install.path}"
+					id="2002"
+					level="info"
+					messagePrefix="CWPDD"/>
+			
+			<!-- look for workspace information -->
+			<getWorkspaceLocations eclipse.install.path="@{eclipse.install.path}"/>
+			
+			<autopd_if isNotTrue="${hasWorkspaceList}">
+				<autopd_if isNotTrue="${workspace.existing}">
+					<wsnlsecho key="ies32.shared.warn.2009" 
+							bundle="properties/RATLSHARE/autopd"
+							message="No workspace found from Eclipse preferences"
+							id="2009"
+							level="warn"
+							messagePrefix="CWPDD"/>
+				</autopd_if><!-- no ofering present -->			
+			</autopd_if> <!-- No Workspace listing --> 
+		
+			<!-- get some data ! -->
+			<autopd_if isTrue="${hasWorkspaceList}">
+				<wsnlsecho key="ies32.shared.info.2003" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Recent workspaces: {0}"
+						id="2003"
+						replace="${eclipse.workspace.path}"					
+						level="info"
+						messagePrefix="CWPDD"/>				
+					
+				<!-- LOOP through each workspace -->
+				<autopdproperty name="value.name" value="" />
+				<autopdproperty name="counter" value="1"/>
+				<autopdloop paramList="${eclipse.workspace.path}"
+					param="value" delimiter=",">
+					<collect.metadata.all workspace="${value}" path.prefix="@{path.prefix}" short.path="@{short.path}" ws.count="${counter}"/>
+					<increment_count property="counter"/>
+				</autopdloop>
+			</autopd_if><!-- end workspace exist -->
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- ================================================================  -->
+	<!--                            Shared                                 -->
+	<!-- ================================================================  -->
+	<!-- NOTE : Methods starting with internal is to be used internally    -->
+	<!-- ================================================================  -->
+	
+<!-- ============================================================ -->
+<!--  Eclipse Workspace information                                               -->
+<!-- ============================================================ -->
+
+	<property name="WORKSPACE_METADATA_ECLIPSE_CORE_DIR" value=".metadata/.plugins/org.eclipse.core.runtime"/>
+	<!-- INPUT :
+	        hasWorkspaceList : true / unset
+	        workspaceList :  list of workspace (if hasWorkspaceList value is true)
+	     OUTPUT : 
+	        hasSelectedWorkspace = true : unset
+	        selectedWorkspace = selected workspace.
+	     Usage: Leverage output from <getWorkspaceLocations>
+	     <getIMInstallDir/>
+		 <getProductPathsFromIM_noprompt 
+    		im.appdata.path="${im.appdata.path}"
+    		product.offering.id="@{product.id}"/>
+	     <getWorkspaceLocations eclipse.install.path="${product.match.eclipse.path}"/>
+	     <prompt.workspace hasworkspacelist="${hasWorkspaceList}" workspacelist="${eclipse.workspace.path}"/>
+	        
+	 -->
+	<!-- AUTOMATION: DONE: Fail. This requires user input -->
+	<macrodef name="prompt.workspace">
+		<attribute name="hasWorkspaceList"/>
+		<attribute name="workspaceList"/>  
+		<sequential>
+			<!-- Not useful if we don't have eclipse path -->
+			<managePrompt component="${ant.file}"
+				forcefail="true">				
+				<prompt.workspace.internal 
+					hasworkspacelist="@{hasWorkspaceList}"
+					workspaceList="@{workspaceList}"/>
+			</managePrompt>
+		</sequential>
+	</macrodef>
+	<!-- AUTOMATION: DONE - wrapped -->
+	<macrodef name="prompt.workspace.internal">
+		<attribute name="hasWorkspaceList"/>
+		<attribute name="workspaceList"/>     <!-- separated by , -->
+		<sequential>
+			
+			<autopd_unset_property name="target.workspace.recent"/>
+			<autopd_unset_property name="target.workspace.browse"/>
+
+			<!-- if workspace list is available -->
+			<autopd_if isTrue="@{hasWorkspaceList}">
+				<internal.prompt.workspace.list workspacelist="@{workspaceList}"/>
+			</autopd_if>
+			
+			<!-- if list is not available -->
+			<autopd_if isNotTrue="@{hasWorkspaceList}">
+				<internal.prompt.workspace.nolist />
+			</autopd_if>	
+						
+		</sequential>
+	</macrodef>
+	
+	<!-- AUTOMATION : Supress prompt -->
+	<macrodef name="prompt.close.workspace">
+		<attribute name="workspace"/>
+		<sequential>
+			<!-- AUTOMATION : Supress prompt -->
+			<managePrompt component="${ant.file}">				
+				<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							key="prompt.workspace.close.label" 
+							propertyName="closeworkspace"						
+							message="If workspace {0} is currently being used, please save and close the application that is using it."
+							replace="@{workspace}"/>
+				
+				<inputdialogtask_v2 actionProperty="user.script.continue" bundle="properties/RATLSHARE/autopd">
+					<fieldtask name="prompt" type="prompt" label="prompt.workspace.close.prompt"/>
+					<fieldtask name="label1" type="label" label="${closeworkspace}"/>				
+				</inputdialogtask_v2>	
+			</managePrompt>
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- prompt
+	     OUTPUT:
+			hasSelectedWorkspace = true : unset
+	        selectedWorkspace = selected workspace.
+	  -->
+	<!-- AUTOMATION: DONE - NOOP : Covered by prompt.workspace.internal-->
+	<macrodef name="internal.prompt.workspace.nolist">
+		<sequential>
+			
+			<autopd_unset_property name="selectedWorkspace"/>
+			<autopd_unset_property name="hasSelectedWorkspace"/>
+			<autopdproperty name="error.msg" value=""/>
+			
+			<!-- prompt -->
+			<autopdproperty name="isContinue" value="true"/>
+			<autopdwhile property="isContinue">
+				
+				<!-- prompt -->
+				<inputdialogtask_v2 actionProperty="user.script.continue" bundle="properties/RATLSHARE/autopd">
+					<fieldtask name="prompt" type="prompt" label="prompt.workspace.prompt"/>
+					<fieldtask name="target.workspace.browse" label="prompt.workspace.nolist.line1"
+		        		type="filebrowser" browserTargetType="dir" />
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+				</inputdialogtask_v2>	
+			
+				<!-- validate -->
+				<internal.validate.workspace workspace="${target.workspace.browse}"/>
+			
+				<autopd_if isTrue="${isValidWorkspace}">
+					<autopdproperty name="isContinue" value="false"/>  <!-- exit loop -->
+					<autopdproperty name="selectedWorkspace" value="${target.workspace.browse}"/>
+					<autopdproperty name="hasSelectedWorkspace" value="true"/>
+				</autopd_if>
+				
+				<autopd_if isNotTrue="${isValidWorkspace}">
+					<!-- ERROR MESSAGE -->
+					<saveresourcebundleproperty 
+							bundle="properties/RATLSHARE/autopd"
+							key="prompt.workspace.error" 
+							propertyName="error.msg" 
+							message="** Invalid workspace {0} selected **" 
+							replace="${target.workspace.browse}"/>
+				</autopd_if>
+			
+			</autopdwhile>
+		
+		</sequential>
+	</macrodef>
+	
+	<!-- AUTOMATION: DONE - NOOP - covered by :prompt.workspace.internal -->
+	<macrodef name="internal.prompt.workspace.list">
+		<attribute name="workspaceList"/>     <!-- separated by , -->
+		<sequential>
+			
+			<autopd_unset_property name="selectedWorkspace"/>
+			<autopd_unset_property name="hasSelectedWorkspace"/>
+			<autopdproperty name="error.msg" value=""/>
+			
+			<!-- prompt -->
+			<autopdproperty name="isContinue" value="true"/>
+			<autopdwhile property="isContinue">
+				
+				<!-- prompt -->
+				<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="prompt.workspace.choice.others" 
+						propertyName="others.choice" 
+						message="Others (specified below)" 
+						/>
+			
+				<inputdialogtask_v2 actionProperty="user.script.continue" bundle="properties/RATLSHARE/autopd">
+					<fieldtask name="prompt" type="prompt" label="prompt.workspace.prompt"/>
+					<fieldtask name="errorlabel" label="${error.msg}" type="label" />
+					<fieldtask name="target.workspace.recent"  type="selectlist" label="prompt.workspace.select.recent"
+						list="@{workspaceList},OTHERS(SpecifiedBelow)"
+						listdetails="@{workspaceList},${others.choice}"
+						delimiter=","/>					
+					<fieldtask name="target.workspace.browse" label="prompt.workspace.select.browse"
+							       type="filebrowser" browserTargetType="dir" />					
+				</inputdialogtask_v2>				
+			
+				<!-- validate -->
+				<internal.validate.workspace workspace="${target.workspace.browse}"/>		
+				
+				<!-- VALID content in the Browse... and if OTHERS is selected -->
+				<autopd_unset_property name="is.others.and.valid.browse"/>
+				<condition property="is.others.and.valid.browse">
+					<and>
+						<equals arg1="true" arg2="${isValidWorkspace}"/>
+						<equals arg1="OTHERS(SpecifiedBelow)" arg2="${target.workspace.recent}"/>   <!-- THIS MUST MATCH OTHERS text -->
+					</and>
+				</condition>
+				
+				<autopd_if isTrue="${is.others.and.valid.browse}">
+					<autopdproperty name="selectedWorkspace" value="${target.workspace.browse}"/>
+				</autopd_if>
+				
+				<!-- VALIDATE the selection field - it is not others nor is it a valid browse --> 
+				<autopd_if isNotTrue="${is.others.and.valid.browse}">
+					<internal.validate.workspace workspace="${target.workspace.recent}"/>
+					
+					<autopd_if isTrue="${isValidWorkspace}">
+						<autopdproperty name="selectedWorkspace" value="${target.workspace.recent}"/>
+					</autopd_if>
+				</autopd_if>
+			
+				<!-- finally -->
+				<autopd_if isTrue="${isValidWorkspace}">
+					<autopdproperty name="isContinue" value="false"/>  <!-- exit loop -->
+					<autopdproperty name="hasSelectedWorkspace" value="true"/>
+				</autopd_if>
+				<autopd_if isNotTrue="${isValidWorkspace}">
+					<!-- ERROR MESSAGE -->
+					<saveresourcebundleproperty 
+						bundle="properties/RATLSHARE/autopd"
+						key="prompt.workspace.error" 
+						propertyName="error.msg" 
+						message="** Invalid workspace {0} selected **" 
+						replace="${target.workspace.browse}"/>
+				</autopd_if>
+			
+			</autopdwhile>
+		
+		</sequential>
+	</macrodef>
+	
+	<!-- input: workspace - target diretory
+	     output:
+	     	isValidWorkspace: not "" and has preference settings directory.
+	     	isEmptyString	    
+	  -->
+	<macrodef name="internal.validate.workspace">
+		<attribute name="workspace"/>
+		<sequential>
+					
+		<autopd_unset_property name="isEmptyString"/>
+		<condition property="isEmptyString">
+			<equals arg1="" arg2="@{workspace}"/>
+		</condition>
+			
+		<autopd_unset_property name="isValidWorkspace"/>
+		<condition property="isValidWorkspace">
+			<and>
+				<not>
+					<equals arg1="" arg2="@{workspace}"/>
+				</not>
+				<available file="@{workspace}" type="dir"/>
+				<available file="@{workspace}/${WORKSPACE_METADATA_ECLIPSE_CORE_DIR}" type="dir"/>
+			</and>
+		</condition>
+		
+		</sequential>
+	</macrodef>
+		
+	<!-- Collecting ALL contents in a workspace - Actual collection -->	
+	<!-- AUTOMATION: DONE : Log error if workspace is not available -->		
+	<macrodef name="collect.metadata.all">
+		<attribute name="workspace"/>
+		<attribute name="path.prefix"/>
+		<attribute name="short.path" default="false"/>  <!-- short path requested -->
+		<attribute name="ws.count" default=""/>         <!-- use with short.path=true: workspace count -->
+		<sequential>
+			
+			<!-- takes workspace information and transform path -->
+			<autopdproperty name="value.name" value="@{workspace}" />
+			
+			<!-- TODO: Here is where workspace path length is found -->
+			<autopdreplace property="value.name" token="\\" value="_" />					
+			<autopdreplace property="value.name" token="\/" value="_" />
+			<autopdreplace property="value.name" token="\:" value="_" />
+
+			<autopd_unset_property name="isDirAvailable"/>
+			<available file="@{workspace}" type="dir" property="isDirAvailable"/>
+			
+			<!-- if workspace is not available -->
+			<autopd_if isnottrue="${isDirAvailable}">
+				<wsnlsecho key="ies32.shared.info.2013" 
+					bundle="properties/RATLSHARE/autopd"
+					message="Eclipse workspace {0} does not exist or is not available."
+					id="2013"
+					replace="@{workspace}"					
+					level="info"
+					messagePrefix="CWPDD"/>
+				
+				<!-- AUTOMATION: ERROR LOG -->
+				<logErrorMessage problem.id="2091" component="${ant.file}"/>
+				
+			</autopd_if>
+			
+			<!-- if workspace is available -->
+			<autopd_if isTrue="${isDirAvailable}">
+				
+				<!-- determine if to store in short path -->
+				<autopd_if isTrue="@{short.path}">
+					<!-- shorten the workspace path to the count -->
+					<autopdproperty name="value.name" value="@{ws.count}"/>						
+					<!-- store this information full path to workspace  -->
+					<util.logToFile msg="Workspace: @{workspace}" output="workspace_path.txt" prefix="@{path.prefix}/WORKSPACE/${value.name}"/>
+				</autopd_if>
+								
+				<wsnlsecho key="ies32.shared.info.2004" 
+						bundle="properties/RATLSHARE/autopd"
+						message="Data from workspace {0} will be in {1}/WORKSPACE/{2}"
+						id="2004"
+						replace="@{workspace};;@{path.prefix};;${value.name}"					
+						level="info"
+						messagePrefix="CWPDD"/>					
+				
+				<!-- collects Workspace data -->
+				<!-- collects metadata -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{workspace}/.metadata"/>
+					<param name="targetPrefix" value="@{path.prefix}/WORKSPACE/${value.name}/.metadata"/>
+					<param name="includes" value="*.*"/>
+				</antcall>
+				
+				<!-- collect logs directory -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{workspace}/logs"/>
+					<param name="targetPrefix" value="@{path.prefix}/WORKSPACE/${value.name}/logs"/>
+				</antcall>
+				
+				<!-- collects core.runtime.settings -->
+				<antcall target="zipDirectory">
+					<param name="zipDir" value="@{workspace}/.metadata/.plugins/org.eclipse.core.runtime/.settings"/>
+					<param name="targetPrefix" value="@{path.prefix}/WORKSPACE/${value.name}/.metadata/.plugins/org.eclipse.core.runtime/.settings"/>
+				</antcall>
+				
+				<!-- item 1408 -->
+				<collect_dir_listing
+					targetDir="@{workspace}/.metadata/.plugins"
+					outputFile="${autopdtmp}/DOT_PLUGIN_DIR_LIST.txt"
+					zipPrefix="@{path.prefix}/WORKSPACE/${value.name}/.metadata/.plugins"/>
+				
+				<!-- collects .jazz*/.flags -->
+				<collect_dir_listing
+					targetDir="@{workspace}/.jazz3/.flags"
+					outputFile="${autopdtmp}/JAZZ_FLAGS_DIR_LIST.txt"
+					zipPrefix="@{path.prefix}/WORKSPACE/${value.name}/.jazz3/.flags"/>
+				<collect_dir_listing
+					targetDir="@{workspace}/.jazz4/.flags"
+					outputFile="${autopdtmp}/JAZZ_FLAGS_DIR_LIST.txt"
+					zipPrefix="@{path.prefix}/WORKSPACE/${value.name}/.jazz4/.flags"/>
+				<collect_dir_listing
+					targetDir="@{workspace}/.jazz5/.flags"
+					outputFile="${autopdtmp}/JAZZ_FLAGS_DIR_LIST.txt"
+					zipPrefix="@{path.prefix}/WORKSPACE/${value.name}/.jazz5/.flags"/>
+			
+			</autopd_if>  <!-- if directory exists -->
+		</sequential>
+	</macrodef>
+	<!-- Collecting ALL contents in a workspace - Actual collection -->	
+	<!-- AUTOMATION: DONE : Log error if workspace is not available -->
+	<macrodef name="collect.workspace.all">
+		<attribute name="workspace"/>
+		<attribute name="path.prefix"/>
+		<sequential>
+			
+			<autopdproperty name="value" value="@{workspace}"/>  <!-- use value for workspace -->
+			<autopd_unset_property name="isDirAvailable"/>
+			<available file="${value}" type="dir" property="isDirAvailable"/>
+			
+			<autopd_if isnottrue="${isDirAvailable}">
+				<wsnlsecho key="ies32.shared.info.2013" 
+		  				bundle="properties/RATLSHARE/autopd"
+	    				message="Eclipse workspace {0} does not exist or is not available."
+	    				replace="${value}"
+	    				id="2013"
+	    				level="warning"
+	    				messagePrefix="CWPDD"/>
+				<!-- AUTOMATE : log error -->
+				<logErrorMessage component="${ant.file}" problem.id="2091"/>
+				
+			</autopd_if>
+			
+			
+			<!-- if workspace is available -->
+			<autopd_if istrue="${isDirAvailable}">
+				
+				<autopdproperty name="value.name" value="@{workspace}" />
+				<autopdreplace property="value.name" token="\\" value="_" />					
+				<autopdreplace property="value.name" token="\/" value="_" />
+				<autopdreplace property="value.name" token="\:" value="_" />
+								
+				<wsnlsecho key="ies32.shared.info.2004" 
+		  				bundle="properties/RATLSHARE/autopd"
+	    				message="Data from workspace {0} will be in {1}/WORKSPACE/{2}"
+	    				replace="${value};;@{path.prefix};;${value.name}"
+	    				id="2004"
+	    				level="info"
+	    				messagePrefix="CWPDD"/>	
+
+				<!-- log the files that cannot be collected -->
+				<ratl.reset.exclude.list/>
+				
+				<!-- gut -->
+				<copy todir="${isadcTempOut}/@{path.prefix}/WORKSPACE/${value.name}" outputencoding="UTF-8">
+					<fileset dir="${value}">
+						<exclude name="**/.lock"/>
+						<exclude name="**/.lck"/>
+						<selector refid="ratl.readable.log.exclude.list"/>
+					</fileset>
+				</copy>
+
+				<ratl.log.exclude.list dir.path="${value}"/>
+								
+			</autopd_if>  <!-- if directory exists -->
+		</sequential>
+	</macrodef>
+	
+	
+	<!-- input value attribute with eclipseLocation values -->
+	<!-- output: value.replaced  : replaced values  -->
+	<!-- AUTOMATION: NOOP -->
+	<macrodef name="expandEclipseLocationValue">
+		<attribute name="value"/>
+		<sequential>
+			<autopdproperty name="value.replaced" value="@{value}"/>
+			<autopdreplace property="value.replaced" token="@user.home" value="${user.home}"/>
+			<autopdreplace property="value.replaced" token="@user.dir" value="${user.dir}"/>
+		</sequential>
+	</macrodef>
+	<!-- getWorkspaceLocations : 
+			1. config.ini for osgi.instance.area: 
+			   See: http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.platform.doc.isv/reference/misc/runtime-options.html
+			2(new). the org.eclipse.ui.ide.pref file in .settings of .eclipse/${product}_${version}/configuration/.settings/
+			3. the org.eclipse.ui.ide.pref file in product/configuration/.settings for RECENT_WORKSPACES
+			4. config.ini for osgi.instance.area.default
+		- if not, will look into product path for default workspace 
+		Note: This logic may fail as - in multiple user situations, the 3 may contain data from /root, if 2 failed.
+			- When this happens, the collector will not have access to those workspaces, but will run without failure 		
+		-->
+	<!-- input: eclipse.install.path -->
+	<!-- output:
+		hasWorkspaceList : true / unset.
+		eclipse.workspace.path : list of , separated paths -->
+	<!-- AUTOMATION : DONE - log error -->
+	<macrodef name="getWorkspaceLocations">
+		<attribute name="eclipse.install.path" />
+		<sequential>
+
+			<autopd_unset_property name="eclipse.workspace.path"/>
+			<autopd_unset_property name="hasWorkspaceList"/>
+			
+						
+			<!-- ========================================= -->
+			<!-- Start with config.ini - osgi.instance.area -->
+			<!-- ========================================= -->
+			<internal.getWorkspaceFromConfigIni 
+			    		eclipse.install.path="@{eclipse.install.path}"
+			    		config.ini.key="osgi.instance.area"/>
+						
+			
+			<!-- ========================================= -->
+			<!-- 2. Check in ui.ide.prefs file in user's home -->
+			<!-- ========================================= -->
+			<autopd_if isNotTrue="${hasWorkspaceList}">				
+				<!-- this sets hasWorkspaceList -->
+				<internal.getWorkspaceFromUserIDEPreferences eclipse.install.path="@{eclipse.install.path}" />
+				
+			</autopd_if>  <!-- if no workspace, try again -->			
+				
+			<!-- ================================================= -->
+			<!-- 3rd: check in ui.ide.prefs file in configuration  -->
+			<!-- ================================================= -->
+	
+			<autopd_if isNotTrue="${hasWorkspaceList}">				
+				<!-- this sets hasWorkspaceList -->
+				<internal.getWorkspaceFromIDEPreferences configuration.parent.path="@{eclipse.install.path}" />
+				
+			</autopd_if>  <!-- if no workspace, try again -->
+			
+			<!-- ================================================ -->
+			<!-- 4th effort:  check config.ini for default values -->
+			<!-- ================================================ -->
+			
+			<autopd_if isNotTrue="${hasWorkspaceList}">
+				<internal.getWorkspaceFromConfigIni 
+			    		eclipse.install.path="@{eclipse.install.path}"
+			    		config.ini.key="osgi.instance.area.default"/>
+			</autopd_if>
+			
+			<!-- ======================================================================== -->
+			<!-- Last effort: check for "workspace" directory in eclipse's parent folder   -->
+			<!-- ======================================================================== -->
+			
+			<!-- 4.1.3.20140828 - change so that workspace is appended if found --> 
+			<!-- check -->
+			<autopd_unset_property name="hasDefaultWorkspace"/>
+			<available file="@{eclipse.install.path}/workspace" type="dir" property="hasDefaultWorkspace"/>
+			<autopd_if isTrue="${hasDefaultWorkspace}">
+
+				<!-- eclipse.workspace.path is updated -->
+				<!-- if already had workspace list - append -->
+				<autopd_if isTrue="${hasWorkspaceList}">
+					<autopdproperty name="eclipse.workspace.path" value="${eclipse.workspace.path},@{eclipse.install.path}/workspace"/>
+				</autopd_if>
+				
+				<!-- if don't have workspace list - make it , and set hasWorkspaceList to true -->
+				<autopd_if isNotTrue="${hasWorkspaceList}">
+					<autopdproperty name="eclipse.workspace.path" value="@{eclipse.install.path}/workspace"/>
+					<autopdproperty name="hasWorkspaceList" value="true"/>
+				</autopd_if>
+			</autopd_if>
+			
+			<!-- final clean-up - to address Eclipse 3.3 workspace -->
+			<autopd_if isTrue="${hasWorkspaceList}">
+				<autopdreplace property="eclipse.workspace.path" token="\n" value="," />
+			</autopd_if>
+			
+			<autopd_if isNotTrue="${hasWorkspaceList}">
+				<!-- AUTOMATION: LOG message - no workspace found -->
+				<logErrorMessage component="${ant.file}" problem.id="2091"/>
+			</autopd_if>
+				
+		</sequential>
+	</macrodef>
+	
+	    	
+    <!-- This calculates the Eclipse Recent workspace path from @{eclipse.install.path}/configuration/config.ini -->
+	<!-- looks for osgi.instance.area or osgi.instance.area.default key.  This will also replace vars --> 
+	<!-- See: http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.platform.doc.isv/reference/misc/runtime-options.html -->
+	<!-- INPUT: eclipse.install.path.  -->
+	<!-- OUTPUT:
+		hasWorkspaceList : true/false
+		eclipse.workspace.path :  content - pre clean up.
+	-->	
+	<!-- AUTOMATION: DONE : NOOP. Covered by caller -->
+	<macrodef name="internal.getWorkspaceFromConfigIni">
+		<attribute name="eclipse.install.path"/>
+	    <attribute name="config.ini.key"/>	    
+		<sequential>
+			<!-- reset hasWorkspaceList--> 
+			<autopd_unset_property name="hasWorkspaceList"/>
+			<autopd_unset_property name="hasConfigIniFile"/>
+			<available file="@{eclipse.install.path}/configuration/config.ini" property="hasConfigIniFile"/>
+			
+			<!-- if config.ini exists -->
+			<autopd_if isTrue="${hasConfigIniFile}">
+				<!-- get osgi.instance.area -->
+			    <property_reader
+					name="@{config.ini.key}"
+					filename="@{eclipse.install.path}/configuration/config.ini"
+					key="eclipse.workspace.path"/>  <!-- eclipse.workspace.path gets set here -->
+				
+				<!-- actual checking -->				
+				<condition property="hasWorkspaceList">
+					<and>
+					   <isset property="eclipse.workspace.path"/>
+					   <not>
+					   		<or>
+						   		<equals arg1="" arg2="${eclipse.workspace.path}"/>
+						   		<!-- ignore @none and @noDefault -->
+						   		<equals arg1="@none" arg2="${eclipse.workspace.path}"/>
+					   			<equals arg1="@noDefault" arg2="${eclipse.workspace.path}"/>
+					   		</or>
+					   	</not>
+					</and>
+				</condition>
+				
+				<!-- Replace if valid workspace list -->
+				<autopd_if isTrue="${hasWorkspaceList}">
+					<!-- do some replacement if necessary -->
+					<expandEclipseLocationValue value="${eclipse.workspace.path}"/>
+					<autopdproperty name="eclipse.workspace.path" value="${value.replaced}"/>
+				</autopd_if>
+							
+			</autopd_if> <!-- config.ini exists -->
+		</sequential>
+	</macrodef>
+	
+	<!-- Retrieves the RECENT_WORKSPACES value from org.eclipse.ui.ide.prefs file in @{configuration.parent.path}/configuration/.settings -->
+	<!-- INPUT: configuration.parent.path, any folder containing configuration folder -->
+	<!-- OUTPUT:
+		hasWorkspaceList : true/false
+		eclipse.workspace.path :  content - pre clean up.
+	-->	
+	<!-- AUTOMATION: DONE : NOOP. Covered by caller -->
+	<macrodef name="internal.getWorkspaceFromIDEPreferences">
+		<attribute name="configuration.parent.path"/>  <!-- generally eclipse.install.path, but can be any folder containing configuration -->
+		<sequential>
+			<!-- reset hasWorkspaceList--> 
+			<autopd_unset_property name="hasWorkspaceList"/>
+			
+			<!-- second test --> 
+			<!-- check for org.eclipse.ui.ide.prefs file -->
+			<autopd_unset_property name="org.eclipse.ui.ide.prefs.existing"/>
+			<available file="@{configuration.parent.path}/configuration/.settings/org.eclipse.ui.ide.prefs"
+					property="org.eclipse.ui.ide.prefs.existing"/>
+		
+			<!-- if org.eclipse.ui.ide.prefs exist. -->
+			<autopd_if isTrue="${org.eclipse.ui.ide.prefs.existing}">								
+				<!-- get recent workspaces -->
+				<property_reader 
+					name="RECENT_WORKSPACES"
+					filename="@{configuration.parent.path}/configuration/.settings/org.eclipse.ui.ide.prefs" 
+					key="eclipse.workspace.path" />
+
+				<!--  double check workspace list -->
+				<condition property="hasWorkspaceList">
+					<and>
+					   <isset property="eclipse.workspace.path"/>
+					   <not>
+					   		<equals arg1="" arg2="${eclipse.workspace.path}"/>
+					   	</not>
+					</and>
+				</condition>					
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+	
+	<!-- goal to read ${user_home}/.eclipse/${id}_${version}_somenumber/configuration/.settings/org.eclipse.ui.ide.prefs -->
+	<!-- where id and version are both from @{eclipse.install.path}/.eclipseproduct -->
+	<!-- OUTPUT:
+			hasWorkspaceList : true/false
+			eclipse.workspace.path :  content - pre clean up.
+		-->	
+	<!-- AUTOMATION: DONE : NOOP. Covered by caller -->
+    <macrodef name="internal.getWorkspaceFromUserIDEPreferences">
+    	<attribute name="eclipse.install.path"/>
+    	<sequential>
+    		<!-- resetting values -->
+    		<autopd_unset_property name="hasWorkspaceList"/>
+    		<autopd_unset_property name="eclipse.workspace.path"/>
+    		    		
+    		<!-- look for .eclipseproudct --> 
+    		<autopdproperty name="eclipseproudct" value="@{eclipse.install.path}/.eclipseproduct"/>
+    		<autopd_unset_property name="hasFile"/>
+    		<available file="${eclipseproudct}" property="hasFile" type="file"/>
+    		<autopd_if isTrue="${hasFile}">
+    			<!-- get the folder pattern --> 
+    			<ratl_autopd_property_reader key="id.read" name="id" filename="${eclipseproudct}" />
+    			<ratl_autopd_property_reader key="version.read" name="version" filename="${eclipseproudct}" />
+    			
+    			<!-- ISADC WORKAROUND -->
+    			<autopd_unset_property name="is.valid"/>
+    			<condition property="is.valid">
+    				<and>
+	    				<isset property="id.read"/>
+	    				<isset property="version.read"/>
+    					<not>
+    						<or>
+    				            <equals arg1="" arg2="${id.read}"/>
+    							<contains string="${id.read}" substring="$${"/>
+    							<contains string="${id.read}" substring="@@{"/>
+    				            <equals arg1="" arg2="${version.read}"/>
+    							<contains string="${version.read}" substring="$${"/>
+    							<contains string="${version.read}" substring="@@{"/>
+    						</or>
+    					</not>
+    				</and>
+    			</condition>
+    			<autopd_if isTrue="${is.valid}">
+
+	    			<!-- user home = ${user.home} -->
+	 				<!-- check to see if ${user_home}/.eclipse/${id}_${version}_somenumber exists -->
+	    			<!-- AD HOC: pick the latest one .... -->     			
+	    			<autopd_unset_property name="filteredFolder"/>
+	    			<file_filter_by_latest key="filteredFolder" 
+	    						path="${user.home}/.eclipse" 
+	    						selector="${id.read}_${version.read}_[0-9].*" />
+	    					
+	    			<!-- check to see if the property is set -->
+	    			<condition property="isSetFilteredFolder">
+	    				<isset property="filteredFolder"/>
+	    			</condition>
+	    			
+	    			<!-- if folder found - get preferences from there -->
+	    			<autopd_if isTrue="${isSetFilteredFolder}"> 				
+	    				<!-- run the actual code! -->
+	    				<internal.getWorkspaceFromIDEPreferences configuration.parent.path="${filteredFolder}"/>
+	    			</autopd_if>
+	    			    			
+	    		</autopd_if> 
+    			
+    		</autopd_if>			
+    	</sequential>
+    </macrodef>
+	
+<!-- ============================================================ -->
+<!--  Eclipse PATHS                                               -->
+<!-- ============================================================ -->
+	<!-- This prompts the user for eclipse path -->
+	<!-- validates the input by checking existence of <path>/configuration/config.ini file-->
+	<!-- AUTOMATION: DONE: Fail. This requires user input -->
+	<macrodef name="getEclipsePathFromUser">
+		<sequential>
+			<!-- Not useful if we don't have eclipse path -->
+			<managePrompt component="${ant.file}"
+				forcefail="true">				
+				<getEclipsePathFromUser.internal/>
+			</managePrompt>
+		</sequential>
+	</macrodef>
+	<macrodef name="getEclipsePathFromUser.internal">
+		<sequential>
+
+			<!-- HARD CODING !!! this is used for directory display -->
+			<autopd_if isTrue="${isWindows}">
+				<autopdproperty name="DEFAULT_ECLIPSE" value="C:\Program Files\eclipse-SDK-3.2.1-win32\eclipse"/>
+			</autopd_if>
+			<autopd_if isNotTrue="${isWindows}">
+				<autopdproperty name="DEFAULT_ECLIPSE" value="/opt/eclipse"/>
+			</autopd_if>
+			
+			<!-- loop -->				
+			<autopdproperty name="EclipseRoot.loop" value="true" />
+			<autopdwhile property="EclipseRoot.loop">
+	
+				<!-- nls -->
+				<saveresourcebundleproperty 
+			       	    bundle="properties/RATLSHARE/autopd"
+						key="ratl.general.example" 
+						propertyName="output.label"
+						replace="${DEFAULT_ECLIPSE}"
+						message="Example: {0}" />
+				
+				<!-- prompt for input -->
+				<inputdialogtask_v2 bundle="properties/RATLSHARE/autopd" >
+						<fieldtask name="prompt" 
+							label="ies32.shared.prompt_fullpath" 
+							type="prompt"  />
+						<fieldtask name="eclipse.path" 
+						     label="${output.label}"
+							 type="filebrowser"
+							 initialValueSource="persisted" 
+						     defaultValue="${DEFAULT_ECLIPSE}"
+							 browserTargetType="directory"
+						     width="50" />
+				</inputdialogtask_v2>
+				
+				<!-- verify its not empty -->
+				<validateEclipsePath eclipse.path="${eclipse.path}"/>
+				
+			</autopdwhile>
+	
+			<!-- have a valid Eclipse Path -->
+			<persistproperty property="eclipse.path"/>
+		</sequential>
+	</macrodef> 
+		
+	
+	<!-- verify that the Eclipse Path is valid --> 
+	<!-- properties affected :
+		 eclipse.configuration - config.ini file
+		-->
+	<!-- AUTOMATION: DONE : Log error -->
+	<macrodef name="validateEclipsePath">
+		<attribute name="eclipse.path" />
+		<sequential>
+			
+			<stepcount />
+			<autopdtimestamp property="autopdts" pattern="yyyy.MM.dd-HH.mm.ss.SSSz" />
+			
+			<echo message=" "/>
+			<wsnlsecho key="ies32.shared.info.2005" 
+							bundle="properties/RATLSHARE/autopd"
+							message="[{0}] Step {1}: Validating the Eclipse directory: {2}"
+							replace="${autopdts};;${step.count};;@{eclipse.path}"
+							id="2005"
+							level="info"
+							messagePrefix="CWPDD"/>	
+
+			<autopd_unset_property name="eclipse.path.set"/>
+			<condition property="eclipse.path.set">
+				 <not>
+			   	    <equals arg1="" arg2="@{eclipse.path}"/>
+			   	  </not>
+			</condition>
+		
+			<autopd_if isTrue="${eclipse.path.set}">
+				
+				<file_available path_key="eclipse.configuration"
+					existing_key="eclipse.existing"
+					paths="@{eclipse.path}/configuration/"
+					pattern="^config.ini$" />
+	
+				<!--  Check for config file - after trying necessary ? -->
+				<autopd_if isNotTrue="${eclipse.existing}">
+
+					<wsnlsecho key="ies32.shared.warn.2011" 
+								bundle="properties/RATLSHARE/autopd"
+								message="Eclipse not found at the specified location. (File Not found: {0}/configuration/config.ini)"
+								replace="@{eclipse.path}"
+								id="2011"
+								level="warn"
+								messagePrefix="CWPDD"/>	
+					<!-- AUTOMATION LOG MESSAGE -->
+					<logErrorMessage component="${ant.file}" problem.id="2091"/>
+							  			
+				</autopd_if><!-- no ofering present -->
+						
+				<!-- found eclipse -->
+				<autopd_if isTrue="${eclipse.existing}">
+					<!-- this is the stop loop flag -->
+					<autopdproperty name="EclipseRoot.loop" value="false" />
+					<persistproperty property="eclipse.configuration"/>
+
+					<wsnlsecho key="ies32.shared.info.2006" 
+								bundle="properties/RATLSHARE/autopd"
+								message="Eclipse config found at: {0}/configuration/config.ini"
+								replace="@{eclipse.path}"
+								id="2006"
+								level="info"
+								messagePrefix="CWPDD"/>	
+				</autopd_if>
+				
+			</autopd_if> <!-- non empty path -->
+			<autopd_if isNotTrue="${eclipse.path.set}">
+				
+				<wsnlsecho key="ies32.shared.warn.2012" 
+							bundle="properties/RATLSHARE/autopd"
+							message="Invalid eclipse path retrieved: {0}"
+							replace="@{eclipse.path}"
+							id="2012"
+							level="warn"
+							messagePrefix="CWPDD"/>	
+				<!-- AUTOMATION LOG MESSAGE -->
+				<logErrorMessage component="${ant.file}" problem.id="2091"/>
+			</autopd_if>
+		</sequential>
+	</macrodef>
+
+<!-- ============================================================ -->
+<!--  Eclipse JDK                                                 -->
+<!-- ============================================================ -->
+	<!-- find the JDK for eclipse
+		Input: product.install = Full product install path.
+			   ini.path = product.ini path (relative to install path) 
+			   user.prompt = true | false : prompts the user if cannot find JVM
+			   
+		1) find -vm in <product>.ini
+		2) eclipse <product_install>/jdk/jre
+		3) prompt user (if requested) 
+		
+		OUTPUT:
+			hasValidVM = true | (unset or false) - if found valid vm
+			vm.home = <path of vm>
+		
+		Example:
+		<getEclipseJDKForProduct
+			product.install="C:\Program Files\IBM\RSDP70\" 
+			ini.path="eclipse.ini"/>
+			
+		<echo message="vm.home=${vm.home}"/>
+		
+		  
+		 
+	-->	
+	<macrodef name="getEclipseJDKForProduct">
+		<attribute name="product.install"/>
+		<attribute name="ini.path"/> 
+		<attribute name="user.prompt" default="true"/>
+		<sequential>						 
+			<!-- get vm from ini -->
+			<internal.getVMfromINI product.ini="@{product.install}/@{ini.path}"/>
+						
+			<!-- if no vm information retrieved from ini --> 
+			<autopd_if isNotTrue="${hasValidVM}">
+				
+				<!-- retrive from eclipse jdk -->
+				<internal.getVMfromEclipse product.install="@{product.install}"/>
+				
+				<autopd_if isNotTrue="${hasValidVM}">
+					<!-- prompt the user - if requested -->
+					<autopd_if isTrue="@{user.prompt}">
+						<getVMfromUser />
+					</autopd_if>
+				</autopd_if>
+			</autopd_if>
+			
+		</sequential>
+	</macrodef>
+		
+	<!-- 
+		INPUT:  full path to the product.ini file
+		OUTPUT:
+			- hasValidVM = true | unset
+			- vm.home = full path to vm
+		-->
+	<macrodef name="internal.getVMfromINI">
+		<attribute name="product.ini"/>		
+		<sequential>
+			<autopd_unset_property name="hasValidVM"/>
+			<autopd_unset_property name="hasValidFile"/>
+			<available file="@{product.ini}" type="file" property="hasValidFile"/>
+			
+			<autopd_if isTrue="${hasValidFile}">
+				<!-- parse it -->
+				<!-- load the file - with delimiter @ -->
+				<!-- scan for "-vm" -->
+				<!-- pick up the next line -->
+				<loadfile srcfile="@{product.ini}" property="product.ini.out">
+					 <filterchain>
+					 	<tokenfilter delimoutput="@"/>
+					</filterchain>
+				</loadfile>
+				
+				<autopdproperty name="found_vmtag" value="false"/>
+				<autopdproperty name="hasValidVM" value="false"/>
+					
+				<!-- ISA 2.0 WORKAROUND -->
+				<run.if.not.empty input="${product.ini.out}">
+					<autopdloop param="line" paramlist="${product.ini.out}" delimiter="@">					
+						<autopd_if isNotTrue="${hasValidVM}">
+							<!-- found vm tag at previous iteration - picking up the value -->
+							<autopd_if isTrue="${found_vmtag}">
+								<autopdproperty name="vm.java.path" value="${line}"/>
+								<autopdproperty name="hasValidVM" value="true"/>   <!-- this forces loop to stop -->
+							</autopd_if>
+							
+							<!-- scan for -vm first -->
+							<autopd_if isNotTrue="${found_vmtag}">
+								<autopd_unset_property name="found_vmtag"/>  <!-- for retesting -->
+								<condition property="found_vmtag">
+									<equals arg1="-vm" arg2="${line}"/>
+								</condition>							
+							</autopd_if>
+						</autopd_if>						
+					</autopdloop>
+				</run.if.not.empty>
+			
+				<autopd_if isTrue="${hasValidVM}">
+					<!-- trim - java home is two dirs up -->
+					<dirname file="${vm.java.path}" property="vm.bin.dir"/>
+					<dirname file="${vm.bin.dir}" property="vm.home"/>					
+				</autopd_if>
+			</autopd_if>
+	
+			<rtl.debugecho message="hasValidVM = ${hasValidVM}"/>
+			<rtl.debugecho message="vm.home = ${vm.home}"/>
+
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="internal.getVMfromEclipse">
+		<attribute name="product.install"/>
+		<sequential>
+			<autopd_unset_property name="hasValidVM"/>
+			<available file="@{product.install}/jdk/jre" type="dir" property="hasValidVM"/>
+			
+			<autopd_if isTrue="${hasValidVM}">
+				<autopdproperty name="vm.home" value="@{product.install}/jdk/jre"/>
+			</autopd_if>
+			<rtl.debugecho message="hasValidVM = ${hasValidVM}"/>
+			<rtl.debugecho message="vm.home = ${vm.home}"/>
+		</sequential>
+	</macrodef>
+	
+	<!-- Prompt user  -->
+	<!-- WILL skip if AUTOMATION -->
+	<!-- Prompting user to select the java.exe file that runs the software -->
+	<macrodef name="getVMfromUser">
+		<sequential>
+
+			<managePrompt_continue component="${ant.file}">
+				<prompt>
+					<autopd_if isTrue="${isWindows}">
+						<autopdproperty name="defaultJREFile" value="C:\Program Files\Java\jre1.6.0_07"/>
+						<autopdproperty name="javaname" value="java.exe"/>
+					</autopd_if>
+					<autopd_if isNotTrue="${isWindows}">
+						<autopdproperty name="defaultJREFile" value="/usr/java/jdk1.6.0"/>
+						<autopdproperty name="javaname" value="java"/>
+					</autopd_if>
+					
+					<!-- loop -->
+					<autopdproperty name="error.msg" value=""/>
+					<autopdproperty name="has.input.error" value="true"/>
+					<autopdwhile property="has.input.error">
+						<inputdialogtask_v2	bundle="properties/RATLSHARE/autopd"		
+							actionProperty="updatePortalDialogResult">
+							<fieldtask name="prompt" 
+								label="prompt.jvm.cannot.find" 
+								type="prompt"  />
+							<fieldtask 
+								name="vm.home" 
+								label="prompt.jvm.select" 
+								type="filebrowser" 
+								browserTargetType="directory"
+								defaultValue="${defaultJREFile}" />	
+							
+							<fieldtask name="errorlabel" label="${error.msg}" type="label" />							
+						</inputdialogtask_v2>
+					
+						<autopd_unset_property name="hasValidVM"/>
+						
+						<!-- if can detect /lib /bin -->
+						<condition property="hasValidVM">
+							<and>
+								<available file="${vm.home}/lib" type="dir"/>
+								<available file="${vm.home}/bin" type="dir"/>
+							</and>						
+						</condition>
+					
+						<!-- validation -->
+						<autopd_if isTrue="${hasValidVM}">
+							<autopdproperty name="has.input.error" value="false"/>  <!-- exit loop -->			
+						</autopd_if>
+						<autopd_if isNotTrue="${hasValidVM}">
+							
+							<!-- <autopdproperty name="error.msg" value="** Invalid JVM location '${vm.home}' selected. **"/> -->
+							<saveresourcebundleproperty 
+									bundle="properties/RATLSHARE/autopd"
+									key="prompt.jvm.invalid" 
+									propertyName="error.msg" 
+									message="** Invalid JVM location {0} selected. **" 
+									replace="${vm.home}"/>
+						</autopd_if>
+						
+					</autopdwhile>
+					
+				</prompt>
+				<setDefault>
+					<autopdproperty name="hasValidVM" value="false"/>
+					<autopdproperty name="vm.home" value=""/>
+				</setDefault>
+			</managePrompt_continue>
+				
+
+		</sequential>
+	</macrodef>		
+	
+</project>

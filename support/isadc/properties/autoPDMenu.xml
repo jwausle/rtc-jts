@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<autoPDMenu>
+	<autoPDMenuItem title="com.ibm.esupport.client.product.SSCP6535.gencollect_server_multi_product" link="scripts/SSCP6535/productgen_server_collect_multi_product.xml" bundle="properties/SSCP6535/autopd"/>
+</autoPDMenu>

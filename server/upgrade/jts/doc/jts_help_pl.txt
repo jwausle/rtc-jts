@@ -1,0 +1,28 @@
+
+
+Aktualizacja zainstalowanego serwera JTS
+
+Uwagi:
+      - Ten skrypt aktualizuje serwer JTS. Więcej informacji na ten temat zawiera temat pomocy Aktualizowanie produktu Rational solution for CLM.
+      - Z wyjątkiem sytuacji, w której jest wyświetlana ta pomoc, ten skrypt musi zostać uruchomiony z katalogu katalog_główny_instalacji_Jazz/server.
+
+Składnia:
+    jts_upgrade
+         -oldJTSHome <wartość> -- pełna ścieżka do katalogu konfiguracji serwera JTS dla starszej instalacji.  W przypadku instalacji typowej ścieżką tą jest ścieżka <instalacja serwera JTS>/server/conf.
+         [-jtsContextRoot jts] -- kontekstowy katalog główny serwera JTS.
+         [-oldJTSVersion <brak>] -- wersja serwera JTS, która jest aktualizowana.  Domyślnie wersja jest określana przez uruchomienie komendy repotools -version dla starego serwera JTS.
+         [-lpaContextRoot admin] -- kontekstowy katalog główny serwera LPA.
+         [-updateTomcatFiles <yes (wartość domyślna) | no>] -- określa, czy aktualizować pliki konfiguracyjne serwera Tomcat.
+         [-oldTomcatHome <brak>] -- pełna ścieżka do katalogu głównego serwera Tomcat dla starszej instalacji. Domyślnie wartość parametru oldTomcatHome jest uzyskiwana z wartości parametru oldJTSHome.
+         [-newJTSHome konfiguracja] -- ścieżka do katalogu konfiguracji serwera JTS dla nowej instalacji.
+         [-newTomcatHome <brak>] -- ścieżka do katalogu głównego serwera Tomcat dla nowej instalacji. Domyślnie
+wartość parametru newTomcatHome jest uzyskiwana z wartości parametru newJTSHome.
+         [-noPrompt] -- bez wyświetlania zapytań przed tworzeniem tabel zanim zostanie przeprowadzone importowanie.
+         [-noEditor] -- nie należy otwierać edytora dla pliku teamserver.properties.
+         [-ignoreLPA] -- ignorowanie aktualizacji aplikacji LPA do nowej wersji.
+         [-noVerify] -- bez przeprowadzania weryfikacji plików teamserver.properties.
+         [-noStepPrompt] -- bez wyświetlania zapytań przed wykonaniem kroku.
+
+Przykłady:
+    upgrade/jts/jts_upgrade.sh -oldJTSHome /opt/JazzTeamServer3.x/jts/server/conf
+

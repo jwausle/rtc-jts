@@ -1,0 +1,30 @@
+
+
+Fazer upgrade de um QM já instalado
+
+Notas:
+      - Este script atualiza o QM. Para obter informações adicionais, consulte o tópico da ajuda, "Atualizando a Solução Rational para CLM".
+      - Exceto ao exibir esta ajuda, este script deve ser executado no diretório JazzInstallRoot/server.
+
+Uso:
+    qm_upgrade
+         -oldApplicationHome <value> --Caminho completo para o diretório inicial do QM da instalação antiga.  Para uma instalação típica, este caminho é <QM installation>/server/conf.
+         [-applicationContextRoot jazz] --raiz de contexto do QM.
+         [-oldApplicationVersion <none>] --A versão que está sendo atualizada.  Por padrão, isso é determinado
+	ao executar repotools -version com relação ao aplicativo QM antigo.
+         [-updateTomcatFiles <yes (default) | no>] --Seja para atualizar os arquivos de configuração tomcat.
+         [-oldTomcatHome <none>] --Caminho completo para o diretório-raiz do Tomcat da instalação antiga. Por padrão, o valor de parâmetro oldTomcatHome é derivado do valor de parâmetro oldApplicationHome.
+         [-newApplicationHome conf] --Caminho para o diretório de configuração do servidor QM da nova instalação.
+         [-newJTSHome <none>] --Caminho para o diretório de configuração do servidor JTS do JTS que a nova instalação irá usar. Por padrão, o valor de parâmetro newJTSHome é derivado do valor de parâmetro newApplicationHome.
+         [-jtsContextRoot jts] --Raiz JTS Context.
+         [-newApplicationTomcatHome <none>] --Caminho para o diretório inicial do Tomcat do QM da nova instalação. Por padrão, o valor de parâmetro newApplicationTomcatHome é derivado do valor de parâmetro newApplicationHome.
+         [-newJTSTomcatHome <none>] --Caminho para o diretório inicial do Tomcat do JTS do JTS que a nova instalação irá usar. Por padrão, o valor de parâmetro newJTSTomcatHome é derivado do valor de parâmetro newJTSHome.
+         [-ignoreJTSVersionCheck] --Não tente verificar se a versão do aplicativo é compatível com a versão do JTS localizada em newJTSHome.  Esse argumento deve ser usado apenas em uma implementação distribuída em que o JTS esteja em um sistema separado que seja inacessível a partir do sistema do aplicativo.
+         [-noPrompt] --Não exibir prompt antes de criar ou modificar das tabelas.
+         [-noEditor] --Não abrir um editor nos arquivos teamserver.properties.
+         [-noVerify] --Não executar a verificação de arquivos teamserver.properties.
+         [-noStepPrompt] --Não exibir prompt antes de executar uma etapa.
+
+Exemplos:
+    upgrade/qm/qm_upgrade.sh -oldApplicationHome /opt/JazzTeamServer3.0.x/jazz/server/conf -importFromFile /tmp/qmData.tar
+

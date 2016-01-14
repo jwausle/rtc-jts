@@ -4,7 +4,8 @@ MAINTAINER jwausle
 
 WORKDIR /  
 COPY . /rtc-server
-RUN touch /rtc-server/server/tomcat/logs/catalina.out
+RUN mkdir -p /rtc-server/server/tomcat/logs && \
+    touch /rtc-server/server/tomcat/logs/catalina.out
 
 EXPOSE 9443 9080 9009
 VOLUME /rtc-server
